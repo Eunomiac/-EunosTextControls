@@ -46,11 +46,7 @@ const EunosTextControl = (() => {
         }
 
         // Display status of automatic text toggling
-        if (STA.TE.IsAutoRegistering) {
-            alertGM(`<p>${HTML.CodeSpan("!ets toggle false")} — Disable automatic text shadowing.</p>`, "Auto-Shadowing is <u><b>ACTIVE</b></u>");
-        } else {
-            alertGM(`<p>${HTML.CodeSpan("!ets toggle true")} — Enable automatic text shadowing.</p>`, "Auto-Shadowing is <u><b>INACTIVE</b></u>");
-        }
+        displayAutoShadowStatus();
     };
     // #endregion
 
@@ -69,15 +65,13 @@ const EunosTextControl = (() => {
                         Object.entries(RE.G).filter(([id, textData]) => "masterID" in textData).forEach(([id, textData]) => unregTextShadow(id));
                         flagGM("Shadow objects removed.");
                         flagGM("Registered shadows cleared.");
+                        showGMToggleMenu();
                     } else {
                         const textObjs = getSelTextObjs(msg);
                         if (textObjs) {
                             textObjs.forEach((obj) => unregTextShadow(obj.id));
-                            flagGM("Shadow objects removed.");
-                            flagGM("Registered shadows cleared.");
                         }
                     }
-                    showGMToggleMenu();
                 },
                 fix: () => { if (args.includes("all")) { fixTextShadows() } },
                 cancelintro: () => { STA.TE.IsShowingIntro = false; flagGM("Help message will no longer display at sandbox start.") },
@@ -135,7 +129,7 @@ const EunosTextControl = (() => {
         alertGM(HTML.Box([
             HTML.Header("Eunomiac's Text Controls v.0.1"),
             HTML.Block([
-                "<img src=\"https://i.imgur.com/Wi8tD7G.jpg\">",
+                "<img src=\"https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/master/images/Header%20-%20Text%20Shadows%200.1.jpg\">",
                 "<p>Add pleasant shadows to sandbox text objects in Roll20 — either <b>automatically</b>, whenever new text is added to the sandbox, or <b>manually</b>, by selecting text objects and registering them for a shadow via the commands below.</p>",
                 "<p>Shadow objects are intended to be hands off: They're created automatically when registered, will update whenever their master text object's position and/or content changes, and will be removed if the master object is ever deleted.</p>",
                 "<h3>Automatic Configuration</h3>",
@@ -149,11 +143,26 @@ const EunosTextControl = (() => {
                 `<p>${HTML.CodeSpan("!ets clear all")} — <b>REMOVE <u>ALL</u></b> text shadow objects <i>(this will not affect the master text objects, just remove the shadows)</i></p>`,
                 `<p>${HTML.CodeSpan("!ets fix all")} — <b>FIX <u>ALL</u></b> text shadow objects, correcting for any errors in position or content, as well as spotting and pruning any orphaned objects from the registry.</p>`,
                 "<h3>Fine-Tuning Shadows</h3>",
-                `<p>The code contains further configuration options in the "<b>${HTML.CodeSpan("&#42;&#42;&#42; &#42;&#42;&#42; CONFIGURATION &#42;&#42;&#42; &#42;&#42;&#42;")}</b>" section, where you can change the color of the shadows and adjust the amount of offset for specific fonts and sizes.</p>`,
+                `<p>The code contains further configuration options in the <b>${HTML.CodeSpan("&#42;&#42;&#42; CONFIGURATION &#42;&#42;&#42;")}</b> section, where you can change the color of the shadows and adjust the amount of offset for specific fonts and sizes.</p>`,
+                "<h3>Source Code & Bug Reports</h3>",
+                "<p>The most recent version of this script, as well as the place to go to submit issues, suggestions or bug reports, is <b><u><a href=\"https://github.com/Eunomiac/-EunosTextControls\" style=\"color: blue;\">right here</a></b>.",
                 "<p>To prevent this message from appearing on startup, click below.</p>",
                 `${HTML.Button("Hide Intro Message", "!ets cancelintro")}`
             ].join(""))
         ].join("")));
+    };
+    const displayAutoShadowStatus = () => {
+        if (STA.TE.IsAutoRegistering) {
+            alertGM(HTML.Box([
+                HTML.Header("Auto-Shadowing <u><b>ACTIVE</b></u>", "#080"),
+                HTML.Block(HTML.Button("Disable Auto-Shadow", "!ets toggle false"))
+            ].join("")));
+        } else {
+            alertGM(HTML.Box([
+                HTML.Header("Auto-Shadowing <u><b>INACTIVE</b></u>", "#800"),
+                HTML.Block(HTML.Button("Enable Auto-Shadow", "!ets toggle true"))
+            ].join("")));
+        }
     };
     // #endregion
 
@@ -285,9 +294,9 @@ const EunosTextControl = (() => {
             "background": "#AAA",
             "padding": "0 5px"
         })}">${content}</span>`,
-        Button: (name, command, width = CHATWIDTH - 10) => `<span style="${parseStyles({
+        Button: (name, command, width = "100%") => `<span style="${parseStyles({
             "display": "inline-block",
-            "width": `${width}px`,
+            "width": `${width}`,
             "color": "white",
             "text-align": "center"
         })}"><a href="${command}" style="width: 90%; background: gold; color: black; font-family: sans-serif; text-transform: uppercase;font-weight: bold; border-radius: 10px; border: 2px outset #666; line-height: 14px;">${name}</a></span>`,
@@ -427,10 +436,11 @@ const EunosTextControl = (() => {
     const showGMToggleMenu = () => {
         alertGM(HTML.Box([
             HTML.Header("Auto-Text Shadow?"),
-            HTML.Block("<p>Do you want newly-created text objects to receive a shadow automatically?</p>"),
             HTML.Block([
-                HTML.Button("Yes", "!ets toggle true", CHATWIDTH / 2 - 10),
-                HTML.Button("No", "!ets toggle false", CHATWIDTH / 2 - 10)
+                "<p>Do you want newly-created text objects to receive a shadow automatically?",
+                HTML.Button("Yes", "!ets toggle true", "50%"),
+                HTML.Button("No", "!ets toggle false", "50%"),
+                "</p>"
             ].join(""))
         ].join("")));
     };
@@ -474,11 +484,7 @@ const EunosTextControl = (() => {
         } else if (isActive === false) {
             STA.TE.IsAutoRegistering = false;
         }
-        if (STA.TE.IsAutoRegistering) {
-            alertGM(`${HTML.CodeSpan("!ets toggle false")} — Disable automatic text shadowing.`, "Auto-Shadowing <u><b>ACTIVE</b></u>");
-        } else {
-            alertGM(`${HTML.CodeSpan("!ets toggle true")} — Enable automatic text shadowing.`, "Auto-Shadowing <u><b>INACTIVE</b></u>");
-        }
+        displayAutoShadowStatus();
     };
     // #endregion
 
