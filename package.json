@@ -1,0 +1,21 @@
+{
+  "name": "eunostextcontrols",
+  "version": "0.1",
+  "description": "Various API functions for controlling and manipulating Roll20 Text Objects.",
+  "main": "EunosTextControls.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/eslint-parser": "^7.14.4",
+    "airbnb": "^0.0.2",
+    "babel": "^6.23.0",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.27.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-babel": "^5.3.1",
+    "eslint-plugin-react": "^7.23.2"
+  }
+}
