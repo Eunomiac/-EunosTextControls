@@ -16,6 +16,12 @@ const EunosTextControls = (() => {
     const RO = {get OT() { return ROOTNAME in state ? state[ROOTNAME] : false }};
 
     const SCRIPTNAME = "EunosTextControls";
+
+    if (!RO.OT[SCRIPTNAME] && RO.OT.EunosTextControl) {
+        RO.OT[SCRIPTNAME] = {...RO.OT.EunosTextControl};
+        delete RO.OT.EunosTextControl;
+    }
+
     const STA = {get TE() { return (RO.OT && SCRIPTNAME in RO.OT) ? RO.OT[SCRIPTNAME] : false}};
 
     const DEFAULTSTATE = { // Initial values for state storage.
@@ -81,7 +87,8 @@ const EunosTextControls = (() => {
                     }
                 },
                 fix: () => { if (args.includes("all")) { fixTextShadows() } },
-                cancelintro: () => { STA.TE.IsShowingIntro = false; flagGM("Disabling Script Introduction.") }
+                cancelintro: () => { STA.TE.IsShowingIntro = false; flagGM("Disabling Script Introduction.") },
+                teststate: () => { showGM(RO.OT) }
             }[(call = args.shift() || "").toLowerCase()] || (() => false))();
         }
     };
@@ -201,9 +208,9 @@ const EunosTextControls = (() => {
     const parseStyles = (styleData) => {
         // Parse object containing CSS styles to inline style attribute.
         if (typeof styleData === "string") {
-            return styleData.replace(/\s{2,}/gu, " ");
+            return styleData.replace(/\s{2,}/gu, " ").replace(/'(serif|sans-serif|monospace)'/gu, "$1");
         } else {
-            return Object.entries(styleData).map(([prop, val]) => `${prop}: ${val}`).join("; ");
+            return Object.entries(styleData).map(([prop, val]) => `${prop}: ${val}`).join("; ").replace(/'(serif|sans-serif|monospace)'/gu, "$1");
         }
     };
     const getR20Type = (val) => { // Returns specific type/subtype of R20 object, or false if val isn't an R20 object.
@@ -251,7 +258,7 @@ const EunosTextControls = (() => {
             }
         }
     };
-    const showGM = (obj, title = "Showing ...") => alertGM(jC(obj), title); // Show properties of stringified object to GM.
+    const showGM = (obj, title = "Showing ...") => alertGM(HTML.CodeBlock(jC(obj)), title); // Show properties of stringified object to GM.
     const flagGM = (msg) => alertGM(null, msg); // Simple one-line chat flag sent to the GM.
     const keyMapObj = (obj, keyFunc = (x) => x, valFunc = undefined) => {
         /* An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
@@ -384,34 +391,37 @@ const EunosTextControls = (() => {
         // Validates Registry & Sandbox Objects, Synchronizing where necessary.
 
         // ONE: Locate all shadow objects in the sandbox, by referencing unique SHADOWCOLOR value (see *** CONFIGURATION ***)
-        const allShadowObjs = findObjs({
+        findObjs({
             _type: "text",
             color: SHADOWCOLOR
-        });
-        allShadowObjs.forEach((shadowObj) => {
-            if (!(shadowObj.id in RE.G)) { // If shadow object isn't in registery, it's an orphan: kill it with fire.
-                shadowObj.remove();
-            }
-        });
+        }).filter((obj) => !(obj.id in RE.G)).forEach((obj) => obj.remove());
 
-        // TWO: Group registered text objects by whether they're a master object or a shadow, then check that each registered
-        // master is paired with a registered shadow, and vice versa.
-        const regTextObjs = _.groupBy(Object.values(RE.G), (data) => "masterID" in data ? "ShadowObjs" : "MasterObjs");
-        regTextObjs.ShadowObjs = _.groupBy(regTextObjs.ShadowObjs, (data) => data.id);
-        regTextObjs.MasterObjs = _.groupBy(regTextObjs.MasterObjs, (data) => data.id);
-
-        for (const [id, shadowData] of Object.entries(regTextObjs.ShadowObjs)) {
-            const shadowObj = getObj("text", id);
-            const masterObj = getObj("text", shadowData.masterID);
-            if (shadowObj && masterObj) { // ... and, if they ARE paired, sync them for position & content.
-                RE.G[shadowObj.id].masterID = masterObj.id;
-                RE.G[masterObj.id].shadowID = shadowObj.id;
-                syncShadow(masterObj, shadowObj);
-            } else if (masterObj && !shadowObj) {
-                makeTextShadow(masterObj);
-            } else if (!masterObj) {
-                unregTextShadow(id);
+        // TWO: Cycle through registry, ensuring all objects exist.
+        //    If a ShadowObj doesn't exist, create it.
+        //    If a MasterObj doesn't exist, unreg the shadow.
+        for (const [id, objData] of Object.entries(RE.G)) {
+            const textObj = getObj("text", id);
+            if ("masterID" in objData) { // This is a Shadow Object.
+                const masterObj = getObj("text", objData.masterID);
+                if (!(masterObj && masterObj.id in RE.G)) { // This is an orphan: Kill it.
+                    unregTextShadow(textObj.id);
+                }
+            } else if ("shadowID" in objData) { // This is a Master Object.
+                const shadowObj = getObj("text", objData.shadowID);
+                if (!shadowObj) { // Create a shadow if it's missing
+                    makeTextShadow(textObj);
+                } else if (!(shadowObj.id in RE.G)) { // ... same for registry.
+                    regTextShadow(textObj, shadowObj);
+                }
+            } else { // Should never get here.
+                alertGM(`Registry entry for ${id} does not contain a masterID or a shadowID`, "REGISTRY ERROR");
             }
+        }
+
+        // THREE: Cycle through registry again, synchronizing all shadow objects.
+        for (const [id, shadowData] of Object.entries(RE.G).filter(([id, data]) => "masterID" in data)) {
+            const [masterObj, shadowObj] = [getObj("text", shadowData.masterID), getObj("text", id)];
+            syncShadow(masterObj, shadowObj);
         }
 
         flagGM("Text Shadows Synchronized.");
@@ -470,7 +480,7 @@ const EunosTextControls = (() => {
             "background-color": bgColor,
             "border": "none", "text-shadow": "none", "box-shadow": "none"
         })}">${[content].flat().join("")}</span>`,
-        CodeBlock: (content, bgColor = "white") => HTML.Block(content, bgColor, "monospace", "bold", 8),
+        CodeBlock: (content, bgColor = "white") => HTML.Block(content, bgColor, "monospace", "bold", 10),
         CodeSpan: (content) => `<span style="${parseStyles({
             "display": "inline-block",
             "font-family": "monospace",
