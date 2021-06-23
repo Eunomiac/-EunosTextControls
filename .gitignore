@@ -1,4 +1,4 @@
 /.eslintrc.js
 /node_modules
-/workspace.code-workspace
-/.gitignore
+/workspace.code-workspace 
+ .gitignore
