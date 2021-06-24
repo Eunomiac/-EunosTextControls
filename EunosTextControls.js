@@ -25,12 +25,10 @@ const EunosTextControls = (() => {
     const STA = {get TE() { return (RO.OT && SCRIPTNAME in RO.OT) ? RO.OT[SCRIPTNAME] : false}};
 
     const DEFAULTSTATE = { // Initial values for state storage.
-        CHARWIDTHS: {},
         REGISTRY: {},
         IsAutoRegistering: false,
         IsShowingIntro: true
     };
-    const CHAR = {get WIDTHS() { return (STA.TE && "CHARWIDTHS" in STA.TE) ? STA.TE.CHARWIDTHS : false }};
     const RE = {get G() { return (STA.TE && "REGISTRY" in STA.TE) ? STA.TE.REGISTRY : {} }};
     // #endregion
 
@@ -76,23 +74,22 @@ const EunosTextControls = (() => {
                 toggle: () => toggleAutoShadow(args.includes("true")),
                 clear: () => {
                     if (args.includes("all")) {
-                        Object.entries(RE.G).filter(([id, textData]) => "masterID" in textData).forEach(([id, textData]) => unregTextShadow(id));
+                        Object.entries(RE.G).filter(([id, textData]) => "masterID" in textData).forEach(([id]) => unregTextShadow(id));
                         flagGM("Shadow objects removed.<br>Registered shadows cleared.");
                         displayAutoShadowToggleMenu();
                     } else {
-                        const textObjs = getSelTextObjs(msg);
-                        if (textObjs) {
-                            textObjs.forEach((obj) => unregTextShadow(obj.id));
-                        }
+                        getSelTextObjs(msg).forEach((obj) => unregTextShadow(obj.id));
                     }
                 },
                 fix: () => { if (args.includes("all")) { fixTextShadows() } },
                 cancelintro: () => { STA.TE.IsShowingIntro = false; flagGM("Disabling Script Introduction.") },
-                teststate: () => { showGM(RO.OT) }
+                teststate: () => { showGM(state) },
+                testdata: () => { showGM((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) },
+                purge: () => { if (args.includes("all")) { Initialize(false, true); showGM(RO.OT) } }
             }[(call = args.shift() || "").toLowerCase()] || (() => false))();
         }
     };
-    const handleTextChange = (textObj, prevData) => {
+    const handleTextChange = (textObj) => {
         if (textObj.id in RE.G) {
             const [masterObj, shadowObj] = [
                 RE.G[textObj.id].shadowID ? textObj : getObj("text", RE.G[textObj.id].masterID),
@@ -104,8 +101,12 @@ const EunosTextControls = (() => {
         }
     };
     const handleTextAdd = (textObj) => {
-        if (STA.TE.IsAutoRegistering && !isShadowObj(textObj)) {
-            makeTextShadow(textObj);
+        if (STA.TE.IsAutoRegistering) {
+            setTimeout(() => { // The delay is necessary to ensure the 'controlledby' field has time to update.
+                if (!isShadowObj(textObj)) {
+                    makeTextShadow(textObj);
+                }
+            }, 500);
         }
     };
     const handleTextDestroy = (textObj) => {
@@ -113,19 +114,22 @@ const EunosTextControls = (() => {
             const textData = RE.G[textObj.id];
             if (isShadowObj(textObj)) {
                 const masterObj = getObj("text", textData.masterID);
-                unregTextShadow(textObj.id);
                 if (masterObj && !removalQueue.includes(textObj.id)) {
                     alertGM(HTML.Box([
-                        HTML.Header("ERROR: Manual Shadow Removal"),
+                        HTML.Header("ERROR: Shadow Removal"),
                         HTML.Block([
-                            "<h3>Recreating Destroyed Text Shadow</h3>",
-                            "<p>Manually-deleted text shadows are automatically recreated (to prevent accidentally deleting a desired shadow).</p>",
-                            "<p>To remove a text shadow from a text object:</p>",
-                            `<p>${HTML.CodeSpan("!ets clear")} — Removes text shadows from all selected text objects <i>(you can select either the master object, the shadow object, or both)</i></p>`,
-                            `<p>${HTML.CodeSpan("!ets clear all")} — Remove <b><u>ALL</u></b> text shadow objects <i>(this will not affect the master text objects, just remove the shadows)</i></p>`
-                        ].join(""))
-                    ].join("")));
+                            HTML.H("Recreating Destroyed Shadow"),
+                            HTML.Paras([
+                                "Manually-deleted text shadows are automatically recreated (to prevent accidentally deleting a desired shadow).",
+                                "To remove a text shadow from a text object:",
+                                `${HTML.CodeSpan("!ets clear")} — Removes text shadows from all selected text objects <i>(you can select either the master object, the shadow object, or both)</i>`,
+                                `${HTML.CodeSpan("!ets clear all")} — Remove <b><u>ALL</u></b> text shadow objects <i>(this will not affect the master text objects, just remove the shadows)</i>`
+                            ])
+                        ])
+                    ]));
                     makeTextShadow(masterObj);
+                } else {
+                    unregTextShadow(textObj.id);
                 }
             } else if (textData.shadowID) {
                 safeRemove(textData.shadowID);
@@ -193,11 +197,8 @@ const EunosTextControls = (() => {
                                 * Keeping master objects on the Objects layer and shadow objects on the Map layer makes
                                 * it easier to manipulate the master objects without the shadows getting in your way.
                                 * (Keeping both on the map layer also works well!) */
-    const SHADOWCOLOR = "rgb(1,1,1)"; /** Change this value (hex, color names and rgb/a values are all valid) to change the color assigned
-                                        * to text shadow objects.
-                                        *                         *** IMPORTANT: *** THIS VALUE MUST BE UNIQUE (i.e. not used as a color for any non-shadow text
-                                        *                                            objects), as the script relies on this value to distinguish shadow objects
-                                        *                                            from standard text objects.  */
+    const SHADOWCOLOR = "black"; /** Change this value (hex, color names and rgb/a values are all valid) to change the color assigned
+                                        * to text shadow objects. */
 
     // #endregion
 
@@ -205,6 +206,7 @@ const EunosTextControls = (() => {
 
     // #region *** *** UTILITY *** ***
 
+    const throttleTimers = {};
     const parseStyles = (styleData) => {
         // Parse object containing CSS styles to inline style attribute.
         if (typeof styleData === "string") {
@@ -232,17 +234,15 @@ const EunosTextControls = (() => {
         }
         return false;
     };
-    const isShadowObj = (val) => getR20Type(val) === "text" && val.get("color") === SHADOWCOLOR;
-    const getSelTextObjs = (msg) => { // Returns an array of selected text objects.
-        if (msg.selected && msg.selected.length) {
-            return msg.selected.filter((objData) => objData._type === "text").map((objData) => getObj("text", objData._id));
-        }
-        return false;
-    };
+    const isShadowObj = (val) => getR20Type(val) === "text" && /etsshadowobj/u.test(val.get("controlledby"));
+    const getSelTextObjs = (msg) => (msg.selected || []).filter((objData) => objData._type === "text").map((objData) => getObj("text", objData._id));
     const jS = (val) => JSON.stringify(val, null, 2).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;"); // Stringification for display in R20 chat.
     const jC = (val) => HTML.CodeBlock(jS(val)); // Stringification for data objects and other code for display in R20 chat.
-    const alertGM = (content, title) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
-        const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
+    const alertGM = (content, title, isThrottling = true) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
+        if (isThrottling && `${title}:${content.slice(0, 20)}` in throttleTimers) {
+            return false;
+        }
+        const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 10).join("");
         if (content || title) {
             if (title) {
                 if (content === null) {
@@ -254,9 +254,13 @@ const EunosTextControls = (() => {
                     ].join(""))}`, null, {noarchive: true});
                 }
             } else {
-                sendChat(randStr(4), `/w gm ${content}`, null, {noarchive: true});
+                sendChat(randStr(), `/w gm ${content}`, null, {noarchive: true});
             }
         }
+        if (isThrottling) {
+            throttleTimers[`${title}:${content.slice(0, 20)}`] = setTimeout(() => delete throttleTimers[title], 1000);
+        }
+        return true;
     };
     const showGM = (obj, title = "Showing ...") => alertGM(HTML.CodeBlock(jC(obj)), title); // Show properties of stringified object to GM.
     const flagGM = (msg) => alertGM(null, msg); // Simple one-line chat flag sent to the GM.
@@ -274,13 +278,14 @@ const EunosTextControls = (() => {
     };
     const scaleOffsets = (sourceOffsets, multiplier) => keyMapObj(
         sourceOffsets,
-        (v) => {
+        ([leftOffset, topOffset]) => {
             if (Array.isArray(multiplier)) {
-                return [v[0] * multiplier[0], v[1] * multiplier[1]];
+                return [leftOffset * multiplier[0], topOffset * multiplier[1]];
             }
-            return [v[0] * multiplier, v[1] * multiplier];
+            return [leftOffset * multiplier, topOffset * multiplier];
         }
     );
+    const getOffsets = (fontFamily, fontSize) => ({...SHADOWOFFSETS.generic, ...(fontFamily in SHADOWOFFSETS ? SHADOWOFFSETS[fontFamily] : SHADOWOFFSETS.generic)}[fontSize]);
 
     // #endregion *** *** UTILITY *** ***
 
@@ -291,7 +296,7 @@ const EunosTextControls = (() => {
     const makeTextShadow = (masterObjs) => {
         [masterObjs].flat().forEach((masterObj) => {
             let isSkipping = false;
-            if (masterObj.id in RE.G) {
+            if (masterObj && masterObj.id in RE.G) {
                 if (RE.G[masterObj.id].shadowID) {
                     unregTextShadow(RE.G[masterObj.id].shadowID);
                 } else if (RE.G[masterObj.id].masterID) {
@@ -301,20 +306,22 @@ const EunosTextControls = (() => {
             }
             if (!isSkipping) {
                 if (getR20Type(masterObj) === "text") {
-                    const shadowOffsets = SHADOWOFFSETS[masterObj.get("font_family") in SHADOWOFFSETS ? masterObj.get("font_family") : "generic"];
-                    const shadowObj = createObj("text", {
-                        _pageid: masterObj.get("_pageid"),
-                        left: masterObj.get("left") + shadowOffsets[masterObj.get("font_size")][0],
-                        top: masterObj.get("top") + shadowOffsets[masterObj.get("font_size")][1],
-                        text: masterObj.get("text"),
-                        font_size: masterObj.get("font_size"),
-                        rotation: masterObj.get("rotation"),
-                        font_family: masterObj.get("font_family"),
-                        color: SHADOWCOLOR,
-                        layer: SHADOWLAYER,
-                        controlledby: ""
-                    });
-                    regTextShadow(masterObj, shadowObj);
+                    const [leftOffset, topOffset] = getOffsets(masterObj.get("font_family"), parseInt(masterObj.get("font_size"))) || [];
+                    if (leftOffset && topOffset) {
+                        const shadowObj = createObj("text", {
+                            _pageid: masterObj.get("_pageid"),
+                            left: masterObj.get("left") + leftOffset,
+                            top: masterObj.get("top") + topOffset,
+                            text: masterObj.get("text"),
+                            font_size: masterObj.get("font_size"),
+                            rotation: masterObj.get("rotation"),
+                            font_family: masterObj.get("font_family"),
+                            color: SHADOWCOLOR,
+                            layer: SHADOWLAYER,
+                            controlledby: "etsshadowobj"
+                        });
+                        regTextShadow(masterObj, shadowObj);
+                    }
                 }
             }
         });
@@ -371,50 +378,52 @@ const EunosTextControls = (() => {
     const syncShadow = (masterObj, shadowObj) => {
         // Where the magic happens (?) --- synchronizing text shadows to their master objects, whenever they're changed or created.
         if (getR20Type(masterObj) && getR20Type(shadowObj)) {
-            const shadowOffsets = SHADOWOFFSETS[masterObj.get("font_family") in SHADOWOFFSETS ? masterObj.get("font_family") : "generic"];
-            shadowObj.set({
-                text: masterObj.get("text"),
-                left: masterObj.get("left") + shadowOffsets[masterObj.get("font_size")][0],
-                top: masterObj.get("top") + shadowOffsets[masterObj.get("font_size")][1],
-                layer: SHADOWLAYER,
-                color: SHADOWCOLOR,
-                font_family: masterObj.get("font_family"),
-                rotation: masterObj.get("rotation"),
-                font_size: masterObj.get("font_size"),
-                controlledby: ""
-            });
-            toFront(shadowObj);
-            toFront(masterObj);
+            const [leftOffset, topOffset] = getOffsets(masterObj.get("font_family"), parseInt(masterObj.get("font_size"))) || [];
+            if (leftOffset && topOffset) {
+                shadowObj.set({
+                    text: masterObj.get("text"),
+                    left: masterObj.get("left") + leftOffset,
+                    top: masterObj.get("top") + topOffset,
+                    layer: SHADOWLAYER,
+                    color: SHADOWCOLOR,
+                    font_family: masterObj.get("font_family"),
+                    rotation: masterObj.get("rotation"),
+                    font_size: masterObj.get("font_size")
+                });
+                toFront(shadowObj);
+                toFront(masterObj);
+            }
         }
     };
     const fixTextShadows = () => {
         // Validates Registry & Sandbox Objects, Synchronizing where necessary.
 
-        // ONE: Locate all shadow objects in the sandbox, by referencing unique SHADOWCOLOR value (see *** CONFIGURATION ***)
-        findObjs({
-            _type: "text",
-            color: SHADOWCOLOR
-        }).filter((obj) => !(obj.id in RE.G)).forEach((obj) => obj.remove());
+        // ONE: Locate all shadow objects in the sandbox, and remove any that aren't in the registry.
+        findObjs({_type: "text"}).filter((obj) => isShadowObj(obj) && !(obj.id in RE.G)).forEach((obj) => obj.remove());
 
         // TWO: Cycle through registry, ensuring all objects exist.
         //    If a ShadowObj doesn't exist, create it.
         //    If a MasterObj doesn't exist, unreg the shadow.
         for (const [id, objData] of Object.entries(RE.G)) {
             const textObj = getObj("text", id);
-            if ("masterID" in objData) { // This is a Shadow Object.
-                const masterObj = getObj("text", objData.masterID);
-                if (!(masterObj && masterObj.id in RE.G)) { // This is an orphan: Kill it.
-                    unregTextShadow(textObj.id);
+            if (textObj) {
+                if ("masterID" in objData) { // This is a Shadow Object.
+                    const masterObj = getObj("text", objData.masterID);
+                    if (!(masterObj && masterObj.id in RE.G)) { // This is an orphan: Kill it.
+                        unregTextShadow(textObj.id);
+                    }
+                } else if ("shadowID" in objData) { // This is a Master Object.
+                    const shadowObj = getObj("text", objData.shadowID);
+                    if (!shadowObj) { // Create a shadow if it's missing
+                        makeTextShadow(textObj);
+                    } else if (!(shadowObj.id in RE.G)) { // ... same for registry.
+                        regTextShadow(textObj, shadowObj);
+                    }
+                } else { // Should never get here.
+                    alertGM(`Registry entry for ${id} does not contain a masterID or a shadowID`, "REGISTRY ERROR");
                 }
-            } else if ("shadowID" in objData) { // This is a Master Object.
-                const shadowObj = getObj("text", objData.shadowID);
-                if (!shadowObj) { // Create a shadow if it's missing
-                    makeTextShadow(textObj);
-                } else if (!(shadowObj.id in RE.G)) { // ... same for registry.
-                    regTextShadow(textObj, shadowObj);
-                }
-            } else { // Should never get here.
-                alertGM(`Registry entry for ${id} does not contain a masterID or a shadowID`, "REGISTRY ERROR");
+            } else {
+                unregTextShadow(objData.shadowID || objData.id);
             }
         }
 
@@ -454,7 +463,7 @@ const EunosTextControls = (() => {
                 outline: 2px solid black;
                 overflow: hidden;
             `)}">${[content].flat().join("")}</div>`,
-        Block: (content, bgColor = "white", fontFamily = "serif", fontWeight = "normal", fontSize = 14, lineHeight) => `<div style="${parseStyles({
+        Block: (content, bgColor = "white", fontFamily = "serif", fontWeight = "normal", fontSize = 14, lineHeight = null) => `<div style="${parseStyles({
             "width": "97%",
             "margin": "2px 0 0 0",
             "padding": "1.5%",
@@ -506,14 +515,15 @@ const EunosTextControls = (() => {
                     line-height: 14px;
                 `)}">${name}</a></span>`,
         H: (content, level = 3) => `<h${level}>${content}</h${level}>`,
-        Paras: (content) => [content].flat().map((para) => `<p>${para}</p>`).join(""),
-        Span: (content, bgColor = "none", color = "black", fontSize = "14px", lineHeight = "18px") => `<span style="${parseStyles(`
+        Paras: (content) => [content].flat().map((para) => `<p>${[para].flat().join("")}</p>`).join(""),
+        Span: (content, bgColor = "none", color = "black", fontSize = "14px", fontFamily = "sans-serif", lineHeight = "18px") => `<span style="${parseStyles(`
                 display: inline-block;
                 background: ${bgColor};
                 color: ${color};
                 font-size: ${fontSize};
+                font-family: ${fontFamily};
                 line-height: ${lineHeight};
-            `)}">${content}</span>`,
+            `)}">${[content].flat().join("")}</span>`,
         Img: (imgSrc) => `<img src="${imgSrc}">`
     };
     // #endregion
@@ -552,30 +562,29 @@ const EunosTextControls = (() => {
                     "To prevent this message from appearing on startup, click below."
                 ]),
                 HTML.Button("Hide Intro Message", "!ets cancelintro")
-            ].join(""))
-        ].join("")));
+            ])
+        ]));
     };
     const displayAutoShadowStatus = () => {
         if (STA.TE.IsAutoRegistering) {
             alertGM(HTML.Box([
                 HTML.Header("Auto-Shadowing <u><b>ACTIVE</b></u>", "#080"),
                 HTML.Block(HTML.Button("Disable Auto-Shadow", "!ets toggle false"))
-            ].join("")));
+            ]));
         } else {
             alertGM(HTML.Box([
                 HTML.Header("Auto-Shadowing <u><b>INACTIVE</b></u>", "#800"),
                 HTML.Block(HTML.Button("Enable Auto-Shadow", "!ets toggle true"))
-            ].join("")));
+            ]));
         }
     };
     const displayAutoShadowToggleMenu = () => {
         alertGM(HTML.Box([
             HTML.Header("Auto-Text Shadow?"),
             HTML.Block([
-                "<p>Do you want newly-created text objects to receive a shadow automatically?",
+                HTML.Span("Do you want newly-created text objects to receive a shadow automatically?"),
                 HTML.Button("Yes", "!ets toggle true", "50%"),
-                HTML.Button("No", "!ets toggle false", "50%"),
-                "</p>"
+                HTML.Button("No", "!ets toggle false", "50%")
             ])
         ]));
     };
