@@ -59,6 +59,9 @@ const EunosTextControls = (() => {
 
         // Display status of automatic text shadowing
         displayAutoShadowStatus();
+
+        // Initialize Text class from state data
+        Text.Initialize();
     };
     // #endregion
 
@@ -70,7 +73,7 @@ const EunosTextControls = (() => {
                 .filter((x) => Boolean(x));
             ({
                 help: displayIntroMessage,
-                shadow: () => makeTextShadow(getSelTextObjs(msg)),
+                shadow: () => Text.AddShadows(getSelTextObjs(msg)),
                 toggle: () => toggleAutoShadow(args.includes("true")),
                 clear: () => {
                     if (args.includes("all")) {
@@ -81,7 +84,7 @@ const EunosTextControls = (() => {
                         getSelTextObjs(msg).forEach((obj) => unregTextShadow(obj.id));
                     }
                 },
-                fix: () => { if (args.includes("all")) { fixTextShadows() } },
+                fix: () => { if (args.includes("all")) { Text.Fix() } },
                 cancelintro: () => { STA.TE.IsShowingIntro = false; flagGM("Disabling Script Introduction.") },
                 teststate: () => { showGM(state) },
                 testdata: () => { showGM((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) },
@@ -90,31 +93,27 @@ const EunosTextControls = (() => {
         }
     };
     const handleTextChange = (textObj) => {
-        if (textObj.id in RE.G) {
-            const [masterObj, shadowObj] = [
-                RE.G[textObj.id].shadowID ? textObj : getObj("text", RE.G[textObj.id].masterID),
-                RE.G[textObj.id].masterID ? textObj : getObj("text", RE.G[textObj.id].shadowID)
-            ];
-            if (masterObj && shadowObj) {
-                syncShadow(masterObj, shadowObj);
-            }
+        const textInst = Text.Get(textObj.id);
+        if (textInst && !(textInst.masterID in throttleTimers)) {
+            throttleTimers[textInst.masterID] = setTimeout(() => delete throttleTimers[textInst.masterID], 500);
+            textInst.SyncShadow(textInst.isTextShadow);
         }
     };
     const handleTextAdd = (textObj) => {
-        if (STA.TE.IsAutoRegistering) {
-            setTimeout(() => { // The delay is necessary to ensure the 'controlledby' field has time to update.
-                if (!isShadowObj(textObj)) {
-                    makeTextShadow(textObj);
-                }
-            }, 500);
-        }
+        setTimeout(() => { // The delay is necessary to ensure the 'controlledby' field has time to update.
+            const textInst = new Text(textObj);
+            if (STA.TE.IsAutoRegistering) {
+                textInst.MakeShadow();
+            }
+        }, 500);
     };
     const handleTextDestroy = (textObj) => {
-        if (textObj.id in RE.G) {
-            const textData = RE.G[textObj.id];
-            if (isShadowObj(textObj)) {
-                const masterObj = getObj("text", textData.masterID);
-                if (masterObj && !removalQueue.includes(textObj.id)) {
+        const textInst = Text.Get(textObj.id);
+        if (textInst) {
+            if (textInst.isTextShadow) {
+                if (Text.OkToDestroy.includes(textInst.id)) {
+                    textInst.master.RemoveShadow();
+                } else {
                     alertGM(HTML.Box([
                         HTML.Header("ERROR: Shadow Removal"),
                         HTML.Block([
@@ -127,12 +126,10 @@ const EunosTextControls = (() => {
                             ])
                         ])
                     ]));
-                    makeTextShadow(masterObj);
-                } else {
-                    unregTextShadow(textObj.id);
+                    textInst.MakeShadow();
                 }
-            } else if (textData.shadowID) {
-                safeRemove(textData.shadowID);
+            } else if (textInst.hasTextShadow) {
+                textInst.RemoveShadow();
             }
         }
     };
@@ -289,11 +286,229 @@ const EunosTextControls = (() => {
 
     // #endregion *** *** UTILITY *** ***
 
+    // #region *** *** TEXT CLASS *** ***
+    class Text {
+        // #region STATIC METHODS, GETTERS, SETTERS
+        static Initialize() {
+            Object.entries(RE.G).forEach(([id, data]) => {
+                const textObj = getObj("text", id);
+                if (textObj) {
+                    new Text(textObj);
+                } else {
+                    delete RE.G[id];
+                }
+            });
+        }
+        static Has(textID) { return textID in this.REG }
+        static Get(textID) { return this.Has(textID) ? this.REG[textID] : false }
+        static Register(textInst) {
+            this._REG = this._REG || {};
+            this._REG[textInst.id] = textInst;
+        }
+        static Unregister(textInst) { delete this._REG[textInst.id] }
+        static Fix() {
+            // Validates Registry & Sandbox Objects, Synchronizing where necessary.
+
+            // ONE: Locate all shadow objects in the sandbox, and remove any that aren't registered in the Text class.
+            findObjs({_type: "text"}).filter((obj) => isShadowObj(obj) && !Text.Has(obj.id)).forEach((obj) => obj.remove());
+
+            // TWO: Cycle through registry, ensuring all objects exist.
+            //    If a ShadowObj doesn't exist, create it.
+            //    If a MasterObj doesn't exist, unreg the shadow.
+            /* for (const [id, objData] of Object.entries(RE.G)) {
+                const textObj = getObj("text", id);
+                if (textObj) {
+                    if ("masterID" in objData) { // This is a Shadow Object.
+                        const masterObj = getObj("text", objData.masterID);
+                        if (!(masterObj && masterObj.id in RE.G)) { // This is an orphan: Kill it.
+                            unregTextShadow(textObj.id);
+                        }
+                    } else if ("shadowID" in objData) { // This is a Master Object.
+                        const shadowObj = getObj("text", objData.shadowID);
+                        if (!shadowObj) { // Create a shadow if it's missing
+                            makeTextShadow(textObj);
+                        } else if (!(shadowObj.id in RE.G)) { // ... same for registry.
+                            regTextShadow(textObj, shadowObj);
+                        }
+                    } else { // Should never get here.
+                        alertGM(`Registry entry for ${id} does not contain a masterID or a shadowID`, "REGISTRY ERROR");
+                    }
+                } else {
+                    unregTextShadow(objData.shadowID || objData.id);
+                }
+            }
+
+            // THREE: Cycle through registry again, synchronizing all shadow objects.
+            for (const [id, shadowData] of Object.entries(RE.G).filter(([id, data]) => "masterID" in data)) {
+                const [masterObj, shadowObj] = [getObj("text", shadowData.masterID), getObj("text", id)];
+                syncShadow(masterObj, shadowObj);
+            }
+
+            flagGM("Text Shadows Synchronized."); */
+        }
+        static AddShadows(texts) {
+            [texts].flat().forEach((text) => {
+                if (getR20Type(text) === "text") {
+                    text = Text.Get(text.id) || new Text(text);
+                }
+                if (text instanceof Text && !text.isTextShadow && !text.hasTextShadow) {
+                    text.MakeShadow();
+                }
+            });
+        }
+
+        static get REG() { return this.REG }
+        static get OkToDestroy() {
+            this._removalQueue = this._removalQueue || [];
+            return this._removalQueue;
+        }
+        static set OkToDestroy(textInst) {
+            this._removalQueue = this._removalQueue || [];
+            this._removalQueue.push(textInst.id);
+        }
+        // #endregion
+
+        // #region CONSTRUCTOR
+        constructor(textObj) {
+            if (getR20Type(textObj) === "text") {
+                this._id = textObj.id;
+                this._type = getR20Type(textObj);
+                if (this.id in RE.G) {
+                    this._importRegData();
+                } else if (STA.TE.IsAutoRegistering && !this.isTextShadow) {
+                    this.MakeShadow();
+                }
+                Text.Register(this);
+                this._writeRegData();
+            }
+        }
+        // #endregion
+
+        // #region PRIVATE METHODS, GETTERS, SETTERS
+        get isRegisteringToState() { return !this.isTextShadow }
+        get stateData() { return RE.G[this.id] || false }
+        set stateData(data = {}) { Object.assign(RE.G[this.id], data) }
+
+        _importRegData() {
+            if (this.stateData) {
+                if ("shadowID" in this.stateData) {
+                    this._shadowID = this.stateData.shadowID;
+                    if (!Text.Has(this._shadowID)) {
+                        this.MakeShadow(getObj("text", this.shadowID));
+                    }
+                }
+            }
+        }
+        _writeRegData() {
+            const regData = {id: this.id};
+            if (this.isRegisteringToState) {
+                if (this.isTextShadow) {
+                    regData.masterID = this.masterID;
+                } else if (this.hasTextShadow) {
+                    regData.shadowID = this.shadowID;
+                }
+                this.stateData = regData;
+            }
+        }
+        // #endregion
+
+        // #region PUBLIC METHODS, GETTERS, SETTERS
+        get id() { return this._id }
+        get obj() {
+            this._obj = this._obj || getObj("text", this.id);
+            return this._obj;
+        }
+        get controlledby() { return (this.obj || {get: () => false}).get("controlledby") }
+
+        get isTextShadow() { return this.type === "text" && /etsshadowobj/u.test(this.controlledby) }
+        get hasTextShadow() { return Boolean(this.shadow) }
+        get masterID() { return this.isTextShadow ? this._masterID : this.id }
+        set masterID(id) { this._masterID = id }
+        get shadowID() { return this.isTextShadow ? this.id : this._shadowID }
+        set shadowID(id) { this._shadowID = id }
+        get master() { return Text.Get(this.masterID) }
+        get shadow() { return Text.Get(this.shadowID) }
+        get masterObj() { return this.master ? this.master.obj : false }
+        get shadowObj() { return this.shadow ? this.shadow.obj : false }
+
+        MakeShadow(shadowObj) {
+            if (this.hasTextShadow) {
+                shadowObj = shadowObj || this.shadowObj;
+            }
+            if (this.isTextShadow) {
+                alertGM("Error: Cannot add a text shadow to a text shadow object.", "ERROR: Text Shadows");
+            } else {
+                const [leftOffset, topOffset] = getOffsets(this.obj.get("font_family"), parseInt(this.obj.get("font_size"))) || [];
+                if (!shadowObj) {
+                    shadowObj = createObj("text", {
+                        _pageid: this.obj.get("_pageid"),
+                        left: this.obj.get("left") + leftOffset,
+                        top: this.obj.get("top") + topOffset,
+                        text: this.obj.get("text"),
+                        font_size: this.obj.get("font_size"),
+                        rotation: this.obj.get("rotation"),
+                        font_family: this.obj.get("font_family"),
+                        color: SHADOWCOLOR,
+                        layer: SHADOWLAYER,
+                        controlledby: "etsshadowobj"
+                    });
+                }
+                const shadowInst = new Text(shadowObj);
+                this.shadowID = shadowInst.id;
+                shadowInst.masterID = this.id;
+                this._writeRegData();
+                this.SyncShadow();
+            }
+        }
+        SyncShadow(syncToShadow = false) {
+            if (this.masterObj && this.shadowObj) {
+                const [leftOffset, topOffset] = getOffsets(this.masterObj.get("font_family"), parseInt(this.masterObj.get("font_size"))) || [];
+                if (leftOffset && topOffset) {
+                    if (syncToShadow) {
+                        this.masterObj.set({
+                            text: this.shadowObj.get("text"),
+                            left: this.shadowObj.get("left") - leftOffset,
+                            top: this.shadowObj.get("top") - topOffset,
+                            font_family: this.shadowObj.get("font_family"),
+                            rotation: this.shadowObj.get("rotation"),
+                            font_size: this.shadowObj.get("font_size")
+                        });
+                    } else {
+                        this.shadowObj.set({
+                            text: this.masterObj.get("text"),
+                            left: this.masterObj.get("left") + leftOffset,
+                            top: this.masterObj.get("top") + topOffset,
+                            layer: SHADOWLAYER,
+                            color: SHADOWCOLOR,
+                            font_family: this.masterObj.get("font_family"),
+                            rotation: this.masterObj.get("rotation"),
+                            font_size: this.masterObj.get("font_size")
+                        });
+                    }
+                    toFront(this.shadowObj);
+                    toFront(this.masterObj);
+                }
+            }
+        }
+        RemoveShadow() {
+            if (this.shadowObj) {
+                Text.Unreg(this.shadow);
+                this.shadowObj.remove();
+                this.shadow = false;
+                this.shadowID = false;
+                this._writeRegData();
+            }
+        }
+        // #endregion
+    }
+
+    // #endregion *** *** TEXT CLASS *** ***
+
     // #region *** *** FEATURE: TEXT SHADOWS *** ***
     const removalQueue = [];
 
     // #region      Text Shadows: Creation & Toggling Automatic Creation
-    const makeTextShadow = (masterObjs) => {
+    /* const makeTextShadow = (masterObjs) => {
         [masterObjs].flat().forEach((masterObj) => {
             let isSkipping = false;
             if (masterObj && masterObj.id in RE.G) {
@@ -325,7 +540,7 @@ const EunosTextControls = (() => {
                 }
             }
         });
-    };
+    }; */
     const toggleAutoShadow = (isActive) => {
         if (isActive === true) {
             STA.TE.IsAutoRegistering = true;
@@ -394,46 +609,6 @@ const EunosTextControls = (() => {
                 toFront(masterObj);
             }
         }
-    };
-    const fixTextShadows = () => {
-        // Validates Registry & Sandbox Objects, Synchronizing where necessary.
-
-        // ONE: Locate all shadow objects in the sandbox, and remove any that aren't in the registry.
-        findObjs({_type: "text"}).filter((obj) => isShadowObj(obj) && !(obj.id in RE.G)).forEach((obj) => obj.remove());
-
-        // TWO: Cycle through registry, ensuring all objects exist.
-        //    If a ShadowObj doesn't exist, create it.
-        //    If a MasterObj doesn't exist, unreg the shadow.
-        for (const [id, objData] of Object.entries(RE.G)) {
-            const textObj = getObj("text", id);
-            if (textObj) {
-                if ("masterID" in objData) { // This is a Shadow Object.
-                    const masterObj = getObj("text", objData.masterID);
-                    if (!(masterObj && masterObj.id in RE.G)) { // This is an orphan: Kill it.
-                        unregTextShadow(textObj.id);
-                    }
-                } else if ("shadowID" in objData) { // This is a Master Object.
-                    const shadowObj = getObj("text", objData.shadowID);
-                    if (!shadowObj) { // Create a shadow if it's missing
-                        makeTextShadow(textObj);
-                    } else if (!(shadowObj.id in RE.G)) { // ... same for registry.
-                        regTextShadow(textObj, shadowObj);
-                    }
-                } else { // Should never get here.
-                    alertGM(`Registry entry for ${id} does not contain a masterID or a shadowID`, "REGISTRY ERROR");
-                }
-            } else {
-                unregTextShadow(objData.shadowID || objData.id);
-            }
-        }
-
-        // THREE: Cycle through registry again, synchronizing all shadow objects.
-        for (const [id, shadowData] of Object.entries(RE.G).filter(([id, data]) => "masterID" in data)) {
-            const [masterObj, shadowObj] = [getObj("text", shadowData.masterID), getObj("text", id)];
-            syncShadow(masterObj, shadowObj);
-        }
-
-        flagGM("Text Shadows Synchronized.");
     };
     // #endregion
 
