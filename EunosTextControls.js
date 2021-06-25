@@ -17,8 +17,8 @@ const EunosTextControls = (() => {
     const DEFAULTSTATE = { // Initial values for state storage.
         REGISTRY: {},
         IsAutoShadowing: false,
-        IsShowingIntro: true,
-        IsAutoPruning: false
+        IsAutoPruning: false,
+        IsShowingIntro: true
     };
 
     const RO = {get OT() { return ROOTNAME in state ? state[ROOTNAME] : false }};
