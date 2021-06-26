@@ -170,7 +170,7 @@ const EunosTextControls = (() => {
                         text-align: center; text-align-last: center;
                         position: relative;
                         border: none; text-shadow: none; box-shadow: none;
-                        background-image: url('${GetImgURL("blackLeather_1.jpg", "texture")}');,
+                        background-image: url('${GetImgURL("blackLeather_2.jpg", "texture")}');,
                         outline: 2px solid black;
                         overflow: hidden;
                     `)}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
@@ -198,7 +198,7 @@ const EunosTextControls = (() => {
                     "line-height": "32px",
                     "font-variant": "small-caps",
                     "background-color": bgColor,
-                    "background-image": `url('${GetImgURL("blackLeather_2.jpg", "texture")}')`,
+                    "background-image": `url('${GetImgURL("blackLeather_1.jpg", "texture")}')`,
                     "background-size": "cover",
                     "font-weight": fontWeight,
                     "border": "none", "box-shadow": "none",
@@ -211,9 +211,12 @@ const EunosTextControls = (() => {
                     "font-weight": "bolder",
                     "font-size": "12px",
                     "color": "black",
-                    "text-shadow": "none",
-                    "background-image": `url('${GetImgURL("gold_1.jpg", "texture")}')`,
-                    "padding": "0 5px"
+                    "text-shadow": "0 0 1px black",
+                    "background-image": `url('${GetImgURL("gold_2.jpg", "texture")}')`,
+                    "padding": "0 7px 0 5px",
+                    "border-radius": "8px",
+                    "background-size": "cover",
+                    "border": "2px solid gold"
                 })}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
                 Button: (name, command, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
                     "display": "inline-block",
