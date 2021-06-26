@@ -146,27 +146,35 @@ const EunosTextControls = (() => {
             };
             // #endregion
             // #endregion
+
+            const IMGROOT = {
+                texture: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/textures/"
+            };
+            const GetImgURL = (imgFileName, imgType = "texture") => `${IMGROOT[imgType]}${imgFileName}`;
+
+
             const CHATWIDTH = 280; // The minimum width of the chat panel, in pixels.
 
             const UPSHIFT = -24;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
             const LEFTSHIFT = -44; // shifts up and to the left to cover the standard chat output with the custom styles below.
-            const BOTTOMSHIFT = -4;
+            const BOTTOMSHIFT = -8;
 
             const HTML = {
                 Box: (content, title) => `<div style="${U.Style(`
                         display: block;
                         width: auto; min-width: ${CHATWIDTH}px;
-                        height: auto; min-height: 28px;
+                        height: auto; min-height: 32px;
                         margin: ${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px;
                         padding: 0;
+                        color: gold;
                         text-align: center; text-align-last: center;
                         position: relative;
                         border: none; text-shadow: none; box-shadow: none;
-                        background: white;
+                        background-image: url('${GetImgURL("blackLeather_1.jpg", "texture")}');,
                         outline: 2px solid black;
                         overflow: hidden;
                     `)}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
-                Block: (content, bgColor = "white", fontFamily = "serif", fontWeight = "normal", fontSize = 14, lineHeight = undefined, title = undefined) => `<div style="${U.Style({
+                Block: (content, bgColor = "none", fontFamily = "serif", fontWeight = "normal", fontSize = 14, lineHeight = undefined, title = undefined) => `<div style="${U.Style({
                     "width": "97%",
                     "margin": "2px 0 0 0",
                     "padding": "1.5%",
@@ -179,19 +187,22 @@ const EunosTextControls = (() => {
                 })}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
                 Header: (content, bgColor = "rgba(80,80,80,1)", fontWeight = "normal", title = undefined) => `<span style="${U.Style({
                     "display": "block",
-                    "height": "auto", "min-height": "28px",
+                    "height": "auto", "min-height": "32px",
                     "width": "auto",
                     "margin": "0",
-                    "padding": "0 5px",
+                    "padding": "0 2px",
                     "text-align": "left", "text-align-last": "left",
-                    "color": "white",
-                    "font-family": "sans-serif",
-                    "font-size": "16px",
-                    "line-height": "28px",
+                    "color": "#ffd400",
+                    "font-family": "serif",
+                    "font-size": "18px",
+                    "line-height": "32px",
                     "font-variant": "small-caps",
                     "background-color": bgColor,
+                    "background-image": `url('${GetImgURL("blackLeather_2.jpg", "texture")}')`,
+                    "background-size": "cover",
                     "font-weight": fontWeight,
-                    "border": "none", "text-shadow": "none", "box-shadow": "none"
+                    "border": "none", "box-shadow": "none",
+                    "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
                 })}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
                 CodeBlock: (content, bgColor = "white") => HTML.Block(content, bgColor, "monospace", "bold", 10),
                 CodeSpan: (content, title) => `<span style="${U.Style({
@@ -199,7 +210,9 @@ const EunosTextControls = (() => {
                     "font-family": "monospace",
                     "font-weight": "bolder",
                     "font-size": "12px",
-                    "background": "#AAA",
+                    "color": "black",
+                    "text-shadow": "none",
+                    "background-image": `url('${GetImgURL("gold_1.jpg", "texture")}')`,
                     "padding": "0 5px"
                 })}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
                 Button: (name, command, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
@@ -266,8 +279,9 @@ const EunosTextControls = (() => {
                     height
                 })}">&nbsp;</span>`,
                 Paras: (content, styles = {}) => [content].flat().map((para) => `<p style="${U.Style(Object.assign({
-                    "line-height": "15px",
-                    "font-family": "serif"
+                    "line-height": "16px",
+                    "font-family": "sans-serif",
+                    "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.7), -2px -2px 3px black, -2px -2px 3px black, -2px -2px 3px black"
                 }, styles))}">${para}</p>`).join(""),
                 Span: (content, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
                     "display": "inline-block",
