@@ -153,59 +153,65 @@ const EunosTextControls = (() => {
             const GetImgURL = (imgFileName, imgType = "texture") => `${IMGROOT[imgType]}${imgFileName}`;
 
 
-            const CHATWIDTH = 280; // The minimum width of the chat panel, in pixels.
+            const CHATWIDTH = 275; // The minimum width of the chat panel, in pixels. Be sure to subtract twice any border widths.
 
-            const UPSHIFT = -24;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
-            const LEFTSHIFT = -44; // shifts up and to the left to cover the standard chat output with the custom styles below.
-            const BOTTOMSHIFT = -8;
+            const UPSHIFT = -26;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
+            const LEFTSHIFT = -45; // shifts up and to the left to cover the standard chat output with the custom styles below.
+            const BOTTOMSHIFT = -7;
 
             const HTML = {
-                Box: (content, title) => `<div style="${U.Style(`
-                        display: block;
-                        width: auto; min-width: ${CHATWIDTH}px;
-                        height: auto; min-height: 32px;
-                        margin: ${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px;
-                        padding: 0;
-                        color: gold;
-                        text-align: center; text-align-last: center;
-                        position: relative;
-                        border: none; text-shadow: none; box-shadow: none;
-                        background-image: url('${GetImgURL("blackLeather_2.jpg", "texture")}');,
-                        outline: 2px solid black;
-                        overflow: hidden;
-                    `)}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
-                Block: (content, bgColor = "none", fontFamily = "serif", fontWeight = "normal", fontSize = 14, lineHeight = undefined, title = undefined) => `<div style="${U.Style({
+                Box: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
+                    "display": "block",
+                    "width": "auto", "min-width": `${CHATWIDTH}px`,
+                    "height": "auto", "min-height": "32px",
+                    "margin": `${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px`,
+                    "padding": "0",
+                    "color": "gold",
+                    "text-align": "center",
+                    "position": "relative",
+                    "text-shadow": "none", "box-shadow": "none",
+                    "background-image": `url('${GetImgURL("blackLeather_2.jpg", "texture")}')`,
+                    "border": "4px outset #666",
+                    "overflow": "hidden",
+                    "border-radius": "33px"
+                }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
+                Block: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
                     "width": "97%",
                     "margin": "2px 0 0 0",
                     "padding": "1.5%",
-                    "text-align": "left", "text-align-last": "left",
-                    "background": bgColor,
-                    "font-family": `'${fontFamily}'`,
-                    "font-weight": fontWeight,
-                    "font-size": `${fontSize}px`,
-                    "line-height": `${lineHeight ? lineHeight : fontSize + 4}px`
-                })}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
-                Header: (content, bgColor = "rgba(80,80,80,1)", fontWeight = "normal", title = undefined) => `<span style="${U.Style({
+                    "text-align": "left",
+                    "background": "none",
+                    "font-family": "serif",
+                    "font-weight": "normal",
+                    "font-size": "14px",
+                    "line-height": "18px"
+                }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
+                Header: (content, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
                     "display": "block",
                     "height": "auto", "min-height": "32px",
                     "width": "auto",
                     "margin": "0",
                     "padding": "0 2px",
-                    "text-align": "left", "text-align-last": "left",
+                    "text-align": "center",
                     "color": "#ffd400",
                     "font-family": "serif",
                     "font-size": "18px",
                     "line-height": "32px",
                     "font-variant": "small-caps",
-                    "background-color": bgColor,
+                    "background-color": "transparent",
                     "background-image": `url('${GetImgURL("blackLeather_1.jpg", "texture")}')`,
                     "background-size": "cover",
-                    "font-weight": fontWeight,
+                    "font-weight": "normal",
                     "border": "none", "box-shadow": "none",
                     "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
-                })}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
-                CodeBlock: (content, bgColor = "white") => HTML.Block(content, bgColor, "monospace", "bold", 10),
-                CodeSpan: (content, title) => `<span style="${U.Style({
+                }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
+                CodeBlock: (content, styles = {}, title = undefined) => HTML.Block(content, Object.assign({
+                    "background": "white",
+                    "font-family": "monospace",
+                    "font-weight": "bold",
+                    "font-size": "10px"
+                }, styles), title),
+                CodeSpan: (content, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
                     "display": "inline-block",
                     "font-family": "monospace",
                     "font-weight": "bolder",
@@ -217,7 +223,7 @@ const EunosTextControls = (() => {
                     "border-radius": "8px",
                     "background-size": "cover",
                     "border": "2px solid gold"
-                })}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
+                }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
                 Button: (name, command, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
                     "display": "inline-block",
                     "width": "100%",
@@ -253,7 +259,7 @@ const EunosTextControls = (() => {
                         color: "gold",
                         "text-indent": "4px",
                         width: "105%",
-                        "background-image": "url('https://image.freepik.com/free-photo/leather-texture-background_1385-1129.jpg')",
+                        "background-image": `url('${GetImgURL("blackLeather_1.jpg", "texture")}')`,
                         "border": "2px solid black",
                         "background-size": "cover"
                     },
@@ -262,17 +268,25 @@ const EunosTextControls = (() => {
                         "font-family": "sans-serif",
                         "line-height": "20px",
                         "margin": "0 0 9px -1%",
-                        color: "white",
+                        color: "gold",
                         "text-indent": "4px",
                         width: "102%",
-                        "background-image": "linear-gradient(90deg, black 50%, #AAA 100%)"
+                        "background-image": `url('${GetImgURL("blackLeather_1.jpg", "texture")}')`,
+                        "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
                     },
                     { // <H4>
                         display: "block",
+                        width: "102%",
+                        color: "gold",
+                        "font-size": "16px",
+                        "line-height": "20px",
                         "font-family": "sans-serif",
-                        "border-bottom": "2px solid gray",
-                        "margin": "0 0 5px 0",
-                        "line-height": "14px"
+                        "border-bottom": "2px solid gold",
+                        "border-top": "2px solid gold",
+                        "margin": "0 0 5px -1%",
+                        "text-indent": "4px",
+                        "background-image": `url('${GetImgURL("blackLeather_1.jpg", "texture")}')`,
+                        "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
                     },
                     { // <H5>
                     }
@@ -290,15 +304,19 @@ const EunosTextControls = (() => {
                     "display": "inline-block",
                     "width": "auto",
                     "background": "none",
-                    "color": "black",
+                    "color": "gold",
                     "font-size": "14px",
                     "line-height": "18px"
                 }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`, //  bgColor = "none", color = "black", fontSize = "14px", lineHeight = "18px") =>
-                Img: (imgSrc, title) => `<img src="${imgSrc}"${title ? ` title="${title}"` : ""}>`
+                Img: (imgSrc, styles = {}, title = undefined) => `<img src="${imgSrc}" style="${U.Style(styles)}"${title ? ` title="${title}"` : ""}>`
             };
             // #endregion
 
-            return {Preinitialize, Initialize, HTML};
+            return {
+                Preinitialize, Initialize,
+                CHATWIDTH, UPSHIFT, LEFTSHIFT, BOTTOMSHIFT,
+                HTML
+            };
         })(),
         // #endregion ░[EUNO.D]░░░░
 
@@ -379,19 +397,28 @@ const EunosTextControls = (() => {
                 if (content || title) {
                     if (title) {
                         if (content === null) {
-                            sendChat(randStr(), `/w gm ${D.HTML.Box(D.HTML.Header(title, "#555"))}`, null, {noarchive: true});
+                            sendChat(randStr(), `/w gm ${D.HTML.Box(D.HTML.Header(title, {
+                                "font-family": "sans-serif",
+                                "text-align": "left"
+                            }), {
+                                "border": "none",
+                                "border-radius": "0px",
+                                "text-indent": "4px",
+                                "min-width": `${D.CHATWIDTH + 8}px`,
+                                "margin": `${D.UPSHIFT + 1}px 0 ${D.BOTTOMSHIFT + 1}px ${D.LEFTSHIFT}px`
+                            })}`, null, {noarchive: true});
                         } else {
                             sendChat(randStr(), `/w gm ${D.HTML.Box([
-                                D.HTML.Header(title, "#555"),
+                                D.HTML.Header(title),
                                 D.HTML.Block(content)
-                            ].join(""))}`, null, {noarchive: true});
+                            ])}`, null, {noarchive: true});
                         }
                     } else {
                         sendChat(randStr(4), `/w gm ${content}`, null, {noarchive: true});
                     }
                 }
             };
-            const Show = (obj, title = "Showing ...") => Alert(D.HTML.CodeBlock(JC(obj)), title); // Show properties of stringified object to GM.
+            const Show = (obj, title = "Showing ...") => Alert(D.HTML.CodeBlock(JC(obj)), {}, title); // Show properties of stringified object to GM.
             const Flag = (msg) => Alert(null, `[ETC] ${msg}`.replace(/\[ETC\]\s*\[ETC\]/gu, "[ETC]")); // Simple one-line chat flag sent to the GM.
             const KVPMap = (obj, keyFunc = (x) => x, valFunc = undefined) => {
                 /* An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
@@ -761,8 +788,6 @@ const EunosTextControls = (() => {
                 U.Alert(D.HTML.Box([
                     D.HTML.Header("Eunomiac's Text Controls v.0.1"),
                     D.HTML.Block([
-                        D.HTML.Img("https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/master/images/Header%20-%20Text%20Shadows%200.1.jpg"),
-                        D.HTML.Spacer("3px"),
                         D.HTML.Button("Latest Version", "https://github.com/Eunomiac/-EunosTextControls/releases", {background: "green", color: "white"}),
                         D.HTML.Spacer("3px"),
                         D.HTML.Button("Issue Tracking", "https://github.com/Eunomiac/-EunosTextControls/issues", {background: "rgba(255,0,0,0.8)", color: "white"}),
@@ -807,8 +832,8 @@ const EunosTextControls = (() => {
                         ]),
                         D.HTML.Span([
                             D.HTML.Span(`Intro Message <span style="color: ${STA.TE.IsShowingIntro ? "darkgreen" : "darkred"};"><u>${STA.TE.IsShowingIntro ? "EN" : "DIS"}ABLED</u></span>`, {
-                                background: "transparent",
-                                color: "black",
+                                // background: "transparent",
+                                // color: "black",
                                 "font-size": "14px",
                                 "line-height": "18px",
                                 "font-family": "sans-serif",
@@ -826,7 +851,7 @@ const EunosTextControls = (() => {
                         ], {width: "97%"}),
                         D.HTML.Span([
                             D.HTML.Span(`Object Pruning <span style="color: ${STA.TE.IsAutoPruning ? "darkgreen" : "darkred"};"><u>${STA.TE.IsAutoPruning ? "EN" : "DIS"}ABLED</u></span>`, {
-                                background: "transparent",
+                                // background: "transparent",
                                 "font-size": "14px",
                                 "line-height": "18px",
                                 "font-family": "sans-serif",
@@ -844,8 +869,8 @@ const EunosTextControls = (() => {
                         ], {width: "97%"}),
                         D.HTML.Span([
                             D.HTML.Span(`Auto-Shadow <span style="color: ${STA.TE.IsAutoShadowing ? "darkgreen" : "darkred"};"><u>${STA.TE.IsAutoShadowing ? "EN" : "DIS"}ABLED</u></span>`, {
-                                background: "transparent",
-                                color: "black",
+                                // background: "transparent",
+                                // color: "black",
                                 "font-size": "14px",
                                 "line-height": "18px",
                                 "font-family": "sans-serif",
@@ -867,7 +892,7 @@ const EunosTextControls = (() => {
             const displayError = (errorTag) => {
                 const ERRORHTML = {
                     AddShadowToShadow: D.HTML.Box([
-                        D.HTML.Header("[ETC] ERROR: Shadow-On-Shadow", "rgb(255, 30, 30)", "bold"),
+                        D.HTML.Header("[ETC] ERROR: Shadow-On-Shadow", {"background-color": "rgb(255, 30, 30)", "background-image": "none", "font-weight": "bold"}),
                         D.HTML.Block([
                             D.HTML.H("Cannot Add a Shadow to a Shadow Object"),
                             D.HTML.Paras([
@@ -876,7 +901,7 @@ const EunosTextControls = (() => {
                         ])
                     ]),
                     ManualShadowRemoval: D.HTML.Box([
-                        D.HTML.Header("[ETC] ERROR: Shadow Deleted", "rgb(255, 30, 30)", "bold"),
+                        D.HTML.Header("[ETC] ERROR: Shadow Deleted", {"background-color": "rgb(255, 30, 30)", "background-image": "none", "font-weight": "bold"}),
                         D.HTML.Block([
                             D.HTML.H("Restoring ..."),
                             D.HTML.Paras([
