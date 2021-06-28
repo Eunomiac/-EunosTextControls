@@ -230,7 +230,7 @@ const EunosTextControls = (() => {
                     "background-size": "cover",
                     "border": "2px solid gold"
                 }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
-                Button: (name, command, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
+                ButtonWide: (name, command, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
                     "display": "inline-block",
                     "width": "100%",
                     "text-align": "center",
@@ -954,11 +954,11 @@ const EunosTextControls = (() => {
                 U.Alert(D.HTML.Box([
                     D.HTML.Header("Eunomiac's Text Controls v.0.1"),
                     D.HTML.Block([
-                        D.HTML.Button("Latest Version", "https://github.com/Eunomiac/-EunosTextControls/releases", {background: "green", color: "white"}),
+                        D.HTML.ButtonWide("Latest Version", "https://github.com/Eunomiac/-EunosTextControls/releases", {background: "green", color: "white"}),
                         D.HTML.Spacer("3px"),
-                        D.HTML.Button("Issue Tracking", "https://github.com/Eunomiac/-EunosTextControls/issues", {background: "rgba(255,0,0,0.8)", color: "white"}),
+                        D.HTML.ButtonWide("Issue Tracking", "https://github.com/Eunomiac/-EunosTextControls/issues", {background: "rgba(255,0,0,0.8)", color: "white"}),
                         D.HTML.Spacer("3px"),
-                        D.HTML.Button("Roll20 Forum Thread", "https://app.roll20.net/forum/permalink/10184021/", {background: "magenta", color: "white"}),
+                        D.HTML.ButtonWide("Roll20 Forum Thread", "https://app.roll20.net/forum/permalink/10184021/", {background: "magenta", color: "white"}),
                         D.HTML.Spacer("5px"),
                         D.HTML.Paras(["This script pack&shy;age is in&shy;tended to be a com&shy;pre&shy;hen&shy;sive so&shy;lution to ma&shy;naging Roll20 Text Ob&shy;jects via API com&shy;mands or scrip&shy;ted auto&shy;mation. At the mo&shy;ment, how&shy;ever, only the 'Text Sha&shy;dows' fea&shy;ture is cur&shy;rently im&shy;ple&shy;ment&shy;ed."]),
                         D.HTML.H("Basic Chat Commands"),
@@ -985,7 +985,7 @@ const EunosTextControls = (() => {
                         D.HTML.H("Spam Control"),
                         D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the but&shy;ton be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc help")} com&shy;mand.)</i>`
                         ]),
-                        D.HTML.Button("Don't Display This At Startup", "!etc toggle intro false")
+                        D.HTML.ButtonWide("Don't Display This At Startup", "!etc toggle intro false")
                     ])
                 ]));
             };
@@ -1006,7 +1006,7 @@ const EunosTextControls = (() => {
                                 "font-weight": "bold",
                                 margin: "-5px 0 10px 0"
                             }, "Whether to display the introductory help message on sandbox startup."),
-                            D.HTML.Button(STA.TE.IsShowingIntro ? "DISABLE" : "ENABLE", `!etc toggle intro ${STA.TE.IsShowingIntro ? "false" : "true"}`,  {
+                            D.HTML.ButtonWide(STA.TE.IsShowingIntro ? "DISABLE" : "ENABLE", `!etc toggle intro ${STA.TE.IsShowingIntro ? "false" : "true"}`,  {
                                 color: STA.TE.IsShowingIntro ? "white" : "black",
                                 width: "27%",
                                 background: STA.TE.IsShowingIntro ? "red" : "lime",
@@ -1024,7 +1024,7 @@ const EunosTextControls = (() => {
                                 "font-weight": "bold",
                                 margin: "-5px 0 10px 0"
                             }, "Whether empty text objects are automatically removed whenever they appear."),
-                            D.HTML.Button(STA.TE.IsAutoPruning ? "DISABLE" : "ENABLE", `!etc toggle autoprune ${STA.TE.IsAutoPruning ? "false" : "true"}`, {
+                            D.HTML.ButtonWide(STA.TE.IsAutoPruning ? "DISABLE" : "ENABLE", `!etc toggle autoprune ${STA.TE.IsAutoPruning ? "false" : "true"}`, {
                                 color: STA.TE.IsAutoPruning ? "white" : "black",
                                 width: "27%",
                                 background: STA.TE.IsAutoPruning ? "red" : "lime",
@@ -1043,7 +1043,7 @@ const EunosTextControls = (() => {
                                 "font-weight": "bold",
                                 margin: "-5px 0 10px 0"
                             }, "Whether shadows should be created automatically for all new text objects."),
-                            D.HTML.Button(STA.TE.IsAutoShadowing ? "DISABLE" : "ENABLE", `!etc toggle autoshadow ${STA.TE.IsAutoShadowing ? "false" : "true"}`,  {
+                            D.HTML.ButtonWide(STA.TE.IsAutoShadowing ? "DISABLE" : "ENABLE", `!etc toggle autoshadow ${STA.TE.IsAutoShadowing ? "false" : "true"}`,  {
                                 color: STA.TE.IsAutoShadowing ? "white" : "black",
                                 width: "27%",
                                 background: STA.TE.IsAutoShadowing ? "red" : "lime",
