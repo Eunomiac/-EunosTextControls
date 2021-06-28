@@ -98,6 +98,7 @@ const RO = {get OT() { // "RO.OT" Reference to 'state.Euno'
 const EUNO = { // Shorthand getters for major script components
     get D() { return EunosTextControls.DATA },
     get U() { return EunosTextControls.UTILITIES },
+    get O() { return EunosTextControls.OBJECTS },
     get M() { return EunosTextControls.MASTER },
     get S() { return EunosTextControls.SandboxControl },
     get C() { return EunosTextControls.ChatboxControl },
@@ -120,7 +121,7 @@ const EunosTextControls = (() => {
             const DEFAULTSTATE = { // Initial values for state storage.
             };
 
-            let D, U, M, S, C, H, CFG;
+            let D, U, O, M, S, C, H, CFG;
             const STA = {get TE() { return (RO.OT && SCRIPTNAME in RO.OT) ? RO.OT[SCRIPTNAME] : false}};
             // #endregion
 
@@ -129,8 +130,12 @@ const EunosTextControls = (() => {
                 // Initialize state storage with DEFAULTSTATE where needed.
                 if (isResettingState) { delete RO.OT[SCRIPTNAME] }
                 RO.OT[SCRIPTNAME] = RO.OT[SCRIPTNAME] || {};
-                Object.entries(DEFAULTSTATE).filter(([key]) => !(key in STA.TE)).forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
-                ({D, U, M, S, C, H, CFG} = EUNO);
+                Object.entries(DEFAULTSTATE)
+                    .filter(([key]) => !(key in STA.TE))
+                    .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+                // Declare local-scope shorthand for main script components.
+                ({D, U, O, M, S, C, H, CFG} = EUNO);
             };
             const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
                 if (isResettingState) { Preinitialize(true) }
@@ -145,7 +150,8 @@ const EunosTextControls = (() => {
                 log(`[ETC] ${SCRIPTNAME} Ready!`);
             };
             // #endregion
-            // #endregion
+
+            // #endregion *** *** FRONT *** ***
 
             const IMGROOT = {
                 texture: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/textures/"
@@ -291,10 +297,7 @@ const EunosTextControls = (() => {
                     { // <H5>
                     }
                 ][level], styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</h${level}>`,
-                Spacer: (height, display = "block") => `<span style="${U.Style({
-                    display,
-                    height
-                })}">&nbsp;</span>`,
+                Spacer: (height, display = "block") => `<span style="${U.Style({display, height})}">&nbsp;</span>`,
                 Paras: (content, styles = {}) => [content].flat().map((para) => `<p style="${U.Style(Object.assign({
                     "line-height": "16px",
                     "font-family": "sans-serif",
@@ -310,7 +313,29 @@ const EunosTextControls = (() => {
                 }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`, //  bgColor = "none", color = "black", fontSize = "14px", lineHeight = "18px") =>
                 Img: (imgSrc, styles = {}, title = undefined) => `<img src="${imgSrc}" style="${U.Style(styles)}"${title ? ` title="${title}"` : ""}>`
             };
-            // #endregion
+            const ApplyStyles = () => {
+                // For each entry in HTML, find all elements with matching class. Extract "style" line, convert to object, submit as 'styles' parameter
+                const processStyles = (elem, HTMLref) => {
+                    console.log(elem, HTMLref);
+                    const inlineStyles = elem.getAttribute("style");
+                    const title = elem.title;
+                    const elemString = HTMLref("**CONTENT**", inlineStyles, title).replace(/[a-zA-Z-]*: (;|$)/gu, "").trim().replace(/\s+/gu, " ");
+                    const combinedStyles = elemString.match(/style\s*=\s*\S([^"]*)\S/u)[1];
+                    elem.style = combinedStyles;
+                };
+                Object.keys(HTML).forEach((classOrTag) => {
+                    if (classOrTag === "H") {
+                        ["H1", "H2", "H3", "H4", "H5"].forEach((header) => {
+                            const styleRef = HTML.H[parseInt(header.slice(1))];
+                            Array.from(document.getElementsByTagName(header)).forEach((elem) => { processStyles(header, styleRef) });
+                        });
+                    } else if (classOrTag === "Paras") {
+                        Array.from(document.getElementsByTagName("P")).forEach((elem) => { processStyles(elem, HTML.Paras) });
+                    } else {
+                        Array.from(document.getElementsByClassName(classOrTag)).forEach((elem) => { processStyles(elem, HTML[classOrTag]) });
+                    }
+                });
+            };
 
             return {
                 Preinitialize, Initialize,
@@ -319,6 +344,72 @@ const EunosTextControls = (() => {
             };
         })(),
         // #endregion ░[EUNO.D]░░░░
+
+
+        // #region ░▒▓█[EUNO.O]█▓▒░ Roll20 Object Manipulation ░░░░░░
+        OBJECTS: (() => {
+            // #region *** *** FRONT *** ***
+
+            // #region      Front: Basic References, State & Namespacing
+            const SCRIPTNAME = "Objects";
+            const DEFAULTSTATE = { // Initial values for state storage.
+            };
+
+            let D, U, O, M, S, C, H, CFG;
+            const STA = {get TE() { return (RO.OT && SCRIPTNAME in RO.OT) ? RO.OT[SCRIPTNAME] : false}};
+            // #endregion
+
+            // #region      Front: Initialization
+            const Preinitialize = (isResettingState = false) => {
+                // Initialize state storage with DEFAULTSTATE where needed.
+                if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+                RO.OT[SCRIPTNAME] = RO.OT[SCRIPTNAME] || {};
+                Object.entries(DEFAULTSTATE)
+                    .filter(([key]) => !(key in STA.TE))
+                    .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+                // Declare local-scope shorthand for main script components.
+                ({D, U, O, M, S, C, H, CFG} = EUNO);
+            };
+            const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
+                if (isResettingState) { Preinitialize(true) }
+
+                // Register event handlers for chat commands and text object changes.
+                if (isRegisteringEventListeners) {
+                    // Register event handlers here.
+                }
+
+                // Report Readiness.
+                U.Flag(`${SCRIPTNAME} Ready!`);
+                log(`[ETC] ${SCRIPTNAME} Ready!`);
+            };
+            // #endregion
+            // #endregion
+
+            // #region 'controlledby' Data Parsing
+            const getETCObjs = (category = null) => findObjs({}).filter((obj) => {
+                const etcData = GetETCData(obj);
+                return "etc" in etcData && (category === null || etcData.etc === category);
+            });
+            const GetETCData = (obj) => {
+                if (!U.GetR20Type(obj)) { return false }
+                const cbFields = obj.get("controlledby").split(/,/u) || [];
+                if (cbFields.length === 0) { return {} }
+                const etcIndex = cbFields.findIndex((cbItem) => /^etc---/u.test(cbItem));
+                if (etcIndex < 0) { return {} }
+                return U.KVPMap(
+                    cbFields[etcIndex].split(/__-__/u),
+                    (i, param) => param.split(/---/u).shift(),
+                    (param) => param.split(/---/u).pop()
+                );
+            };
+            // #endregion
+
+            return {
+                Preinitialize, Initialize
+            };
+        })(),
+        // #endregion ░[EUNO.O]░░░░
 
         // #region ░▒▓█[EUNO.U]█▓▒░ Global Utility Functions ░░░░░░
         UTILITIES: (() => {
@@ -329,7 +420,7 @@ const EunosTextControls = (() => {
             const DEFAULTSTATE = { // Initial values for state storage.
             };
 
-            let D, U, M, S, C, H, CFG;
+            let D, U, O, M, S, C, H, CFG;
             const STA = {get TE() { return (RO.OT && SCRIPTNAME in RO.OT) ? RO.OT[SCRIPTNAME] : false}};
             // #endregion
 
@@ -338,8 +429,12 @@ const EunosTextControls = (() => {
                 // Initialize state storage with DEFAULTSTATE where needed.
                 if (isResettingState) { delete RO.OT[SCRIPTNAME] }
                 RO.OT[SCRIPTNAME] = RO.OT[SCRIPTNAME] || {};
-                Object.entries(DEFAULTSTATE).filter(([key]) => !(key in STA.TE)).forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
-                ({D, U, M, S, C, H, CFG} = EUNO);
+                Object.entries(DEFAULTSTATE)
+                    .filter(([key]) => !(key in STA.TE))
+                    .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+                // Declare local-scope shorthand for main script components.
+                ({D, U, O, M, S, C, H, CFG} = EUNO);
             };
             const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
                 if (isResettingState) { Preinitialize(true) }
@@ -357,16 +452,10 @@ const EunosTextControls = (() => {
             // #endregion
 
             const throttleTimers = {};
-            const Style = (styleData) => {
-                // Parse object containing CSS styles to inline style attribute.
-                if (typeof styleData === "string") {
-                    return styleData.replace(/\s{2,}/gu, " ").replace(/'(serif|sans-serif|monospace)'/gu, "$1");
-                } else {
-                    return Object.entries(styleData).map(([prop, val]) => `${prop}: ${val}`).join("; ").replace(/'(serif|sans-serif|monospace)'/gu, "$1");
-                }
-            };
+
+            // #region *** *** Validation & Type Checking *** ***
             const GetR20Type = (val) => { // Returns specific type/subtype of R20 object, or false if val isn't an R20 object.
-                if (_.isObject(val) && val.id && "get" in val) {
+                if (val && typeof val === "object" && "id" in val && "get" in val) {
                     const type = val.get("_type");
                     if (type === "graphic") {
                         if (val.get("represents")) {
@@ -384,14 +473,29 @@ const EunosTextControls = (() => {
                 }
                 return false;
             };
-            const GetSelObjs = (msg, type = "text") => { // Returns an array of selected objects.
-                if (msg.selected && msg.selected.length) {
-                    return msg.selected.filter((objData) => objData._type === type).map((objData) => getObj(type, objData._id));
+            const GetType = (val) => {
+                const valType = Object.prototype.toString.call(val).slice(8, -1).toLowerCase();
+                switch (valType) {
+                    case "number": return /\./u.test(`${val}`) ? "float" : "int";
+                    case "object": return GetR20Type(val) || "list";
+                    default: return valType;
                 }
-                return [];
             };
+            // #endregion *** *** Validation *** ***
+
+            // #region *** *** Parsing JSON & Inline CSS for Chat Output *** ***
             const JS = (val) => JSON.stringify(val, null, 2).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;"); // Stringification for display in R20 chat.
             const JC = (val) => D.HTML.CodeBlock(JS(val)); // Stringification for data objects and other code for display in R20 chat.
+            const Style = (styleData) => { // Parse object containing CSS styles to inline style attribute.
+                if (typeof styleData === "string") {
+                    return styleData.replace(/\s{2,}/gu, " ").replace(/'(serif|sans-serif|monospace)'/gu, "$1");
+                } else {
+                    return Object.entries(styleData).map(([prop, val]) => `${prop}: ${val}`).join("; ").replace(/'(serif|sans-serif|monospace)'/gu, "$1");
+                }
+            };
+            // #endregion
+
+            // #region *** *** Basic GM Alerts & Flags *** ***
             const Alert = (content, title) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
                 const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
                 if (content || title) {
@@ -420,7 +524,19 @@ const EunosTextControls = (() => {
             };
             const Show = (obj, title = "Showing ...") => Alert(D.HTML.CodeBlock(JC(obj)), {}, title); // Show properties of stringified object to GM.
             const Flag = (msg) => Alert(null, `[ETC] ${msg}`.replace(/\[ETC\]\s*\[ETC\]/gu, "[ETC]")); // Simple one-line chat flag sent to the GM.
-            const KVPMap = (obj, keyFunc = (x) => x, valFunc = undefined) => {
+            // #endregion *** *** Basic GM Alerts *** ***
+
+            // #region *** *** Roll20 Objects *** ***
+            const GetSelObjs = (msg, type = "text") => { // Returns an array of selected objects.
+                if (msg.selected && msg.selected.length) {
+                    return msg.selected.filter((objData) => objData._type === type).map((objData) => getObj(type, objData._id));
+                }
+                return [];
+            };
+            // #endregion *** *** Roll20 Objects *** ***
+
+            // #region *** *** Array & Object Processing *** ***
+            const KVPMap = (obj, keyFunc = (x) => x, valFunc) => {
                 /* An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
                 *      If only one function is provided, it's assumed to be mapping the values and will receive (v, k) args. */
                 [valFunc, keyFunc] = [valFunc, keyFunc].filter((x) => typeof x === "function" || typeof x === "boolean");
@@ -432,12 +548,13 @@ const EunosTextControls = (() => {
                 });
                 return newObj;
             };
+            // #endregion *** *** Array & Object Processing *** ***
+
             return {
                 Preinitialize, Initialize,
-                JS, JC,
+                GetR20Type, GetType,
+                JS, JC, Style,
                 Alert, Show, Flag,
-                Style,
-                GetR20Type,
                 GetSelObjs,
                 KVPMap
             };
@@ -453,7 +570,7 @@ const EunosTextControls = (() => {
             const DEFAULTSTATE = { // Initial values for state storage.
             };
 
-            let D, U, M, S, C, H, CFG;
+            let D, U, O, M, S, C, H, CFG;
             const STA = {get TE() { return (RO.OT && SCRIPTNAME in RO.OT) ? RO.OT[SCRIPTNAME] : false}};
             // #endregion
 
@@ -462,8 +579,12 @@ const EunosTextControls = (() => {
                 // Initialize state storage with DEFAULTSTATE where needed.
                 if (isResettingState) { delete RO.OT[SCRIPTNAME] }
                 RO.OT[SCRIPTNAME] = RO.OT[SCRIPTNAME] || {};
-                Object.entries(DEFAULTSTATE).filter(([key]) => !(key in STA.TE)).forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
-                ({D, U, M, S, C, H, CFG} = EUNO);
+                Object.entries(DEFAULTSTATE)
+                    .filter(([key]) => !(key in STA.TE))
+                    .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+                // Declare local-scope shorthand for main script components.
+                ({D, U, O, M, S, C, H, CFG} = EUNO);
             };
             const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
                 if (isResettingState) { Preinitialize(true) }
@@ -496,7 +617,7 @@ const EunosTextControls = (() => {
                 IsShowingIntro: true
             };
 
-            let D, U, M, S, C, H, CFG;
+            let D, U, O, M, S, C, H, CFG;
             const STA = {get TE() { return (RO.OT && SCRIPTNAME in RO.OT) ? RO.OT[SCRIPTNAME] : false}};
             const RE = {get G() { return (STA.TE && "REGISTRY" in STA.TE) ? STA.TE.REGISTRY : {} }};
 
@@ -507,8 +628,12 @@ const EunosTextControls = (() => {
                 // Initialize state storage with DEFAULTSTATE where needed.
                 if (isResettingState) { delete RO.OT[SCRIPTNAME] }
                 RO.OT[SCRIPTNAME] = RO.OT[SCRIPTNAME] || {};
-                Object.entries(DEFAULTSTATE).filter(([key]) => !(key in STA.TE)).forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
-                ({D, U, M, S, C, H, CFG} = EUNO);
+                Object.entries(DEFAULTSTATE)
+                    .filter(([key]) => !(key in STA.TE))
+                    .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+                // Declare local-scope shorthand for main script components.
+                ({D, U, O, M, S, C, H, CFG} = EUNO);
             };
             const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
                 if (isResettingState) { Preinitialize(true) }
@@ -520,6 +645,7 @@ const EunosTextControls = (() => {
                     on("add:text", handleTextAdd);
                     on("destroy:text", handleTextDestroy);
                 }
+
                 // Report Readiness.
                 U.Flag(`${SCRIPTNAME} Ready!`);
                 log(`[ETC] ${SCRIPTNAME} Ready!`);
@@ -606,14 +732,12 @@ const EunosTextControls = (() => {
 
             // #endregion *** *** FRONT *** ***
 
-
             // #region *** *** UTILITY *** ***
             const isShadowObj = (val) => U.GetR20Type(val) === "text" && /etcshadowobj/u.test(val.get("controlledby"));
             const getOffsets = (fontFamily, fontSize) => ({
                 ...CFG.TextShadows.OFFSETS.generic,
                 ...(fontFamily in CFG.TextShadows.OFFSETS ? CFG.TextShadows.OFFSETS[fontFamily] : CFG.TextShadows.OFFSETS.generic)
             }[fontSize]);
-
             // #endregion *** *** UTILITY *** ***
 
             // #region *** *** CORE TEXT CONTROL *** ***
@@ -779,6 +903,48 @@ const EunosTextControls = (() => {
 
             // #endregion *** *** TEXT SHADOWS *** ***
 
+            // #region *** *** FEATURE: ATTRIBUTE DISPLAYS *** ***
+
+            // #region         Attribute Displays: Linking Text Objects
+            const getAttr = (charRef, attrRef) => {
+                const charID = (D.GetChar(charRef) || (() => false)).id;
+                const charAttrs = findObjs({_type: "attribute", _characterid: charID});
+                let attrObj;
+                ({
+                    string: () => {
+
+                    },
+                    object: () => {
+
+                    }
+                }[typeof attrRef])();
+
+                switch (typeof attrRef) {
+                    case "string": {
+
+                    }
+                }
+                // if (typeof attrRef === "string")
+                // SWEEP 1: Look for attribute with name that matches lowercase letters and digits
+
+
+                const charAttrNames = charAttrs.map((attrObj) => attrObj.get("name"));
+            };
+            const linkTextToAttr = (textObj, charRef, attrRef, options = {}) => {
+                if (!U.GetR20Type(textObj)) { return false }
+                const charObj = U.GetChar(charRef);
+                if (!U.GetR20Type(charObj)) { return false }
+                const attrObj = U.GetAttr(charObj, attrRef);
+                if (!U.GetR20Type(attrObj)) { return false }
+
+
+                return true;
+            };
+            // #endregion
+
+
+            // #endregion *** *** ATTRIBUTE DISPLAYS *** ***
+
             // #region *** *** CHAT DISPLAYS & MENUS *** ***
             const toggleIntroMessage = (isActive) => {
                 STA.TE.IsShowingIntro = isActive === true;
@@ -917,9 +1083,7 @@ const EunosTextControls = (() => {
                     U.Alert(ERRORHTML[errorTag]);
                 }
             };
-            // #endregion
-
-            // #endregion *** *** D.HTML *** ***
+            // #endregion *** *** CHAT DISPLAYS *** ***
 
             return {Preinitialize, Initialize};
         })(),
