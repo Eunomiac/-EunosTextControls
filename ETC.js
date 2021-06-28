@@ -154,75 +154,25 @@ const EunosTextControls = (() => {
             // #endregion *** *** FRONT *** ***
 
             const IMGROOT = {
-                texture: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/textures/"
+                general: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/",
+                texture: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/textures/",
+                button: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/buttons/"
             };
-            const GetImgURL = (imgFileName, imgType = "texture") => `${IMGROOT[imgType]}${imgFileName}`;
+            const GetImgURL = (imgFileName, imgType = "general") => `${IMGROOT[imgType]}${imgFileName}`;
+            const COLORS = {
+                palegold: "#ffe775"
+            };
 
+            const CHATWIDTH = 283; // The minimum width of the chat panel, in pixels. Be sure to subtract twice any border widths.
 
-            const CHATWIDTH = 275; // The minimum width of the chat panel, in pixels. Be sure to subtract twice any border widths.
-
-            const UPSHIFT = -26;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
+            const UPSHIFT = -29;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
             const LEFTSHIFT = -45; // shifts up and to the left to cover the standard chat output with the custom styles below.
-            const BOTTOMSHIFT = -7;
-            const ApplyStyles = () => {
-                // For each entry in HTML, find all elements with matching class. Extract "style" line, convert to object, submit as 'styles' parameter
-                const processStyles = (elem, HTMLref, isButton) => {
-                    const styleData = {};
-                    (elem.getAttribute("style") || "")
-                        .split(/;/u).filter((style) => Boolean(style))
-                        .map((styleString) => (styleString || "").split(/:/).map((prop) => prop.trim()))
-                        .forEach(([key, val]) => { styleData[key] = val } );
-                    const title = elem.title;
-                    let elemString;
-                    if (/^H\d$/.test(elem.tagName)) {
-                        elemString = HTMLref("**CONTENT**", parseInt(elem.tagName.slice(1)), styleData, title);
-                    } else if (Array.from(elem.classList).filter((cls) => cls.startsWith("Button")).length) {
-                        const [href, name] = elem.innerHTML.match(/href\s*=\s*\S(.*)\S.*>(.*)</u).slice(1);
-                        elemString = HTMLref(name, href, styleData, title);
-                        const [wrapperStyle, linkStyle] = elemString
-                            .match(/(?:style\s*=\s*\S([^"]*)\S)/gu)
-                            .map((styleString) => styleString.replace(/^.*=['"](.*)['"]$/gu, "$1"));
-                        elem.innerHTML = `<a href='${href}' style='${linkStyle}'>${name}</a>`;
-                        console.log([
-                            elemString,
-                            href, name,
-                            `Box Styles: ${wrapperStyle}`,
-                            `Link Styles: ${linkStyle}`
-                        ].join("\n"));
-                    } else if (elem.tagName === "A") {
-                        return;
-                        // elemString = HTMLref("**COMMAND**", styleData, title);
-                        // console.log(`Link Element: ${elemString}`);
-                    } else {
-                        elemString = HTMLref("**CONTENT**", styleData, title);
-                    }
-                    const combinedStyles = elemString.replace(/[a-zA-Z-]*: (;|$)/gu, "").trim().replace(/\s+/gu, " ").match(/style\s*=\s*\S([^"]*)\S/u)[1];
-                    if (elem.classList.contains("Button") || elem.tagName === "A") {
-                    }
-                    elem.style = combinedStyles;
-                };
-                Object.keys(HTML).forEach((classOrTag) => {
-                    if (classOrTag === "H") {
-                        ["H1", "H2", "H3", "H4", "H5"].forEach((header) => {
-                            const hLevel = parseInt(header.slice(1));
-                            Array.from(document.getElementsByTagName(header)).forEach((elem) => { processStyles(elem, HTML.H, hLevel) });
-                        });
-                    } else if (classOrTag === "Paras") {
-                        Array.from(document.getElementsByTagName("P")).forEach((elem) => { processStyles(elem, HTML.Paras) });
-                    } else if (classOrTag.startsWith("Button")) {
-                        Array.from(document.getElementsByClassName(classOrTag)).forEach((elem) => { processStyles(elem, HTML[classOrTag]), true});
-                        Array.from(document.getElementsByTagName("A")).forEach((elem) => { processStyles(elem, HTML.A) });
-                    } else {
-                        Array.from(document.getElementsByClassName(classOrTag)).forEach((elem) => { processStyles(elem, HTML[classOrTag]) });
-                    }
-                });
-            };
-
+            const BOTTOMSHIFT = -4;
             const HTML = {
                 Box: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
                     "display": "block",
                     "width": "auto", "min-width": `${CHATWIDTH}px`,
-                    "height": "auto", "min-height": "32px",
+                    "height": "auto", "min-height": "39px",
                     "margin": `${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px`,
                     "padding": "0",
                     "color": COLORS.palegold,
@@ -231,12 +181,13 @@ const EunosTextControls = (() => {
                     "text-shadow": "none", "box-shadow": "none", "border": "none",
                     "background-image": `url('${GetImgURL("BG.jpg", "general")}')`,
                     "background-size": "100%",
-                    "overflow": "hidden"
+                    "overflow": "hidden",
+                    "outline": "2px solid black"
                 }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
                 Block: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
-                    "width": `${CHATWIDTH - 16}px`,
+                    "width": `${CHATWIDTH - 24}px`,
                     "margin": "2px 0 0 0",
-                    "padding": "0 8px",
+                    "padding": "0 12px",
                     "text-align": "left",
                     "background": "none",
                     "font-family": "serif",
@@ -290,20 +241,22 @@ const EunosTextControls = (() => {
                     "margin": "0",
                     "float": "none"
                 }, _.pick(styles, "display", "width", "text-align", "vertical-align", "margin", "float")))}"${title ? ` title="${title}"` : ""}>${HTML.A(name, command, _.omit(styles, "display", "width", "text-align", "vertical-align", "margin", "float"), title)}</span>`,
-                ButtonRound: (imgRef, command, styles = {}, title = undefined) => {
+                ButtonRound: (imgName, command, styles = {}, title = undefined) => {
                     return `<span style="${U.Style(Object.assign({}, {
                         "display": "inline-block",
                         "width": "50px",
                         "height": "50px",
-                        "background-image": `url('${GetImgURL(imgRef)}')`,
-                        "vertical-align": "baseline",
-                        "margin": "0",
-                        "float": "none"
-                    }, _.pick(styles, "display", "width", "background-image", "vertical-align", "margin", "float")))}"${title ? ` title="${title}"` : ""}>${HTML.A("", command, Object.assign({}, styles, {
+                        "margin": "0 15px",
+                        "background-image": `url('${GetImgURL(imgName, "button")}')`
+                    }, _.pick(styles, "display", "width", "line-height", "margin", "float")))}"${title ? ` title="${title}"` : ""}>${HTML.A("", command, Object.assign({}, styles, {
+                        "display": "block",
                         "width": "50px",
                         "height": "50px",
                         "padding": "0",
-                        "margin": "0"
+                        "margin": "0",
+                        "background": "none",
+                        "border-radius": "none",
+                        "border": "none"
                     }), title)}</span>`;
                 },
                 A: (content, command, styles = {}, title = undefined) => {
@@ -323,12 +276,12 @@ const EunosTextControls = (() => {
                         "line-height": "18px"
                     }, styles))}">${[content].flat().join("")}</a>`;
                 },
-                H: (content, level = 3, styles = {}, title = undefined) => `<h${level} style="${U.Style(Object.assign([
+                H: (content, level = 2, styles = {}, title = undefined) => `<h${level} style="${U.Style(Object.assign([
                     null, // <H0>
                     { // <H1>
                         display: "block",
-                        height: "43px", width: "285px",
-                        margin: "20px 0 -10px -9px",
+                        height: "43px", width: "288px",
+                        margin: "20px 0px -10px -14px",
                         "font-family": "Impact",
                         "line-height": "36px",
                         "font-size": "24px",
@@ -341,7 +294,7 @@ const EunosTextControls = (() => {
                     { // <H2>
                         display: "block",
                         height: "26px", width: "285px",
-                        "margin": "15px 0 -5px -9px",
+                        "margin": "15px 0 -5px -13px",
                         "font-family": "Trebuchet MS",
                         "line-height": "26px",
                         "font-size": "16px",
@@ -382,8 +335,8 @@ const EunosTextControls = (() => {
                 Spacer: (height, display = "block") => `<span style="${U.Style({display, height})}">&nbsp;</span>`,
                 Paras: (content, styles = {}) => [content].flat().map((para) => `<p style="${U.Style(Object.assign({
                     "margin": "10px 0",
-                    "line-height": "16px",
-                    "font-family": "sans-serif"
+                    "line-height": "18px",
+                    "font-family": "Tahoma"
                 }, styles))}">${para}</p>`).join(""),
                 Span: (content, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
                     "display": "inline-block",
@@ -396,33 +349,9 @@ const EunosTextControls = (() => {
                 Img: (imgSrc, styles = {}, title = undefined) => `<img src="${imgSrc}" style="${U.Style(styles)}"${title ? ` title="${title}"` : ""}>`
             };
 
-            const ApplStyles = () => {
-                // For each entry in HTML, find all elements with matching class. Extract "style" line, convert to object, submit as 'styles' parameter
-                const processStyles = (elem, HTMLref) => {
-                    console.log(elem, HTMLref);
-                    const inlineStyles = elem.getAttribute("style");
-                    const title = elem.title;
-                    const elemString = HTMLref("**CONTENT**", inlineStyles, title).replace(/[a-zA-Z-]*: (;|$)/gu, "").trim().replace(/\s+/gu, " ");
-                    const combinedStyles = elemString.match(/style\s*=\s*\S([^"]*)\S/u)[1];
-                    elem.style = combinedStyles;
-                };
-                Object.keys(HTML).forEach((classOrTag) => {
-                    if (classOrTag === "H") {
-                        ["H1", "H2", "H3", "H4", "H5"].forEach((header) => {
-                            const styleRef = HTML.H[parseInt(header.slice(1))];
-                            Array.from(document.getElementsByTagName(header)).forEach((elem) => { processStyles(header, styleRef) });
-                        });
-                    } else if (classOrTag === "Paras") {
-                        Array.from(document.getElementsByTagName("P")).forEach((elem) => { processStyles(elem, HTML.Paras) });
-                    } else {
-                        Array.from(document.getElementsByClassName(classOrTag)).forEach((elem) => { processStyles(elem, HTML[classOrTag]) });
-                    }
-                });
-            };
-
             return {
                 Preinitialize, Initialize,
-                CHATWIDTH, UPSHIFT, LEFTSHIFT, BOTTOMSHIFT,
+                CHATWIDTH, UPSHIFT, LEFTSHIFT, BOTTOMSHIFT, COLORS,
                 HTML
             };
         })(),
@@ -584,21 +513,30 @@ const EunosTextControls = (() => {
                 if (content || title) {
                     if (title) {
                         if (content === null) {
-                            sendChat(randStr(), `/w gm ${D.HTML.Box(D.HTML.Header(title, {
-                                "font-family": "sans-serif",
-                                "text-align": "left"
-                            }), {
-                                "border": "none",
-                                "border-radius": "0px",
-                                "text-indent": "4px",
-                                "min-width": `${D.CHATWIDTH + 8}px`,
-                                "margin": `${D.UPSHIFT + 1}px 0 ${D.BOTTOMSHIFT + 1}px ${D.LEFTSHIFT}px`
-                            })}`, null, {noarchive: true});
+                            sendChat(randStr(), `/w gm ${D.HTML.Box(D.HTML.Block([
+                                D.HTML.H(title, 1, {
+                                    "margin": "0px 0px -10px -14px",
+                                    "font-family": "Trebuchet MS",
+                                    "font-weight": "bold",
+                                    "font-variant": "small-caps",
+                                    "text-indent": "12px",
+                                    "font-size": "18px",
+                                    "line-height": "34px",
+                                    "text-align": "left"
+                                })]))}`, null, {noarchive: true});
                         } else {
-                            sendChat(randStr(), `/w gm ${D.HTML.Box([
-                                D.HTML.Header(title),
+                            sendChat(randStr(), `/w gm ${D.HTML.Box(D.HTML.Block([
+                                D.HTML.H(title, 1, {
+                                    "margin": "0px 0px -10px -14px",
+                                    "font-family": "Trebuchet MS",
+                                    "font-weight": "bold",
+                                    "font-variant": "small-caps",
+                                    "text-indent": "12px",
+                                    "font-size": "18px",
+                                    "line-height": "34px"
+                                }),
                                 D.HTML.Block(content)
-                            ])}`, null, {noarchive: true});
+                            ]))}`, null, {noarchive: true});
                         }
                     } else {
                         sendChat(randStr(4), `/w gm ${content}`, null, {noarchive: true});
@@ -989,7 +927,7 @@ const EunosTextControls = (() => {
             // #region *** *** FEATURE: ATTRIBUTE DISPLAYS *** ***
 
             // #region         Attribute Displays: Linking Text Objects
-            const getAttr = (charRef, attrRef) => {
+            /* const getAttr = (charRef, attrRef) => {
                 const charID = (D.GetChar(charRef) || (() => false)).id;
                 const charAttrs = findObjs({_type: "attribute", _characterid: charID});
                 let attrObj;
@@ -1012,8 +950,8 @@ const EunosTextControls = (() => {
 
 
                 const charAttrNames = charAttrs.map((attrObj) => attrObj.get("name"));
-            };
-            const linkTextToAttr = (textObj, charRef, attrRef, options = {}) => {
+            }; */
+            /* const linkTextToAttr = (textObj, charRef, attrRef, options = {}) => {
                 if (!U.GetR20Type(textObj)) { return false }
                 const charObj = U.GetChar(charRef);
                 if (!U.GetR20Type(charObj)) { return false }
@@ -1022,7 +960,7 @@ const EunosTextControls = (() => {
 
 
                 return true;
-            };
+            }; */
             // #endregion
 
 
@@ -1035,47 +973,40 @@ const EunosTextControls = (() => {
             };
             const displayIntroMessage = () => {
                 U.Alert(D.HTML.Box([
-                    D.HTML.Header("Eunomiac's Text Controls v.0.1"),
+                    D.HTML.Title(),
                     D.HTML.Block([
-                        D.HTML.ButtonWide("Latest Version", "https://github.com/Eunomiac/-EunosTextControls/releases", {background: "green", color: "white"}),
-                        D.HTML.Spacer("3px"),
-                        D.HTML.ButtonWide("Issue Tracking", "https://github.com/Eunomiac/-EunosTextControls/issues", {background: "rgba(255,0,0,0.8)", color: "white"}),
-                        D.HTML.Spacer("3px"),
-                        D.HTML.ButtonWide("Roll20 Forum Thread", "https://app.roll20.net/forum/permalink/10184021/", {background: "magenta", color: "white"}),
-                        D.HTML.Spacer("5px"),
-                        D.HTML.Paras(["This script pack&shy;age is in&shy;tended to be a com&shy;pre&shy;hen&shy;sive so&shy;lution to ma&shy;naging Roll20 Text Ob&shy;jects via API com&shy;mands or scrip&shy;ted auto&shy;mation. At the mo&shy;ment, how&shy;ever, only the 'Text Sha&shy;dows' fea&shy;ture is cur&shy;rently im&shy;ple&shy;ment&shy;ed."]),
+                        D.HTML.ButtonRound("Button_DownloadUpdate.png", "https://github.com/Eunomiac/-EunosTextControls/releases", {margin: "0 5px 20px 5px"}, "Download the most recent version."),
+                        D.HTML.ButtonRound("Button_ForumLink.png", "https://app.roll20.net/forum/permalink/10184021/", {margin: "0 5px 8px 5px"}, "Join the discussion in the Roll20 forum thread."),
+                        D.HTML.ButtonRound("Button_ReportBugs.png", "https://github.com/Eunomiac/-EunosTextControls/issues", {margin: "0 5px 20px 5px"}, "Report bugs, make suggestions and track issues.")
+                    ], {"text-align": "center", "margin": "-65px 0 -15px 0"}),
+                    D.HTML.Block(D.HTML.Paras([
+                        "<b>!ETC</b> is in&shy;ten&shy;ded to be a com&shy;pre&shy;hen&shy;sive sol&shy;ution to man&shy;ag&shy;ing Roll20 Text Ob&shy;jects.",
+                        "You can keep ap&shy;prised of new fea&shy;tures, fixes and fu&shy;ture plans as <b>!ETC</b> dev&shy;elop&shy;ment pro&shy;ceeds through its al&shy;pha per&shy;iod by visiting the links above."
+                    ])),
+                    D.HTML.Block([
                         D.HTML.H("Basic Chat Commands"),
+                        D.HTML.Spacer("5px"),
                         D.HTML.Paras([
-                            `${D.HTML.CodeSpan("!etc help")} — View this help message.`,
+                            `${D.HTML.CodeSpan("!etc")} — View this help message.`,
                             `${D.HTML.CodeSpan("!etc setup")} — Ac&shy;ti&shy;vate or de&shy;ac&shy;ti&shy;vate any of the fea&shy;tures in this script pack&shy;age.`,
-                            `${D.HTML.CodeSpan("!etc purge all")} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning it to its de&shy;fault in&shy;stall&shy;ation state. Sha&shy;dow ob&shy;jects will be purged, lea&shy;ving the ma&shy;ster ob&shy;jects un&shy;touched.`
+                            `${D.HTML.CodeSpan("!etc purge all")} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning <b>!ETC</b> to its de&shy;fault in&shy;stall&shy;ation state.`
                         ]),
-                        D.HTML.H("Feature: Text Shadows", 2),
-                        D.HTML.Img("https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/master/images/Header%20-%20Text%20Shadows%200.1.jpg"),
-                        D.HTML.Paras([
-                            "Add plea&shy;sant sha&shy;dows to sand&shy;box text ob&shy;jects in Roll20 — either <b>auto&shy;matically</b>, when&shy;ever new text is ad&shy;ded to the sand&shy;box, or <b>man&shy;ually</b>, by se&shy;lect&shy;ing text ob&shy;jects and re&shy;gister&shy;ing them for a sha&shy;dow via the com&shy;mands be&shy;low.",
-                            "Sha&shy;dow ob&shy;jects are in&shy;tended to be hands off: They're crea&shy;ted auto&shy;ma&shy;ti&shy;cally when re&shy;gist&shy;ered, will up&shy;date when&shy;ever their mas&shy;ter text ob&shy;ject's po&shy;sition and/or con&shy;tent chan&shy;ges, and will be re&shy;moved if the mas&shy;ter ob&shy;ject is ever de&shy;leted."
-                        ]),
-                        D.HTML.H("Chat Commands for Text Shadows", 4),
-                        D.HTML.Paras([
-                            `${D.HTML.CodeSpan("!etc shadow")} — <b>ADD</b> sha&shy;dow(s) to all se&shy;lec&shy;ted text ob&shy;jects.`,
-                            `${D.HTML.CodeSpan("!etc clear")} — <b>REMOVE</b> sha&shy;dow(s) from all se&shy;lec&shy;ted text ob&shy;jects <i>(you can se&shy;lect either mas&shy;ter ob&shy;jects and/or sha&shy;dow ob&shy;jects for this com&shy;mand)</i>`,
-                            `${D.HTML.CodeSpan("!etc clear all")} — <b>REMOVE <u>ALL</u></b> text sha&shy;dow ob&shy;jects <i>(this will not af&shy;fect the mas&shy;ter text ob&shy;jects, just re&shy;move the sha&shy;dows)</i>`,
-                            `${D.HTML.CodeSpan("!etc fix all")} — <b>FIX <u>ALL</u></b> text sha&shy;dow ob&shy;jects, cor&shy;rect&shy;ing for any er&shy;rors in po&shy;sit&shy;ion or con&shy;tent, as well as spot&shy;ting and pru&shy;ning any or&shy;phaned ob&shy;jects from the re&shy;gistry.`
-                        ]),
-                        D.HTML.H("Fine-Tuning Text Shadows", 4),
-                        D.HTML.Paras(`The code con&shy;tains fur&shy;ther con&shy;fig&shy;ura&shy;tion op&shy;tions in the <b>${D.HTML.CodeSpan("&#42;&#42;&#42; CON&shy;FIG&shy;URATION &#42;&#42;&#42;")}</b> sec&shy;tion. There, you can change the co&shy;lor of the sha&shy;dows, or fine-tune sha&shy;dow off&shy;sets down to the pix&shy;el for spe&shy;ci&shy;fic fonts and/&shy;or si&shy;zes.`),
-                        D.HTML.H("Spam Control"),
-                        D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the but&shy;ton be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc help")} com&shy;mand.)</i>`
-                        ]),
-                        D.HTML.ButtonWide("Don't Display This At Startup", "!etc toggle intro false")
-                    ])
+                        D.HTML.Paras("Learn more a&shy;bout each of <b>!ETC</b>'s fea&shy;tures by click&shy;ing the head&shy;ings be&shy;low:", {margin: "5px 0 -10px 0"}),
+                        D.HTML.H("Automatic Text Shadows", 1),
+                        D.HTML.H("Attribute Linking", 1, {margin: "5px 0px -10px -14px"}),
+                        D.HTML.H("Table & Chart Styling", 1, {margin: "5px 0px -10px -14px"}),
+                        D.HTML.H("Timers & Calendars", 1, {margin: "5px 0px -10px -14px"}),
+                        D.HTML.H("Miscellaneous", 1, {margin: "5px 0px -10px -14px"}),
+                        D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc")} com&shy;mand.)</i>`
+                        ])
+                    ]),
+                    D.HTML.Footer()
                 ]));
             };
             const displayToggles = () => {
                 U.Alert(D.HTML.Box([
                     D.HTML.Block([
-                        D.HTML.H("[ETC] Options", 2,  {margin: "-10px 0 6px -2%"}),
+                        D.HTML.H("[ETC] Options", 1),
                         D.HTML.Paras([
                             "Hover over the description on the left for more details about any given setting."
                         ]),
@@ -1141,7 +1072,7 @@ const EunosTextControls = (() => {
             const displayError = (errorTag) => {
                 const ERRORHTML = {
                     AddShadowToShadow: D.HTML.Box([
-                        D.HTML.Header("[ETC] ERROR: Shadow-On-Shadow", {"background-color": "rgb(255, 30, 30)", "background-image": "none", "font-weight": "bold"}),
+                        D.HTML.H("[ETC] ERROR: Shadow-On-Shadow", 1, {"font-family": "sans-serif"}),
                         D.HTML.Block([
                             D.HTML.H("Cannot Add a Shadow to a Shadow Object"),
                             D.HTML.Paras([
@@ -1150,7 +1081,7 @@ const EunosTextControls = (() => {
                         ])
                     ]),
                     ManualShadowRemoval: D.HTML.Box([
-                        D.HTML.Header("[ETC] ERROR: Shadow Deleted", {"background-color": "rgb(255, 30, 30)", "background-image": "none", "font-weight": "bold"}),
+                        D.HTML.H("[ETC] ERROR: Shadow Deleted", 1, {"font-family": "sans-serif"}),
                         D.HTML.Block([
                             D.HTML.H("Restoring ..."),
                             D.HTML.Paras([
