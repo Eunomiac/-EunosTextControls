@@ -4,7 +4,7 @@
 |*     ▌████████████████████████████████████████████████████████████▐     *|
 |*     ▌█████████████████████▓▒░ v0.13-alpha ░▒▓████████████████████▐     *|
 |*     ▌████████████████████▓▒░ June 25, 2021 ░▒▓███████████████████▐     *|
-|*     ▌███▓▒░ https://github.com/Eunomiac/-EunosTextControls ░▒▓███▐     *|
+|*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
 
@@ -21,7 +21,7 @@ const EUNO_ETC_CONFIG = {
     // #region ░▒▓█[Text Shadows]█▓▒░ Configuration: Text Shadows ░░░░░░
     TextShadows: {
 
-        COLOR: "rgba(0,0,0,0.8)", /** Change this value (hex, color names and rgb/a values are all valid) to change the
+        COLOR: "rgba(0,0,0,1)", /** Change this value (hex, color names and rgb/a values are all valid) to change the
                                     * color of the text shadows. */
 
         LAYER: "map", /** The layer on which to place the text shadow objects.
@@ -154,9 +154,9 @@ const EunosTextControls = (() => {
             // #endregion *** *** FRONT *** ***
 
             const IMGROOT = {
-                general: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/",
-                texture: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/textures/",
-                button: "https://raw.githubusercontent.com/Eunomiac/-EunosTextControls/ClassRefactor/images/buttons/"
+                general: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images/",
+                texture: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images/textures/",
+                button: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images/buttons/"
             };
             const GetImgURL = (imgFileName, imgType = "general") => `${IMGROOT[imgType]}${imgFileName}`;
             const COLORS = {
@@ -205,12 +205,12 @@ const EunosTextControls = (() => {
                     "font-weight": "normal",
                     "border": "none", "box-shadow": "none", "text-shadow": "none"
                 }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
-                Footer: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
+                Footer: (content, imgFileName = "BOTTOM.png", styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
                     "display": "block",
                     "height": "37px",
                     "width": "auto",
                     "margin": "6px 0 0 0",
-                    "background-image": `url('${GetImgURL("BOTTOM.png", "general")}')`,
+                    "background-image": `url('${GetImgURL(imgFileName, "general")}')`,
                     "background-size": "100%",
                     "background-repeat": "no-repeat",
                     "font-weight": "normal",
@@ -233,6 +233,40 @@ const EunosTextControls = (() => {
                     "padding": "0 7px 0 5px",
                     "background-size": "100% 100%"
                 }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
+                ButtonH: (content, command, level = 2, styles = {}, title = undefined) => HTML.H(HTML.A(content, command, Object.assign({}, styles, {
+                    "display": "block",
+                    "width": "100%",
+                    "height": "100%",
+                    "padding": "0",
+                    "margin": "0",
+                    "background": "none",
+                    "border-radius": "none",
+                    "border": "none",
+                    "text-align": "inherit",
+                    "font-family": "inherit",
+                    "font-size": "inherit",
+                    "line-height": "inherit",
+                    "font-weight": "inherit",
+                    "text-transform": "inherit",
+                    "color": "inherit"
+                })), level, styles, title),
+                ButtonFooter: (imgFileName, command, styles = {}, title = undefined) => HTML.Footer(HTML.A("", command, Object.assign({}, styles, {
+                    "display": "block",
+                    "width": "100%",
+                    "height": "100%",
+                    "padding": "0",
+                    "margin": "0",
+                    "background": "none",
+                    "border-radius": "none",
+                    "border": "none",
+                    "text-align": "inherit",
+                    "font-family": "inherit",
+                    "font-size": "inherit",
+                    "line-height": "inherit",
+                    "font-weight": "inherit",
+                    "text-transform": "inherit",
+                    "color": "inherit"
+                })), imgFileName, styles, title),
                 ButtonWide: (name, command, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
                     "display": "inline-block",
                     "width": "100%",
@@ -975,9 +1009,9 @@ const EunosTextControls = (() => {
                 U.Alert(D.HTML.Box([
                     D.HTML.Title(),
                     D.HTML.Block([
-                        D.HTML.ButtonRound("Button_DownloadUpdate.png", "https://github.com/Eunomiac/-EunosTextControls/releases", {margin: "0 5px 20px 5px"}, "Download the most recent version."),
+                        D.HTML.ButtonRound("Button_DownloadUpdate.png", "https://github.com/Eunomiac/EunosRoll20Scripts/releases", {margin: "0 5px 20px 5px"}, "Download the most recent version."),
                         D.HTML.ButtonRound("Button_ForumLink.png", "https://app.roll20.net/forum/permalink/10184021/", {margin: "0 5px 8px 5px"}, "Join the discussion in the Roll20 forum thread."),
-                        D.HTML.ButtonRound("Button_ReportBugs.png", "https://github.com/Eunomiac/-EunosTextControls/issues", {margin: "0 5px 20px 5px"}, "Report bugs, make suggestions and track issues.")
+                        D.HTML.ButtonRound("Button_ReportBugs.png", "https://github.com/Eunomiac/EunosRoll20Scripts/issues", {margin: "0 5px 20px 5px"}, "Report bugs, make suggestions and track issues.")
                     ], {"text-align": "center", "margin": "-65px 0 -15px 0"}),
                     D.HTML.Block(D.HTML.Paras([
                         "<b>!ETC</b> is in&shy;ten&shy;ded to be a com&shy;pre&shy;hen&shy;sive sol&shy;ution to man&shy;ag&shy;ing Roll20 Text Ob&shy;jects.",
@@ -992,15 +1026,16 @@ const EunosTextControls = (() => {
                             `${D.HTML.CodeSpan("!etc purge all")} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning <b>!ETC</b> to its de&shy;fault in&shy;stall&shy;ation state.`
                         ]),
                         D.HTML.Paras("Learn more a&shy;bout each of <b>!ETC</b>'s fea&shy;tures by click&shy;ing the head&shy;ings be&shy;low:", {margin: "5px 0 -10px 0"}),
-                        D.HTML.H("Automatic Text Shadows", 1),
-                        D.HTML.H("Attribute Linking", 1, {margin: "5px 0px -10px -14px"}),
-                        D.HTML.H("Table & Chart Styling", 1, {margin: "5px 0px -10px -14px"}),
-                        D.HTML.H("Timers & Calendars", 1, {margin: "5px 0px -10px -14px"}),
-                        D.HTML.H("Miscellaneous", 1, {margin: "5px 0px -10px -14px"}),
+                        D.HTML.ButtonH("Drop Shadows", "!etc help shadows", 1, {}, "Control drop shadow behavior."),
+                        D.HTML.ButtonH("Empty Text Pruning", "!etc help prune", 1, {margin: "5px 0px -10px -14px"}, "Configure pruning of empty text objects."),
+                        D.HTML.H("Attribute Linking", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
+                        D.HTML.H("Table & Chart Styling", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
+                        D.HTML.H("Timers & Calendars", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
+                        D.HTML.H("Miscellaneous", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
                         D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc")} com&shy;mand.)</i>`
                         ])
                     ]),
-                    D.HTML.Footer()
+                    D.HTML.Footer("BOTTOMIntroMessage.png")
                 ]));
             };
             const displayToggles = () => {
