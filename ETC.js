@@ -706,7 +706,7 @@ const EunosTextControls = (() => {
                 log(`[ETC] ${SCRIPTNAME} Ready!`);
 
                 // Display intro message if toggled:
-                if (STA.TE.IsShowingIntro) { displayIntroMessage() }
+                if (STA.TE.IsShowingIntro) { displayHelp("intro") }
             };
             // #endregion
 
@@ -734,6 +734,7 @@ const EunosTextControls = (() => {
                         },
                         fix: () => { if (args.includes("all")) { fixTextShadows() } },
                         setup: () => { displayToggles() },
+                        help: () => { displayHelp(args.shift()) },
                         purge: () => ({
                             state: () => Preinitialize(true),
                             reg: () => STA.TE.REGISTRY = {}
@@ -745,7 +746,7 @@ const EunosTextControls = (() => {
                             data: () => { U.Show((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) }
                         }[(call = args.shift() || "").toLowerCase()] || (() => false))()
                     }[(call = args.shift() || "").toLowerCase()] || (() => false))() === false) {
-                        displayIntroMessage();
+                        displayHelp("intro")();
                     };
                 }
             };
@@ -1005,38 +1006,72 @@ const EunosTextControls = (() => {
                 STA.TE.IsShowingIntro = isActive === true;
                 displayToggles();
             };
-            const displayIntroMessage = () => {
-                U.Alert(D.HTML.Box([
-                    D.HTML.Title(),
-                    D.HTML.Block([
-                        D.HTML.ButtonRound("Button_DownloadUpdate.png", "https://github.com/Eunomiac/EunosRoll20Scripts/releases", {margin: "0 5px 20px 5px"}, "Download the most recent version."),
-                        D.HTML.ButtonRound("Button_ForumLink.png", "https://app.roll20.net/forum/permalink/10184021/", {margin: "0 5px 8px 5px"}, "Join the discussion in the Roll20 forum thread."),
-                        D.HTML.ButtonRound("Button_ReportBugs.png", "https://github.com/Eunomiac/EunosRoll20Scripts/issues", {margin: "0 5px 20px 5px"}, "Report bugs, make suggestions and track issues.")
-                    ], {"text-align": "center", "margin": "-65px 0 -15px 0"}),
-                    D.HTML.Block(D.HTML.Paras([
-                        "<b>!ETC</b> is in&shy;ten&shy;ded to be a com&shy;pre&shy;hen&shy;sive sol&shy;ution to man&shy;ag&shy;ing Roll20 Text Ob&shy;jects.",
-                        "You can keep ap&shy;prised of new fea&shy;tures, fixes and fu&shy;ture plans as <b>!ETC</b> dev&shy;elop&shy;ment pro&shy;ceeds through its al&shy;pha per&shy;iod by visiting the links above."
-                    ])),
-                    D.HTML.Block([
-                        D.HTML.H("Basic Chat Commands"),
-                        D.HTML.Spacer("5px"),
-                        D.HTML.Paras([
-                            `${D.HTML.CodeSpan("!etc")} — View this help message.`,
-                            `${D.HTML.CodeSpan("!etc setup")} — Ac&shy;ti&shy;vate or de&shy;ac&shy;ti&shy;vate any of the fea&shy;tures in this script pack&shy;age.`,
-                            `${D.HTML.CodeSpan("!etc purge all")} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning <b>!ETC</b> to its de&shy;fault in&shy;stall&shy;ation state.`
+            const displayHelp = (msgRef = "intro") => {
+                U.Alert({
+                    intro: D.HTML.Box([
+                        D.HTML.Title(),
+                        D.HTML.Block([
+                            D.HTML.ButtonRound("Button_DownloadUpdate.png", "https://github.com/Eunomiac/EunosRoll20Scripts/releases", {margin: "0 5px 20px 5px"}, "Download the most recent version."),
+                            D.HTML.ButtonRound("Button_ForumLink.png", "https://app.roll20.net/forum/permalink/10184021/", {margin: "0 5px 8px 5px"}, "Join the discussion in the Roll20 forum thread."),
+                            D.HTML.ButtonRound("Button_ReportBugs.png", "https://github.com/Eunomiac/EunosRoll20Scripts/issues", {margin: "0 5px 20px 5px"}, "Report bugs, make suggestions and track issues.")
+                        ], {"text-align": "center", "margin": "-65px 0 -15px 0"}),
+                        D.HTML.Block(D.HTML.Paras([
+                            "<b>!ETC</b> is in&shy;ten&shy;ded to be a com&shy;pre&shy;hen&shy;sive sol&shy;ution to man&shy;ag&shy;ing Roll20 Text Ob&shy;jects.",
+                            "You can keep ap&shy;prised of new fea&shy;tures, fixes and fu&shy;ture plans as <b>!ETC</b> dev&shy;elop&shy;ment pro&shy;ceeds through its al&shy;pha per&shy;iod by visiting the links above."
+                        ])),
+                        D.HTML.Block([
+                            D.HTML.H("Basic Chat Commands"),
+                            D.HTML.Spacer("5px"),
+                            D.HTML.Paras([
+                                `${D.HTML.CodeSpan("!etc")} — View this help message.`,
+                                `${D.HTML.CodeSpan("!etc setup")} — Ac&shy;ti&shy;vate or de&shy;ac&shy;ti&shy;vate any of the fea&shy;tures in this script pack&shy;age.`,
+                                `${D.HTML.CodeSpan("!etc purge all")} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning <b>!ETC</b> to its de&shy;fault in&shy;stall&shy;ation state.`
+                            ]),
+                            D.HTML.Paras("Learn more a&shy;bout each of <b>!ETC</b>'s fea&shy;tures by click&shy;ing the head&shy;ings be&shy;low:", {margin: "5px 0 -10px 0"}),
+                            D.HTML.ButtonH("Text Drop Shadows", "!etc help shadows", 1, {}, "Control drop shadow behavior."),
+                            D.HTML.ButtonH("Empty Text Pruning", "!etc help prune", 1, {margin: "5px 0px -10px -14px"}, "Configure pruning of empty text objects."),
+                            D.HTML.H("Attribute Linking", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
+                            D.HTML.H("Table & Chart Styling", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
+                            D.HTML.H("Timers & Calendars", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
+                            D.HTML.H("Miscellaneous", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
+                            D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc")} com&shy;mand.)</i>`
+                            ])
                         ]),
-                        D.HTML.Paras("Learn more a&shy;bout each of <b>!ETC</b>'s fea&shy;tures by click&shy;ing the head&shy;ings be&shy;low:", {margin: "5px 0 -10px 0"}),
-                        D.HTML.ButtonH("Drop Shadows", "!etc help shadows", 1, {}, "Control drop shadow behavior."),
-                        D.HTML.ButtonH("Empty Text Pruning", "!etc help prune", 1, {margin: "5px 0px -10px -14px"}, "Configure pruning of empty text objects."),
-                        D.HTML.H("Attribute Linking", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
-                        D.HTML.H("Table & Chart Styling", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
-                        D.HTML.H("Timers & Calendars", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
-                        D.HTML.H("Miscellaneous", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
-                        D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc")} com&shy;mand.)</i>`
-                        ])
+                        D.HTML.ButtonFooter("BOTTOMIntroMessage.png", "!etc toggle intro")
                     ]),
-                    D.HTML.ButtonFooter("BOTTOMIntroMessage.png", "!etc toggle intro")
-                ]));
+                    shadow: D.HTML.Box([
+                        D.HTML.Block([
+                            D.HTML.H("Text Drop Shadows", 1, {margin: "0px 0px -10px -14px"}),
+                            D.HTML.Spacer("5px"),
+                            D.HTML.H("Automatic Control", 2),
+                            D.HTML.Paras([
+                                `${D.HTML.CodeSpan("!etc toggle autoshadow [true/false]")} — Toggle automatic text shadows on or off.`
+                            ]),
+                            D.HTML.H("Manual Control", 2),
+                            D.HTML.Paras([
+                                `${D.HTML.CodeSpan("!etc shadow")} — <b>ADD</b> shadows to all selected text objects.`,
+                                `${D.HTML.CodeSpan("!etc clear")} — <b>REMOVE</b> shadows from all selected text objects.`,
+                                `${D.HTML.CodeSpan("!etc clear all")} — <b>REMOVE <u>ALL</u></b> shadows from <b><u>ALL</u></b> text objects.`
+                            ])
+                        ]),
+                        D.HTML.ButtonFooter("BOTTOMGoBack.png", "!etc")
+                    ]),
+                    prune: D.HTML.Box([
+                        D.HTML.Block([
+                            D.HTML.H("Empty Text Pruning", 1, {margin: "0px 0px -10px -14px"}),
+                            D.HTML.Spacer("5px"),
+                            D.HTML.H("Automatic Control", 2),
+                            D.HTML.Paras([
+                                `${D.HTML.CodeSpan("!etc toggle autoprune [true/false]")} — Toggle automatic pruning of empty text objects on or off.`
+                            ]),
+                            D.HTML.H("Manual Control", 2),
+                            D.HTML.Paras([
+                                `${D.HTML.CodeSpan("!etc prune all")} — <b>REMOVE <u>ALL</u></b> empty text objects from the sandbox.`
+                            ])
+                        ]),
+                        D.HTML.ButtonFooter("BOTTOMGoBack.png", "!etc")
+                    ])
+                }[msgRef]);
             };
             const displayToggles = () => {
                 U.Alert(D.HTML.Box([
