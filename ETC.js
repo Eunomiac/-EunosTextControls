@@ -1035,7 +1035,7 @@ const EunosTextControls = (() => {
                         D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc")} com&shy;mand.)</i>`
                         ])
                     ]),
-                    D.HTML.Footer("BOTTOMIntroMessage.png")
+                    D.HTML.ButtonFooter("BOTTOMIntroMessage.png", "!etc toggle intro")
                 ]));
             };
             const displayToggles = () => {
