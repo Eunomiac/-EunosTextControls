@@ -30,7 +30,7 @@ const EunosTextControls = (() => {
     // #region      Front: Initialization
     const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
 
-        state[ROOTNAME] = state[ROOTNAME] || {};
+        /* state[ROOTNAME] = state[ROOTNAME] || {};
 
         // Initialize state storage with DEFAULTSTATE where needed.
         if (isResettingState) { delete RO.OT[SCRIPTNAME] }
@@ -53,7 +53,7 @@ const EunosTextControls = (() => {
         if (STA.TE.IsShowingIntro) { displayIntroMessage() }
 
         // Display status of automatic text shadowing
-        displayAutoShadowStatus();
+        displayAutoShadowStatus(); */
 
         // Initialize Text class from state data
         Text.Initialize();
@@ -61,32 +61,32 @@ const EunosTextControls = (() => {
     // #endregion
 
     // #region      Front: Event Handlers
-    const handleMessage = (msg) => {
-        if (msg.content.startsWith("!ets") && playerIsGM(msg.playerid)) {
-            let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
-                .map((x) => x.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1"))
-                .filter((x) => Boolean(x));
-            ({
-                help: displayIntroMessage,
-                shadow: () => Text.AddShadows(getSelTextObjs(msg)),
-                toggle: () => toggleAutoShadow(args.includes("true")),
-                clear: () => {
-                    if (args.includes("all")) {
-                        Object.entries(RE.G).filter(([id, textData]) => "masterID" in textData).forEach(([id]) => unregTextShadow(id));
-                        flagGM("Shadow objects removed.<br>Registered shadows cleared.");
-                        displayAutoShadowToggleMenu();
-                    } else {
-                        getSelTextObjs(msg).forEach((obj) => unregTextShadow(obj.id));
-                    }
-                },
-                fix: () => { if (args.includes("all")) { Text.Fix() } },
-                cancelintro: () => { STA.TE.IsShowingIntro = false; flagGM("Disabling Script Introduction.") },
-                teststate: () => { showGM(state) },
-                testdata: () => { showGM((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) },
-                purge: () => { if (args.includes("all")) { Initialize(false, true); showGM(RO.OT) } }
-            }[(call = args.shift() || "").toLowerCase()] || (() => false))();
-        }
-    };
+    // const handleMessage = (msg) => {
+    //     if (msg.content.startsWith("!ets") && playerIsGM(msg.playerid)) {
+    //         let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
+    //             .map((x) => x.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1"))
+    //             .filter((x) => Boolean(x));
+    //         ({
+    //             help: displayIntroMessage,
+    //             shadow: () => Text.AddShadows(getSelTextObjs(msg)),
+    //             toggle: () => toggleAutoShadow(args.includes("true")),
+    //             clear: () => {
+    //                 if (args.includes("all")) {
+    //                     Object.entries(RE.G).filter(([id, textData]) => "masterID" in textData).forEach(([id]) => unregTextShadow(id));
+    //                     flagGM("Shadow objects removed.<br>Registered shadows cleared.");
+    //                     displayAutoShadowToggleMenu();
+    //                 } else {
+    //                     getSelTextObjs(msg).forEach((obj) => unregTextShadow(obj.id));
+    //                 }
+    //             },
+    //             fix: () => { if (args.includes("all")) { Text.Fix() } },
+    //             cancelintro: () => { STA.TE.IsShowingIntro = false; flagGM("Disabling Script Introduction.") },
+    //             teststate: () => { showGM(state) },
+    //             testdata: () => { showGM((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) },
+    //             purge: () => { if (args.includes("all")) { Initialize(false, true); showGM(RO.OT) } }
+    //         }[(call = args.shift() || "").toLowerCase()] || (() => false))();
+    //     }
+    // };
     const handleTextChange = (textObj) => {
         const Ҩtext = Text.Get(textObj.id);
         if (Ҩtext && !Ҩtext.isThrottlingEvents) {
