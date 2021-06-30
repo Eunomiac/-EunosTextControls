@@ -10,7 +10,7 @@
 
 // #region █████▓▒░ CONFIGURATION: Advanced Settings & Options ░▒▓█████
 
-const EUNO_CONFIG = {
+const EUNO_ETC_CONFIG = {
     // #region ░▒▓█[Global]█▓▒░ Configuration: Global Settings ░░░░░░
 
     INACTIVELAYER: "walls", /** The layer to send text objects to when they are toggled off. Change to 'gmlayer' if you
@@ -103,7 +103,7 @@ const EUNO = { // Shorthand getters for major script components
     get S() { return EunosTextControls.SandboxControl },
     get C() { return EunosTextControls.ChatboxControl },
     get H() { return EunosTextControls.HandoutControl },
-    get CFG() { return EUNO_CONFIG }
+    get CFG() { return EUNO_ETC_CONFIG }
 };
 const Update_EUNO_Namespace = () => { // Any processes necessary to update to latest version.
     return true;
@@ -539,11 +539,11 @@ const EunosTextControls = (() => {
                             ]))}`, null, {noarchive: true});
                         }
                     } else {
-                        sendChat(randStr(4), `/w gm ${content}`, null, {noarchive: true});
+                        sendChat(randStr(), `/w gm ${content}`, null, {noarchive: true});
                     }
                 }
             };
-            const Show = (obj, title = "Showing ...") => Alert(D.HTML.CodeBlock(JC(obj)), {}, title); // Show properties of stringified object to GM.
+            const Show = (obj, title = "Showing ...") => Alert(JC(obj), title); // Show properties of stringified object to GM.
             const Flag = (msg) => Alert(null, `[ETC] ${msg}`.replace(/\[ETC\]\s*\[ETC\]/gu, "[ETC]")); // Simple one-line chat flag sent to the GM.
             // #endregion *** *** Basic GM Alerts *** ***
 
