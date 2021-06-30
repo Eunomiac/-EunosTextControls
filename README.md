@@ -6,8 +6,9 @@ I've written a ton of scripts in my neverending quest to transform the Roll20 sa
 Roll20's native support for Text Objects (i.e. text you create directly in the sandbox) is limited, especially if you'd like to make your sandbox into an infographic or HUD. Enter **!ETC** to provide a host of functions dedicated to streamlining, simplifying and automating your ability to use Text Objects for all manner of applications!
 
 ## Installation & Setup
-* **Add EunoLIB.js** — This library of functions and data is used by all of my scripts, and should be installed *before* any of my other releases in the "API Scripts" section of your game management page. (The most recent stable versions of all of my scripts can be found under Releases.)
-* **Add ETC.js** — Next, install ETC.js somewhere after EunoLIB, then restart your game's sandbox.  Instructions are provided in chat on script startup, and can be reviewed at any time via the **!etc** chat command.
+* **Install ETC.js** — Install the contents of **ETC.js** as a new script in the "API Scripts" section of your game management page.
+
+... and you're done! Instructions are printed to chat on script startup, and can be reviewed at any time by typing "**!etc**".
 
 ## !ETC Feature: Text Drop Shadows
 Add drop shadows to text objects, either automatically (whenever one is created) or manually via chat command.
@@ -27,7 +28,10 @@ Additional features in development include:
 
 # Beyond !ETC
 I am in the process of planning out a selection of other script packages:
-* **!EGC: Eunomiac's Grab Controls** — Who said you can't have buttons in the Roll20 Sandbox? **!EGC** circumvents this limitation by creating a new type of interactive control: the "Grab Pad".  You simply point **!EGC** at a sandbox object (graphic, text, path, anything), and it will add an invisible graphic object on top that can be controlled by whomever you specify.  Whenever that invisible pad is moved, it triggers a chat command or custom function (your choice) then immediately snaps back to its home position, ready to be used again.  In short, Grab Pads are button that you wiggle instead of push, that you link to whichever functionality you wish.
-* **!EHC: Eunomiac's HTML Controls** — Create gorgeous handouts and chat messages with (almost) full HTML and CSS support.
+## !EGC: Eunomiac's Grab Controls
+Who said you can't have buttons in the Roll20 Sandbox? **!EGC** circumvents this limitation by creating a new type of interactive control: the "Grab Pad".  You simply point **!EGC** at a sandbox object (graphic, text, path, anything), and it will add an invisible graphic object on top that can be controlled by whomever you specify.  Whenever that invisible pad is moved, it triggers a chat command or custom function (your choice) then immediately snaps back to its home position, ready to be used again.  In short, Grab Pads are like buttons that you wiggle instead of push.
+
+## !EHC: Eunomiac's HTML Controls
+Dispense with the limitations of the Roll20 content editors, and instead create gorgeous handouts and chat messages with (almost) full HTML and CSS support. Buttons capable of submitting API chat commands can be included in both chat messages and handouts, the latter being an excellent way to create a master GM "control panel" for your game.
 
 ... and more, in even earlier stages of development! 
