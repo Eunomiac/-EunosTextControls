@@ -233,6 +233,23 @@ const EunosTextControls = (() => {
                     "padding": "0 7px 0 5px",
                     "background-size": "100% 100%"
                 }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
+                ButtonCodeSpan: (content, command, styles = {}, title = undefined) => HTML.CodeSpan(HTML.A(content, command || content, Object.assign({}, styles, {
+                    display: "inline-block",
+                    width: "auto",
+                    height: "auto",
+                    "padding": "0",
+                    "margin": "0",
+                    "background": "none",
+                    "border-radius": "none",
+                    "border": "none",
+                    "text-align": "inherit",
+                    "font-family": "inherit",
+                    "font-size": "inherit",
+                    "line-height": "inherit",
+                    "font-weight": "inherit",
+                    "text-transform": "inherit",
+                    "color": "inherit"
+                })), styles, title),
                 ButtonH: (content, command, level = 2, styles = {}, title = undefined) => HTML.H(HTML.A(content, command, Object.assign({}, styles, {
                     "display": "block",
                     "width": "100%",
@@ -544,7 +561,7 @@ const EunosTextControls = (() => {
             // #region *** *** Basic GM Alerts & Flags *** ***
             const Alert = (content, title) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
                 const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
-                if (content || title) {
+                if (content !== false && (content || title)) {
                     if (title) {
                         if (content === null) {
                             sendChat(randStr(), `/w gm ${D.HTML.Box(D.HTML.Block([
@@ -706,7 +723,7 @@ const EunosTextControls = (() => {
                 log(`[ETC] ${SCRIPTNAME} Ready!`);
 
                 // Display intro message if toggled:
-                if (STA.TE.IsShowingIntro) { displayHelp("intro") }
+                if (STA.TE.IsShowingIntro) { displayHelp("intro", {isAutoDisplaying: true}) }
             };
             // #endregion
 
@@ -733,6 +750,7 @@ const EunosTextControls = (() => {
                             }
                         },
                         fix: () => { if (args.includes("all")) { fixTextShadows() } },
+                        prune: () => { pruneText(args.includes("all") ? "all" : U.GetSelObjs(msg, "text")) },
                         setup: () => { displayToggles() },
                         help: () => { displayHelp(args.shift()) },
                         purge: () => ({
@@ -746,7 +764,7 @@ const EunosTextControls = (() => {
                             data: () => { U.Show((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) }
                         }[(call = args.shift() || "").toLowerCase()] || (() => false))()
                     }[(call = args.shift() || "").toLowerCase()] || (() => false))() === false) {
-                        displayHelp("intro")();
+                        displayHelp("intro");
                     };
                 }
             };
@@ -763,10 +781,10 @@ const EunosTextControls = (() => {
             };
             const handleTextAdd = (textObj) => {
                 setTimeout(() => { // The delay is necessary to ensure the new object fully updates.
-                    if (textObj.get("text") === "" && STA.TE.IsAutoPruning) {
-                        textObj.remove();
-                    } else if (STA.TE.IsAutoShadowing && !isShadowObj(textObj)) {
-                        makeTextShadow(textObj);
+                    if (!(STA.TE.IsAutoPruning && pruneText(textObj))) {
+                        if (STA.TE.IsAutoShadowing && !isShadowObj(textObj)) {
+                            makeTextShadow(textObj);
+                        }
                     }
                 }, 500);
             };
@@ -795,13 +813,6 @@ const EunosTextControls = (() => {
                 ...(fontFamily in CFG.TextShadows.OFFSETS ? CFG.TextShadows.OFFSETS[fontFamily] : CFG.TextShadows.OFFSETS.generic)
             }[fontSize]);
             // #endregion *** *** UTILITY *** ***
-
-            // #region *** *** CORE TEXT CONTROL *** ***
-            const toggleAutoPrune = (isActive) => {
-                STA.TE.IsAutoPruning = isActive === true;
-                displayToggles();
-            };
-            // #endregion *** *** CORE TEXT CONTROL *** ***
 
             // #region *** *** FEATURE: TEXT SHADOWS *** ***
             const removalQueue = [];
@@ -959,6 +970,22 @@ const EunosTextControls = (() => {
 
             // #endregion *** *** TEXT SHADOWS *** ***
 
+            // #region *** *** FEATURE: EMPTY TEXT PRUNING *** ***
+            const toggleAutoPrune = (isActive) => {
+                STA.TE.IsAutoPruning = isActive === true;
+                displayToggles();
+            };
+            const pruneText = (textRef) => {
+                if (textRef === "all") {
+                    textRef = findObjs({_type: "text"});
+                } else {
+                    textRef = [textRef].flat();
+                }
+                U.Show(textRef, "Text Refs");
+                textRef.forEach((textObj) => { if (!textObj.get("text")) { textObj.remove() } });
+            };
+            // #endregion *** *** EMPTY TEXT PRUNING *** ***
+
             // #region *** *** FEATURE: ATTRIBUTE DISPLAYS *** ***
 
             // #region         Attribute Displays: Linking Text Objects
@@ -1006,8 +1033,8 @@ const EunosTextControls = (() => {
                 STA.TE.IsShowingIntro = isActive === true;
                 displayToggles();
             };
-            const displayHelp = (msgRef = "intro") => {
-                U.Alert({
+            const displayHelp = (msgRef = "intro", options = {}) => {
+                U.Alert(({
                     intro: D.HTML.Box([
                         D.HTML.Title(),
                         D.HTML.Block([
@@ -1023,21 +1050,20 @@ const EunosTextControls = (() => {
                             D.HTML.H("Basic Chat Commands"),
                             D.HTML.Spacer("5px"),
                             D.HTML.Paras([
-                                `${D.HTML.CodeSpan("!etc")} — View this help message.`,
-                                `${D.HTML.CodeSpan("!etc setup")} — Ac&shy;ti&shy;vate or de&shy;ac&shy;ti&shy;vate any of the fea&shy;tures in this script pack&shy;age.`,
-                                `${D.HTML.CodeSpan("!etc purge all")} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning <b>!ETC</b> to its de&shy;fault in&shy;stall&shy;ation state.`
+                                `${D.HTML.ButtonCodeSpan("!etc")} — View this help message.`,
+                                `${D.HTML.ButtonCodeSpan("!etc setup")} — Ac&shy;ti&shy;vate or de&shy;ac&shy;ti&shy;vate any of the fea&shy;tures in this script pack&shy;age.`,
+                                `${D.HTML.ButtonCodeSpan("!etc purge all")} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning <b>!ETC</b> to its de&shy;fault in&shy;stall&shy;ation state.`
                             ]),
                             D.HTML.Paras("Learn more a&shy;bout each of <b>!ETC</b>'s fea&shy;tures by click&shy;ing the head&shy;ings be&shy;low:", {margin: "5px 0 -10px 0"}),
-                            D.HTML.ButtonH("Text Drop Shadows", "!etc help shadows", 1, {}, "Control drop shadow behavior."),
+                            D.HTML.ButtonH("Text Drop Shadows", "!etc help shadow", 1, {}, "Control drop shadow behavior."),
                             D.HTML.ButtonH("Empty Text Pruning", "!etc help prune", 1, {margin: "5px 0px -10px -14px"}, "Configure pruning of empty text objects."),
                             D.HTML.H("Attribute Linking", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
                             D.HTML.H("Table & Chart Styling", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
                             D.HTML.H("Timers & Calendars", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
                             D.HTML.H("Miscellaneous", 1, {margin: "5px 0px -10px -14px", opacity: "0.5"}),
-                            D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc")} com&shy;mand.)</i>`
-                            ])
+                            options.isAutoDisplaying ? D.HTML.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${D.HTML.CodeSpan("!etc")} com&shy;mand.)</i>`]) : ""
                         ]),
-                        D.HTML.ButtonFooter("BOTTOMIntroMessage.png", "!etc toggle intro")
+                        options.isAutoDisplaying ? D.HTML.ButtonFooter("BOTTOMIntroMessage.png", "!etc toggle intro") : D.HTML.Footer()
                     ]),
                     shadow: D.HTML.Box([
                         D.HTML.Block([
@@ -1045,13 +1071,15 @@ const EunosTextControls = (() => {
                             D.HTML.Spacer("5px"),
                             D.HTML.H("Automatic Control", 2),
                             D.HTML.Paras([
-                                `${D.HTML.CodeSpan("!etc toggle autoshadow [true/false]")} — Toggle automatic text shadows on or off.`
+                                `${D.HTML.ButtonCodeSpan("!etc toggle autoshadow true")} — Tog&shy;gle gen&shy;era&shy;tion of auto&shy;ma&shy;tic text sha&shy;dows <b>ON</b>.`,
+                                `${D.HTML.ButtonCodeSpan("!etc toggle autoshadow false")} — Tog&shy;gle gen&shy;era&shy;tion of auto&shy;ma&shy;tic text sha&shy;dows <b>OFF</b>.`
                             ]),
                             D.HTML.H("Manual Control", 2),
                             D.HTML.Paras([
-                                `${D.HTML.CodeSpan("!etc shadow")} — <b>ADD</b> shadows to all selected text objects.`,
-                                `${D.HTML.CodeSpan("!etc clear")} — <b>REMOVE</b> shadows from all selected text objects.`,
-                                `${D.HTML.CodeSpan("!etc clear all")} — <b>REMOVE <u>ALL</u></b> shadows from <b><u>ALL</u></b> text objects.`
+                                `${D.HTML.ButtonCodeSpan("!etc shadow")} — <b>ADD</b> sha&shy;dows to all se&shy;lec&shy;ted text ob&shy;jects.`,
+                                `${D.HTML.ButtonCodeSpan("!etc clear")} — <b>RE&shy;MOVE</b> sha&shy;dows from all se&shy;lec&shy;ted text ob&shy;jects.`,
+                                `${D.HTML.ButtonCodeSpan("!etc clear all")} — <b>RE&shy;MOVE <u>ALL</u></b> sha&shy;dows from <b><u>ALL</u></b> text ob&shy;jects.`,
+                                `${D.HTML.ButtonCodeSpan("!etc fix all")} — <b>FIX <u>ALL</u></b> text sha&shy;dow ob&shy;jects, cor&shy;rect&shy;ing for any er&shy;rors in po&shy;si&shy;tion or con&shy;tent, and pru&shy;ning any or&shy;phaned sha&shy;dows from the sand&shy;box.`
                             ])
                         ]),
                         D.HTML.ButtonFooter("BOTTOMGoBack.png", "!etc")
@@ -1062,16 +1090,17 @@ const EunosTextControls = (() => {
                             D.HTML.Spacer("5px"),
                             D.HTML.H("Automatic Control", 2),
                             D.HTML.Paras([
-                                `${D.HTML.CodeSpan("!etc toggle autoprune [true/false]")} — Toggle automatic pruning of empty text objects on or off.`
+                                `${D.HTML.ButtonCodeSpan("!etc toggle autoprune true")} — Tog&shy;gle auto&shy;ma&shy;tic pru&shy;ning of emp&shy;ty text ob&shy;jects <b>ON</b>.`,
+                                `${D.HTML.ButtonCodeSpan("!etc toggle autoprune false")} — Tog&shy;gle auto&shy;ma&shy;tic pru&shy;ning of emp&shy;ty text ob&shy;jects <b>OFF</b>.`
                             ]),
                             D.HTML.H("Manual Control", 2),
                             D.HTML.Paras([
-                                `${D.HTML.CodeSpan("!etc prune all")} — <b>REMOVE <u>ALL</u></b> empty text objects from the sandbox.`
+                                `${D.HTML.ButtonCodeSpan("!etc prune all")} — <b>RE&shy;MOVE <u>ALL</u></b> emp&shy;ty text ob&shy;jects from the sand&shy;box.`
                             ])
                         ]),
                         D.HTML.ButtonFooter("BOTTOMGoBack.png", "!etc")
                     ])
-                }[msgRef]);
+                }[msgRef]) || (() => false));
             };
             const displayToggles = () => {
                 U.Alert(D.HTML.Box([
