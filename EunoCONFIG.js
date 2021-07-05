@@ -1,4 +1,4 @@
-
+void MarkStart("EunoCONFIG");
 /******▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██▓▒░ EunoCONFIG: Customization of EunosRoll20Scripts ░▒▓███▐     *|
 |*     ▌████████████████████████████████████████████████████████████▐     *|
@@ -7,7 +7,7 @@
 |*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
-const Euno_CONFIG = {
+const EunoCONFIG = {
     GLOBAL: { // ████[GLOBAL]██▓▒░ Settings Applicable to All Scripts ░▒▓████████
 
         INACTIVELAYER: "walls" /** The layer to send sandbox objects to when they are toggled off.
@@ -93,3 +93,4 @@ const Euno_CONFIG = {
         }
     }
 };
+void MarkStop("EunoCONFIG");

@@ -146,8 +146,7 @@ const EunosTextControls = (() => {
                 }
 
                 // Report Readiness.
-                U.Flag(`${SCRIPTNAME} Ready!`);
-                log(`[ETC] ${SCRIPTNAME} Ready!`);
+                U.Flag(`${SCRIPTNAME} Ready!`); log(`[ETC] ${SCRIPTNAME} Ready!`);
             };
             // #endregion
 
@@ -165,28 +164,27 @@ const EunosTextControls = (() => {
 
             const CHATWIDTH = 283; // The minimum width of the chat panel, in pixels. Be sure to subtract twice any border widths.
 
-            const UPSHIFT = -29;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
+            const UPSHIFT = -26;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
             const LEFTSHIFT = -45; // shifts up and to the left to cover the standard chat output with the custom styles below.
-            const BOTTOMSHIFT = -4;
+            const BOTTOMSHIFT = -7;
             const HTML = {
                 Box: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
                     "display": "block",
-                    "width": "auto", "min-width": `${CHATWIDTH}px`,
-                    "height": "auto", "min-height": "39px",
+                    "width": `${CHATWIDTH}px`, "min-width": `${CHATWIDTH}px`,
+                    "height": "auto", "min-height": "33px",
                     "margin": `${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px`,
-                    "padding": "0",
+                    "padding": "2px 0",
                     "color": COLORS.palegold,
                     "text-align": "center",
                     "position": "relative",
                     "text-shadow": "none", "box-shadow": "none", "border": "none",
                     "background-image": `url('${GetImgURL("BG.jpg", "general")}')`,
                     "background-size": "100%",
-                    "overflow": "hidden",
-                    "outline": "2px solid black"
+                    "overflow": "hidden"
                 }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
                 Block: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
                     "width": `${CHATWIDTH - 24}px`,
-                    "margin": "2px 0 0 0",
+                    "margin": "0",
                     "padding": "0 12px",
                     "text-align": "left",
                     "background": "none",

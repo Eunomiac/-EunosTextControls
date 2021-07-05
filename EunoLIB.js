@@ -1,4 +1,5 @@
-
+void MarkStart("EunoLIB");
+log("Starting!");
 /******▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██▓▒░ EunoLIB: Common Functions for EunosRoll20Scripts ░▒▓██▐     *|
 |*     ▌████████████████████████████████████████████████████████████▐     *|
@@ -7,391 +8,187 @@
 |*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
-// #region █████▓▒░ Top-Level Namespacing & Initialization ░▒▓█████
-const EUNOSCRIPTS = {
-    get ROOTNAME() { return "Euno" }, // Namespace under global state variable
+// #region █████▓▒░ TOP: Root-Level Namespacing, Initialization, On "Ready" Listener ░▒▓█████
+const EunoCORE = {
+    ROOTNAME: "Euno", // Namespace under global state variables
+
+    _scripts: {}, // Installed scripts will register themselves here.
+    regSCRIPT: (name, script) => { EunoCORE._scripts[name] = script },
+    get SCRIPTS() { return EunoCORE._scripts },
+
     get ROOT() { // Returns state namespace
-        state[this.ROOTNAME] = state[this.ROOTNAME] || {};
-        return state[this.ROOTNAME];
+        state[EunoCORE.ROOTNAME] = state[EunoCORE.ROOTNAME] || {};
+        return state[EunoCORE.ROOTNAME];
     },
     getSTATE: (scriptName) => { // Returns local script state namespace
-        this.ROOT[scriptName] = this.ROOT[scriptName] || {};
-        return this.ROOT[scriptName];
+        EunoCORE.ROOT[scriptName] = EunoCORE.ROOT[scriptName] || {};
+        return EunoCORE.ROOT[scriptName];
     },
-    get SCRIPTS() { return [EunoLIB, ETC, EGC, EHC].filter((script) => Boolean(script)) },
-
-    UpdateNamespace: () => { // Any checks or migration functions required on version update.
-        return true;
-    },
+    UpdateNamespace: () => { /* Checks & Migration functions required for version update */ return true },
 
     // Script initialization calls.
-    Preinitialize: () => this.SCRIPTS.forEach((script) => {
-        if ("Preinitialize" in script) { script.Preinitialize() }
-        Object.values(script)
-            .filter((subScript) => subScript && typeof subScript === "object" && "Preinitialize" in subScript)
-            .forEach((subScript) => subScript.Preinitialize());
-    }),
-    Initialize: () => this.SCRIPTS.forEach((script) => {
-        if ("Initialize" in script) { script.Initialize() }
-        Object.values(script)
-            .filter((subScript) => subScript && typeof subScript === "object" && "Initialize" in subScript)
-            .forEach((subScript) => subScript.Initialize());
-    }),
+    Preinitialize: () => Object.values(EunoCORE.SCRIPTS).filter((script) => "Preinitialize" in script).forEach((script) => script.Preinitialize()),
+    Initialize: () => Object.values(EunoCORE.SCRIPTS).filter((script) => "Initialize" in script).forEach((script) => script.Initialize()),
+
+    // █████▓▒░ [EunoCORE.C] Global References & Constants ░▒▓█████
+    C: {
+
+        // #region ░░░░▒▓█[COLORS]█▓▒░ Color Definitions ░░░░░░
+        COLORS: {
+            // Black / Grey / White
+            black: "#000",
+            // get grey10() { return EunoCORE.U.ScaleColor("#FFF", 0.1) },
+            // get grey25() { return EunoCORE.U.ScaleColor("#FFF", 0.25) },
+            // get grey() { return EunoCORE.U.ScaleColor("#FFF", 0.50) },
+            // get grey75() { return EunoCORE.U.ScaleColor("#FFF", 0.75) },
+            // get grey90() { return EunoCORE.U.ScaleColor("#FFF", 0.9) },
+            white: "#FFF",
+
+            // Golds
+            gold: "#FFD700",
+            palegold: "#FFE775"
+        },
+        // #endregion ░▒▓█[COLORS]█▓▒░
+
+        // #region ░░░░▒▓█[IMAGES]█▓▒░ Image Source URLs ░░░░░░
+        IMGROOT: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images",
+        IMAGES: {
+            titleMain: ["bookends", "titleMain.png", [283, 208] ],
+            titleETC: ["bookends", "titleETC.png", [283, 142] ],
+            titleSubETC: ["bookends", "titleSubETC.png", [283, 60] ],
+            bgChatGold: ["backgrounds", "chatBGGold.jpg", [283, 563] ],
+            bgChatSilver: ["backgrounds", "chatBGSilver.jpg", [283, 563] ],
+            footerGold: ["bookends", "footerGold.png", [283, 37] ],
+            footerSilver: ["bookends", "footerSilver.png", [283, 37] ],
+            footerGoBackGold: ["bookends", "footerGoBackGold.png", [283, 37] ],
+            footerGoBackSilver: ["bookends", "footerGoBackSilver.png", [283, 37] ],
+            footerHideIntroGold: ["bookends", "footerHideIntroGold.png", [283, 37] ],
+            buttonDownload: ["buttons", "buttonDownload.png", [50, 50] ],
+            buttonChat: ["buttons", "buttonChat.png", [50, 50] ],
+            buttonBug: ["buttons", "buttonBug.png", [50, 50] ],
+            h1Gold: ["emphasis", "h1Gold.png", [283, 40]],
+            h1Silver: ["emphasis", "h1Silver.png", [283, 40]],
+            h2Gold: ["emphasis", "h2Gold.png", [283, 37]],
+            h2Silver: ["emphasis", "h2Silver.png", [283, 37]],
+            commandGold: ["emphasis", "commandGold.png", [235, 37]],
+            commandSilver: ["emphasis", "commandSilver.png", [235, 37]]
+        },
+        GetImgURL: (imgKey, imgFolder) => {
+            if (!imgFolder && imgKey in EunoCORE.C.IMAGES) {
+                [imgFolder, imgKey] = EunoCORE.C.IMAGES[imgKey];
+            }
+            return [EunoCORE.C.IMGROOT, imgFolder.toLowerCase(), imgKey].join("/");
+        },
+        GetImgSize: (imgKey) => [...EunoCORE.C.IMAGES[imgKey]].pop()
+        // #endregion ░▒▓█[IMAGES]█▓▒░
+
+    },
 
     // Shorthand getters for major script components
-    get CFG() { return EUNO_CONFIG },
-    get M() { return EunoLIB.MASTER },
-    get U() { return EunoLIB.UTILITIES },
-    get O() { return EunoLIB.OBJECTS }
+    get CFG() { return EunoCONFIG },
+    get LIB() { return EunoLIB },
+    get U() { log("U Called!"); return EunoLIB.UTILITIES },
+    get O() { return EunoLIB.OBJECTS },
+    get H() { return EunoLIB.HTML }
 };
-
 on("ready", () => {
-    if (EUNOSCRIPTS.UpdateNamespace()) {
+    try { EunoCONFIG } catch (noConfigError) { return log("[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?") }
+    if (EunoCORE.UpdateNamespace()) {
         // Preinitialize each major script component, then finalize initialization.
         //   - Delays are necessary to ensure each step completes for all scripts before moving to the next.
-        setTimeout(EUNOSCRIPTS.Preinitialize, 1000);
-        setTimeout(EUNOSCRIPTS.Initialize, 2000);
+        setTimeout(EunoCORE.Preinitialize, 1000);
+        setTimeout(EunoCORE.Initialize, 2000);
+        return true;
     } else {
-        log("[Euno] ERROR: Failure to Update 'Euno' Namespace.");
+        return log("[Euno] ERROR: Failure to Update 'Euno' Namespace.");
     }
 });
-// #endregion ▄▄▄▄▄ Namespacing & Initialization ▄▄▄▄▄
+// #endregion ▄▄▄▄▄ TOP ▄▄▄▄▄
 
+
+// #region █████▓▒░ EunoLIB: Library of Script Dependencies ░▒▓█████
 const EunoLIB = (() => {
+    // #region ░░░░▒▓█[FRONT]█▓▒░ Boilerplate Namespacing & Initialization ░░░░░░
 
-    // #region *** *** FRONT *** ***
-    let CFG, M, U, O;
-
-    // #region      Front: Basic References, State & Namespacing
+    // #region ========== Namespacing: Basic State References & Namespacing ===========
     const SCRIPTNAME = "EunoLIB";
     const DEFAULTSTATE = { /* initial values for state storage, if any */ };
-    const RO = {get OT() { return EUNOSCRIPTS.ROOT }};
-    const STA = {get TE() { return EUNOSCRIPTS.getSTATE(SCRIPTNAME) }};
-    // #endregion
+    const RO = {get OT() { return EunoCORE.ROOT }};
+    const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
+    // #endregion _______ Namespacing _______
 
-    // #region      Front: Initialization
+    // #region ========== Initialization: Script Startup & Event Listeners ===========
+    const {C} = EunoCORE;
+    let CFG, LIB, U, O, H;
     const Preinitialize = (isResettingState = false) => {
-        if (isResettingState) { delete RO.OT[SCRIPTNAME] } // reset script state entry
-        Object.entries(DEFAULTSTATE) // initialize script state entry with default values where needed
+        // Reset script state entry, if specified
+        if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+
+        // Initialize script state entry with default values where needed
+        Object.entries(DEFAULTSTATE)
             .filter(([key]) => !(key in STA.TE))
             .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
-        ({CFG, M, U, O} = EUNOSCRIPTS); // declare local-scope shorthand for main script components
+
+        // Define local-scope shorthand references for main script components
+        ({CFG, LIB, U, O, H} = EunoCORE);
+
+        // Preinitialize EunoLIB sub-scripts
+        ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Preinitialize());
     };
     const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-        if (isResettingState) { Preinitialize(true) } // reset script state entry
+        // Reset script state entry, if specified
+        if (isResettingState) { Preinitialize(true) }
+
+        // Register event handlers, if specified
         if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
-        U.Flag(`${SCRIPTNAME} Ready!`); log(`[Euno] ${SCRIPTNAME} Ready!`); // report readiness
+
+        // Initialize EunoLIB sub-scripts
+        ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Initialize(isRegisteringEventListeners));
+
+        // Report readiness
+        U.Flag(`${SCRIPTNAME} Ready!`);
+        log(`[Euno] ${SCRIPTNAME} Ready!`);
     };
-    // #endregion
+    // #endregion _______ Initialization _______
 
-    // #endregion *** *** FRONT *** ***
+    // #endregion ░▒▓█[FRONT]█▓▒░
 
-    const MASTER = (() => { //░░░░░▒▓█[EUNO.M]█▓▒░░░░░ Master Data Control, References & Constants ░░░░░░
+    // █████▓▒░ [EunoLIB.U] Global Utility Functions ░▒▓█████
+    const UTILITIES = (() => {
+        // #region ░░░░▒▓█[FRONT]█▓▒░ Boilerplate Namespacing & Initialization ░░░░░░
 
-        // #region *** *** FRONT *** ***
-
-        // #region      Front: Basic References, State & Namespacing
-        const SCRIPTNAME = "MASTER";
-        const DEFAULTSTATE = { /* initial values for state storage, if any */ };
-        const STA = {get TE() { return EUNOSCRIPTS.getSTATE(SCRIPTNAME) }};
-        // #endregion
-
-        // #region      Front: Initialization
-        const Preinitialize = (isResettingState = false) => {
-            if (isResettingState) { delete RO.OT[SCRIPTNAME] } // reset script state entry
-            Object.entries(DEFAULTSTATE) // initialize script state entry with default values where needed
-                .filter(([key]) => !(key in STA.TE))
-                .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
-        };
-        const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-            if (isResettingState) { Preinitialize(true) } // reset script state entry
-            if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
-            U.Flag(`${SCRIPTNAME} Ready!`); log(`[Euno] ${SCRIPTNAME} Ready!`); // report readiness
-        };
-        // #endregion
-
-        // #endregion *** *** FRONT *** ***
-
-        const IMGROOT = {
-            general: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images/",
-            texture: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images/textures/",
-            button: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images/buttons/"
-        };
-        const GetImgURL = (imgFileName, imgType = "general") => `${IMGROOT[imgType]}${imgFileName}`;
-        const COLORS = {
-            palegold: "#ffe775"
-        };
-
-        const CHATWIDTH = 283; // The minimum width of the chat panel, in pixels. Be sure to subtract twice any border widths.
-        const UPSHIFT = -29;   // Constants governing how the chat box is positioned in the chat panel: By default, everything
-        const LEFTSHIFT = -45; // shifts up and to the left to cover the standard chat output with the custom styles below.
-        const BOTTOMSHIFT = -4;
-        const HTML = {
-            Box: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
-                "display": "block",
-                "width": "auto", "min-width": `${CHATWIDTH}px`,
-                "height": "auto", "min-height": "39px",
-                "margin": `${UPSHIFT}px 0 ${BOTTOMSHIFT}px ${LEFTSHIFT}px`,
-                "padding": "0",
-                "color": COLORS.palegold,
-                "text-align": "center",
-                "position": "relative",
-                "text-shadow": "none", "box-shadow": "none", "border": "none",
-                "background-image": `url('${GetImgURL("BG.jpg", "general")}')`,
-                "background-size": "100%",
-                "overflow": "hidden",
-                "outline": "2px solid black"
-            }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
-            Block: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
-                "width": `${CHATWIDTH - 24}px`,
-                "margin": "2px 0 0 0",
-                "padding": "0 12px",
-                "text-align": "left",
-                "background": "none",
-                "font-family": "serif",
-                "font-weight": "normal",
-                "font-size": "14px",
-                "line-height": "18px"
-            }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
-            Title: (content, styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
-                "display": "block",
-                "height": "142px",
-                "width": "auto",
-                "margin": "0 0 -30px 0",
-                "background-image": `url('${GetImgURL("TOP.png", "general")}')`,
-                "background-size": "cover",
-                "font-weight": "normal",
-                "border": "none", "box-shadow": "none", "text-shadow": "none"
-            }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
-            Footer: (content, imgFileName = "BOTTOM.png", styles = {}, title = undefined) => `<div style="${U.Style(Object.assign({
-                "display": "block",
-                "height": "37px",
-                "width": "auto",
-                "margin": "6px 0 0 0",
-                "background-image": `url('${GetImgURL(imgFileName, "general")}')`,
-                "background-size": "100%",
-                "background-repeat": "no-repeat",
-                "font-weight": "normal",
-                "border": "none", "box-shadow": "none", "text-shadow": "none"
-            }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</div>`,
-            CodeBlock: (content, styles = {}, title = undefined) => HTML.Block(content, Object.assign({
-                "background": "white",
-                "font-family": "monospace",
-                "font-weight": "bold",
-                "font-size": "10px"
-            }, styles), title),
-            CodeSpan: (content, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
-                "display": "inline-block",
-                "font-family": "monospace",
-                "font-weight": "bolder",
-                "font-size": "12px",
-                "color": "black",
-                "text-shadow": "0 0 1px black",
-                "background-image": `url('${GetImgURL("CodeSpanBG.png")}')`,
-                "padding": "0 7px 0 5px",
-                "background-size": "100% 100%"
-            }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`,
-            ButtonCodeSpan: (content, command, styles = {}, title = undefined) => HTML.CodeSpan(HTML.A(content, command || content, Object.assign({}, styles, {
-                display: "inline-block",
-                width: "auto",
-                height: "auto",
-                "padding": "0",
-                "margin": "0",
-                "background": "none",
-                "border-radius": "none",
-                "border": "none",
-                "text-align": "inherit",
-                "font-family": "inherit",
-                "font-size": "inherit",
-                "line-height": "inherit",
-                "font-weight": "inherit",
-                "text-transform": "inherit",
-                "color": "inherit"
-            })), styles, title),
-            ButtonH: (content, command, level = 2, styles = {}, title = undefined) => HTML.H(HTML.A(content, command, Object.assign({}, styles, {
-                "display": "block",
-                "width": "100%",
-                "height": "100%",
-                "padding": "0",
-                "margin": "0",
-                "background": "none",
-                "border-radius": "none",
-                "border": "none",
-                "text-align": "inherit",
-                "font-family": "inherit",
-                "font-size": "inherit",
-                "line-height": "inherit",
-                "font-weight": "inherit",
-                "text-transform": "inherit",
-                "color": "inherit"
-            })), level, styles, title),
-            ButtonFooter: (imgFileName, command, styles = {}, title = undefined) => HTML.Footer(HTML.A("", command, Object.assign({}, styles, {
-                "display": "block",
-                "width": "100%",
-                "height": "100%",
-                "padding": "0",
-                "margin": "0",
-                "background": "none",
-                "border-radius": "none",
-                "border": "none",
-                "text-align": "inherit",
-                "font-family": "inherit",
-                "font-size": "inherit",
-                "line-height": "inherit",
-                "font-weight": "inherit",
-                "text-transform": "inherit",
-                "color": "inherit"
-            })), imgFileName, styles, title),
-            ButtonWide: (name, command, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
-                "display": "inline-block",
-                "width": "100%",
-                "text-align": "center",
-                "vertical-align": "baseline",
-                "margin": "0",
-                "float": "none"
-            }, _.pick(styles, "display", "width", "text-align", "vertical-align", "margin", "float")))}"${title ? ` title="${title}"` : ""}>${HTML.A(name, command, _.omit(styles, "display", "width", "text-align", "vertical-align", "margin", "float"), title)}</span>`,
-            ButtonRound: (imgName, command, styles = {}, title = undefined) => {
-                return `<span style="${U.Style(Object.assign({}, {
-                    "display": "inline-block",
-                    "width": "50px",
-                    "height": "50px",
-                    "margin": "0 15px",
-                    "background-image": `url('${GetImgURL(imgName, "button")}')`
-                }, _.pick(styles, "display", "width", "line-height", "margin", "float")))}"${title ? ` title="${title}"` : ""}>${HTML.A("", command, Object.assign({}, styles, {
-                    "display": "block",
-                    "width": "50px",
-                    "height": "50px",
-                    "padding": "0",
-                    "margin": "0",
-                    "background": "none",
-                    "border-radius": "none",
-                    "border": "none"
-                }), title)}</span>`;
-            },
-            A: (content, command, styles = {}, title = undefined) => {
-                return `<a href="${command}" style="${U.Style(Object.assign({
-                    display: "inline-block",
-                    width: "90%",
-                    padding: "5px",
-                    "margin-top": "0",
-                    background: "gold",
-                    color: "black",
-                    "font-family": "sans-serif",
-                    "text-transform": "uppercase",
-                    "font-weight": "bold",
-                    "border-radius": "10px",
-                    border: "2px outset #666",
-                    "font-size": "14px",
-                    "line-height": "18px"
-                }, styles))}">${[content].flat().join("")}</a>`;
-            },
-            H: (content, level = 2, styles = {}, title = undefined) => `<h${level} style="${U.Style(Object.assign([
-                null, // <H0>
-                { // <H1>
-                    display: "block",
-                    height: "43px", width: "288px",
-                    margin: "20px 0px -10px -14px",
-                    "font-family": "Impact",
-                    "line-height": "36px",
-                    "font-size": "24px",
-                    "font-weight": "normal",
-                    color: "black",
-                    "text-align": "center",
-                    "background-image": `url('${GetImgURL("H1.png")}')`,
-                    "background-size": "100% 100%"
-                },
-                { // <H2>
-                    display: "block",
-                    height: "26px", width: "285px",
-                    "margin": "15px 0 -5px -13px",
-                    "font-family": "Trebuchet MS",
-                    "line-height": "26px",
-                    "font-size": "16px",
-                    color: "black",
-                    "text-indent": "10px",
-
-                    "background-image": `url('${GetImgURL("H2.png")}')`,
-                    "background-size": "cover"
-                },
-                { // <H3>
-                    display: "block",
-                    "font-family": "sans-serif",
-                    "line-height": "20px",
-                    "margin": "0 0 9px -1%",
-                    color: "gold",
-                    "text-indent": "4px",
-                    width: "102%",
-                    "background-image": `url('${GetImgURL("blackLeather_1.jpg", "texture")}')`,
-                    "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
-                },
-                { // <H4>
-                    display: "block",
-                    width: "102%",
-                    color: "gold",
-                    "font-size": "16px",
-                    "line-height": "20px",
-                    "font-family": "sans-serif",
-                    "border-bottom": "2px solid gold",
-                    "border-top": "2px solid gold",
-                    "margin": "0 0 5px -1%",
-                    "text-indent": "4px",
-                    "background-image": `url('${GetImgURL("blackLeather_1.jpg", "texture")}')`,
-                    "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
-                },
-                { // <H5>
-                }
-            ][level], styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</h${level}>`,
-            Spacer: (height, display = "block") => `<span style="${U.Style({display, height})}">&nbsp;</span>`,
-            Paras: (content, styles = {}) => [content].flat().map((para) => `<p style="${U.Style(Object.assign({
-                "margin": "10px 0",
-                "line-height": "18px",
-                "font-family": "Tahoma"
-            }, styles))}">${para}</p>`).join(""),
-            Span: (content, styles = {}, title = undefined) => `<span style="${U.Style(Object.assign({
-                "display": "inline-block",
-                "width": "auto",
-                "background": "none",
-                "color": "gold",
-                "font-size": "14px",
-                "line-height": "18px"
-            }, styles))}"${title ? ` title="${title}"` : ""}>${[content].flat().join("")}</span>`, //  bgColor = "none", color = "black", fontSize = "14px", lineHeight = "18px") =>
-            Img: (imgSrc, styles = {}, title = undefined) => `<img src="${imgSrc}" style="${U.Style(styles)}"${title ? ` title="${title}"` : ""}>`
-        };
-
-        return {
-            Preinitialize, Initialize,
-            CHATWIDTH, UPSHIFT, LEFTSHIFT, BOTTOMSHIFT, COLORS,
-            HTML
-        };
-    })();
-
-    const UTILITIES = (() => { //░░▒▓█[EUNO.U]█▓▒░░ Global Utility Functions ░░░░░░
-
-        // #region *** *** FRONT *** ***
-
-        // #region      Front: Basic References, State & Namespacing
+        // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "UTILITIES";
         const DEFAULTSTATE = { /* initial values for state storage, if any */ };
-        const STA = {get TE() { return EUNOSCRIPTS.getSTATE(SCRIPTNAME) }};
-        // #endregion
+        const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
+        // #endregion _______ Namespacing _______
 
-        // #region      Front: Initialization
+        // #region ========== Initialization: Script Startup & Event Listeners ===========
         const Preinitialize = (isResettingState = false) => {
-            if (isResettingState) { delete RO.OT[SCRIPTNAME] } // reset script state entry
-            Object.entries(DEFAULTSTATE) // initialize script state entry with default values where needed
+            // Reset script state entry, if specified
+            if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+
+            // Initialize script state entry with default values where needed
+            Object.entries(DEFAULTSTATE)
                 .filter(([key]) => !(key in STA.TE))
                 .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
         };
         const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-            if (isResettingState) { Preinitialize(true) } // reset script state entry
+            // Reset script state entry, if specified
+            if (isResettingState) { Preinitialize(true) }
+
+            // Register event handlers, if specified
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
-            U.Flag(`${SCRIPTNAME} Ready!`); log(`[Euno] ${SCRIPTNAME} Ready!`); // report readiness
+
+            // Report readiness
+            Flag(`${SCRIPTNAME} Ready!`, 2);
+            log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
         };
-        // #endregion
+        // #endregion _______ Initialization _______
 
-        // #endregion *** *** FRONT *** ***
+        // #endregion ░▒▓█[FRONT]█▓▒░
 
-        // #region *** *** Validation & Type Checking *** ***
+        // #region ░░░░▒▓█[Validation]█▓▒░ Verification & Type Checking ░░░░░░
         const GetR20Type = (val) => { // Returns specific type/subtype of R20 object, or false if val isn't an R20 object.
             if (val && typeof val === "object" && "id" in val && "get" in val) {
                 const type = val.get("_type");
@@ -411,36 +208,94 @@ const EunoLIB = (() => {
             }
             return false;
         };
-        const GetType = (val) => {
-            const valType = Object.prototype.toString.call(val).slice(8, -1).toLowerCase();
+        const GetType = (val) => { // More discerning 'typeof' replacement: Handles number types and Roll20 object types
+            const valType = Object.prototype.toString.call(val).slice(8, -1).toLowerCase().trim();
             switch (valType) {
+                case "string": {
+                    if (/^(#[A-Fa-f0-9]{3}|#[A-Fa-f0-9]{6})/u.test(val)) { return "hex" }
+                    if (/^#[A-Fa-f0-9]{8}$/u.test(val)) { return "hexa" }
+                    if (/^rgb\((\s*\d{1,3}[,\s)]){3}$/u.test(val)) { return "rgb" }
+                    if (/^rgba\((\s*\d{1,3}[,\s)]){3}(\s*[\d\.]+[,\s)])$/u.test(val)) { return "rgba" }
+                    if (/^hsl\((\s*[\d\.%]+[,\s)]){3}$/u.test(val)) { return "hsl" }
+                    if (/^hsla\((\s*[\d\.%]+[,\s)]){3}(\s*[\d\.]+[,\s)])$/u.test(val)) { return "hsla" }
+                    break;
+                }
                 case "number": return /\./u.test(`${val}`) ? "float" : "int";
                 case "object": return GetR20Type(val) || "list";
-                default: return valType;
+                // no default
+            }
+            return valType;
+        };
+        // #endregion ░▒▓█[Validation]█▓▒░
+
+        // #region ░░░░▒▓█[Conversion]█▓▒░ Converting Data Types & Formats ░░░░░░
+        const HexToDec = (hex) => hex
+            .toLowerCase()
+            .replace(/[^a-z0-9]/gu, "")
+            .split("")
+            .reverse()
+            .reduce((tot, digit, i) => tot + Math.pow(16, i) * [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "a", "b", "c", "d", "e", "f"].findIndex((val) => `${val}` === digit), 0);
+        const DecToHex = (dec) => {
+            const hex = [];
+            let quot = parseInt(dec);
+            do {
+                hex.push([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "a", "b", "c", "d", "e", "f"][quot % 16]);
+                quot = Math.floor(quot/16);
+            } while (quot > 0);
+            return hex.reverse().join("");
+        };
+        // #endregion ░▒▓█[Conversion]█▓▒░
+
+        // #region ░░░░▒▓█[Scaling]█▓▒░ Scaling & Related Manipulation of Values ░░░░░░
+        const ScaleColor = (colorRef, scaleFactor = 1) => {
+            const colorVals = [];
+            console.log(`==== ${colorRef} ====`);
+            const colorRefType = GetType(colorRef);
+            switch (colorRefType) {
+                case "hex": case "hexa": {
+                    colorRef = colorRef.replace(/[^A-Za-z0-9]/gu, "");
+                    if (colorRef.length === 3) { colorRef = colorRef.split("").map((h) => `${h}${h}`).join("") }
+                    if (colorRef.length === 6) { colorRef += "FF" }
+                    colorVals.push(...colorRef.match(/.{2}/g).map((hex) => HexToDec(hex)));
+                    console.log(`${colorRef.match(/.{2}/g).join("|")} --- ${colorVals.join(", ")}`);
+                    break;
+                }
+                case "rgb": case "rgba": case "hsl": case "hsla": {
+                    colorVals.push(...colorRef
+                        .match(/[\d\.%]+[,\s)]/g)
+                        .map((val) => {
+                            if (/%/.test(val)) { return parseInt(val.replace(/[^\d\.]/gu, "")) / 100 }
+                            return /\./.test(val) ? parseFloat(val) : parseInt(val);
+                        }));
+                    break;
+                }
+                case "string": return colorRef;
+                default: return false;
+            }
+            for (let i = 0; i < 3; i++) {
+                colorVals[i] = Math.round(colorVals[i] * scaleFactor);
+                console.log(colorVals);
+            }
+            switch (colorRefType) {
+                case "hex": case "hexa": return `#${colorVals.map((val) => DecToHex(val)).join("")}`;
+                default: return `${GetType(colorRef)}(${colorVals.join(", ")})`;
             }
         };
-        // #endregion *** *** Validation *** ***
+        // #endregion ░▒▓█[Scaling]█▓▒░
 
-        // #region *** *** Parsing JSON & Inline CSS for Chat Output *** ***
+        // #region ░░░░▒▓█[String Parsing]█▓▒░ Parsing JSON & Inline CSS for Chat Output ░░░░░░
         const JS = (val) => JSON.stringify(val, null, 2).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;"); // Stringification for display in R20 chat.
-        const JC = (val) => M.HTML.CodeBlock(JS(val)); // Stringification for data objects and other code for display in R20 chat.
-        const Style = (styleData) => { // Parse object containing CSS styles to inline style attribute.
-            if (typeof styleData === "string") {
-                return styleData.replace(/\s{2,}/gu, " ").replace(/'(serif|sans-serif|monospace)'/gu, "$1");
-            } else {
-                return Object.entries(styleData).map(([prop, val]) => `${prop}: ${val}`).join("; ").replace(/'(serif|sans-serif|monospace)'/gu, "$1");
-            }
-        };
-        // #endregion
+        const JC = (val) => H.Pre(JS(val)); // Stringification for data objects and other code for display in R20 chat.
+        // #endregion ░▒▓█[String Parsing]█▓▒░
 
-        // #region *** *** Basic GM Alerts & Flags *** ***
-        const Alert = (content, title) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
+        // #region ░░░░▒▓█[Chat]█▓▒░ Basic Chat Messages ░░░░░░
+        const Alert = (content, title, headerLevel = 1) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
             const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
             if (content !== false && (content || title)) {
                 if (title) {
                     if (content === null) {
-                        sendChat(randStr(), `/w gm ${M.HTML.Box(M.HTML.Block([
-                            M.HTML.H(title, 1, {
+                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, [], {margin: 0, "text-align": "left", height: "39px", "background-size": "283px 40px"}), {padding: 0}), {"min-height": null})}`, null, {noarchive: true});
+                        /* {
                                 "margin": "0px 0px -10px -14px",
                                 "font-family": "Trebuchet MS",
                                 "font-weight": "bold",
@@ -449,10 +304,14 @@ const EunoLIB = (() => {
                                 "font-size": "18px",
                                 "line-height": "34px",
                                 "text-align": "left"
-                            })]))}`, null, {noarchive: true});
+                            })}`, null, {noarchive: true}); */
                     } else {
-                        sendChat(randStr(), `/w gm ${M.HTML.Box(M.HTML.Block([
-                            M.HTML.H(title, 1, {
+                        sendChat(randStr(), `/w gm ${H.Box(H.Block([
+                            H[`H${headerLevel}`](title),
+                            H.Block(content)
+                        ]))}`, null, {noarchive: true});
+                        /* [
+                            H.HTML.H(title, 1, {
                                 "margin": "0px 0px -10px -14px",
                                 "font-family": "Trebuchet MS",
                                 "font-weight": "bold",
@@ -461,8 +320,8 @@ const EunoLIB = (() => {
                                 "font-size": "18px",
                                 "line-height": "34px"
                             }),
-                            M.HTML.Block(content)
-                        ]))}`, null, {noarchive: true});
+                            H.HTML.Block(content)
+                        ]))}`, null, {noarchive: true}); */
                     }
                 } else {
                     sendChat(randStr(), `/w gm ${content}`, null, {noarchive: true});
@@ -470,19 +329,10 @@ const EunoLIB = (() => {
             }
         };
         const Show = (obj, title = "Showing ...") => Alert(JC(obj), title); // Show properties of stringified object to GM.
-        const Flag = (msg) => Alert(null, `[Euno] ${msg}`.replace(/\[Euno\]\s*\[Euno\]/gu, "[Euno]")); // Simple one-line chat flag sent to the GM.
-        // #endregion *** *** Basic GM Alerts *** ***
+        const Flag = (msg, headerLevel = 1) => Alert(null, `[Euno] ${msg}`.replace(/\[Euno\]\s*\[Euno\]/gu, "[Euno]"), headerLevel); // Simple one-line chat flag sent to the GM.
+        // #endregion ░▒▓█[Chat]█▓▒░
 
-        // #region *** *** Roll20 Objects *** ***
-        const GetSelObjs = (msg, type = "text") => { // Returns an array of selected objects.
-            if (msg.selected && msg.selected.length) {
-                return msg.selected.filter((objData) => objData._type === type).map((objData) => getObj(type, objData._id));
-            }
-            return [];
-        };
-        // #endregion *** *** Roll20 Objects *** ***
-
-        // #region *** *** Array & Object Processing *** ***
+        // #region ░░░░▒▓█[Arrays & Objects]█▓▒░ Array & Object Processing ░░░░░░
         const KVPMap = (obj, keyFunc = (x) => x, valFunc) => {
             /* An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
             *      If only one function is provided, it's assumed to be mapping the values and will receive (v, k) args. */
@@ -495,48 +345,378 @@ const EunoLIB = (() => {
             });
             return newObj;
         };
-        // #endregion *** *** Array & Object Processing *** ***
+        // #endregion ░▒▓█[Arrays & Objects]█▓▒░
 
         return {
             Preinitialize, Initialize,
 
             GetR20Type, GetType,
-            JS, JC, Style,
+            HexToDec, DecToHex, ScaleColor,
+            JS, JC,
             Alert, Show, Flag,
-            GetSelObjs,
             KVPMap
         };
 
     })();
 
-    const OBJECTS = (() => { //░░░░▒▓█[EUNO.O]█▓▒░░░░ Roll20 Object Manipulation ░░░░░░
+    // █████▓▒░ [EunoLIB.O] Roll20 Object Manipulation ░▒▓█████
+    const OBJECTS = (() => {
+        // #region ░░░░▒▓█[FRONT]█▓▒░ Boilerplate Namespacing & Initialization ░░░░░░
 
-        // #region *** *** FRONT *** ***
-
-        // #region      Front: Basic References, State & Namespacing
+        // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "OBJECTS";
         const DEFAULTSTATE = { /* initial values for state storage, if any */ };
-        const STA = {get TE() { return EUNOSCRIPTS.getSTATE(SCRIPTNAME) }};
-        // #endregion
+        const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
+        // #endregion _______ Namespacing _______
 
-        // #region      Front: Initialization
+        // #region ========== Initialization: Script Startup & Event Listeners ===========
         const Preinitialize = (isResettingState = false) => {
-            if (isResettingState) { delete RO.OT[SCRIPTNAME] } // reset script state entry
-            Object.entries(DEFAULTSTATE) // initialize script state entry with default values where needed
+            // Reset script state entry, if specified
+            if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+
+            // Initialize script state entry with default values where needed
+            Object.entries(DEFAULTSTATE)
                 .filter(([key]) => !(key in STA.TE))
                 .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
         };
         const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-            if (isResettingState) { Preinitialize(true) } // reset script state entry
-            if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
-            U.Flag(`${SCRIPTNAME} Ready!`); log(`[Euno] ${SCRIPTNAME} Ready!`); // report readiness
-        };
-        // #endregion
+            // Reset script state entry, if specified
+            if (isResettingState) { Preinitialize(true) }
 
-        // #endregion *** *** FRONT *** ***
+            // Register event handlers, if specified
+            if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
+
+            // Report readiness
+            // U.Flag(`${SCRIPTNAME} Ready!`, 2);
+            log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
+        };
+        // #endregion _______ Initialization _______
+
+        // #endregion ░▒▓█[FRONT]█▓▒░
+
+        // #region ░░░░▒▓█[Selections]█▓▒░ Extracting Selected Objects from API Chat Messages ░░░░░░
+        const GetSelObjs = (msg, type = "text") => { // Returns an array of selected objects.
+            if (msg.selected && msg.selected.length) {
+                return msg.selected.filter((objData) => objData._type === type).map((objData) => getObj(type, objData._id));
+            }
+            return [];
+        };
+        // #endregion ░▒▓█[Selections]█▓▒░
 
         return {
-            Preinitialize, Initialize
+            Preinitialize, Initialize,
+
+            GetSelObjs
+        };
+
+    })();
+
+    // █████▓▒░ [EunoLIB.H] HTML/CSS Parsing & Styling for Chat & Handouts ░▒▓█████
+    const HTML = (() => {
+        // #region ░░░░▒▓█[FRONT]█▓▒░ Boilerplate Namespacing & Initialization ░░░░░░
+
+        // #region ========== Namespacing: Basic State References & Namespacing ===========
+        const SCRIPTNAME = "HTML";
+        const DEFAULTSTATE = { /* initial values for state storage, if any */ };
+        const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
+        // #endregion _______ Namespacing _______
+
+        // #region ========== Initialization: Script Startup & Event Listeners ===========
+        const Preinitialize = (isResettingState = false) => {
+            // Reset script state entry, if specified
+            if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+
+            // Initialize script state entry with default values where needed
+            Object.entries(DEFAULTSTATE)
+                .filter(([key]) => !(key in STA.TE))
+                .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+        };
+        const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
+            // Reset script state entry, if specified
+            if (isResettingState) { Preinitialize(true) }
+
+            // Register event handlers, if specified
+            if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
+
+            // Report readiness
+            // U.Flag(`${SCRIPTNAME} Ready!`, 2);
+            log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
+        };
+        // #endregion _______ Initialization _______
+
+        // #endregion ░▒▓█[FRONT]█▓▒░
+
+        // #region ░░░░▒▓█[STYLES]█▓▒░ CSS Class Style Definitions ░░░░░░
+        const cssVars = {
+            boxPosition: {
+                width: 283,
+                shifts: {top: -29, right: 0, bottom: -7, left: -45}
+            },
+            bodyFontSize: 13
+        };
+        const cssBaseTagStyles = {
+            "div": {
+                display: "block",
+                width: "auto", height: "auto",
+                margin: "0", padding: "0",
+                color: C.COLORS.palegold,
+                "font-size": "0",
+                border: "none", outline: "none", "text-shadow": "none", "box-shadow": "none",
+                overflow: "hidden"
+            },
+            "span": {
+                display: "inline-block",
+                padding: "0",
+                "color": "inherit",
+                "font-family": "inherit",
+                "font-size": "inherit",
+                "font-weight": "inherit",
+                "line-height": "inherit",
+                "vertical-align": "baseline"
+            },
+            "p": {
+                display: "block",
+                margin: "10px",
+                "font-size": `${cssVars.bodyFontSize}px`,
+                "font-family": "Tahoma, sans-serif",
+                "line-height": `${1.5 * cssVars.bodyFontSize}px`,
+                "text-align": "left"
+            },
+            "pre": {
+                "margin": "0", "padding": "0",
+                "font-family": "'Fira Code', Input, monospace",
+                "font-size": "10px",
+                "font-weight": "normal",
+                "background-color": C.COLORS.grey75
+            },
+            "img": {
+                display: "block"
+            },
+            "a": {
+                display: "inline-block",
+                width: "90%",
+                margin: "0",
+                padding: "5px",
+                background: "none",
+                "color": C.COLORS.black,
+                "font-family": "inherit",
+                "font-size": "inherit",
+                "font-weight": "bold",
+                "line-height": "inherit",
+                "vertical-align": "inherit"
+            },
+            "h1": {
+                display: "block",
+                height: "43px",
+                width: "100%",
+                margin: "20px 0 -10px 0",
+                "font-family": "Impact, sans-serif",
+                "line-height": "36px",
+                "font-size": "24px",
+                "font-weight": "normal",
+                color: "black",
+                "text-align": "center",
+                "background-image": `url('${C.GetImgURL("h1Gold")}')`,
+                "background-size": "100% 100%"
+            },
+            "h1.silver": {
+                "background-image": `url('${C.GetImgURL("h1Silver")}')`
+            },
+            "h2": { // background: bg-color bg-image position/bg-size bg-repeat bg-origin bg-clip bg-attachment initial|inherit;
+                display: "block",
+                height: "26px",
+                width: "100%",
+                "margin": "15px 0 -5px 0",
+                "font-family": "'Trebuchet MS', sans-serif",
+                "line-height": "23px",
+                "font-size": "16px",
+                color: "black",
+                "text-indent": "10px"/* ,
+                "background": parseBGStyle({
+                    color: C.COLORS.black,
+                    image: "h2Gold",
+                    position: "center top",
+                    repeat: "no-repeat",
+                    origin: "border-box"
+                }) */
+            },
+            "h2.silver": {
+                /* "background": parseBGStyle({
+                    color: C.COLORS.black,
+                    image: "h2Silver",
+                    position: "center top",
+                    repeat: "no-repeat",
+                    origin: "border-box"
+                }) */
+                "background-image": `url('${C.GetImgURL("h2Silver")}')`
+            },
+            "h3": {
+                display: "block",
+                width: "100%",
+                "font-family": "'Trebuchet MS', sans-serif",
+                "line-height": "20px",
+                "margin": "0 0 9px 0",
+                color: "gold",
+                "text-indent": "4px"/* ,
+                "background": parseBGStyle({
+                    color: C.COLORS.black,
+                    image: "h3BGBlack",
+                    position: "center top",
+                    repeat: "no-repeat",
+                    origin: "border-box"
+                }) */,
+                "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
+            }
+        };
+        const cssClassStyles = {
+            "box": {
+                "width": `${cssVars.boxPosition.width}px`,
+                "min-width": `${cssVars.boxPosition.width}px`,
+                "min-height": "39px",
+                "margin": `${cssVars.boxPosition.shifts.top}px ${cssVars.boxPosition.shifts.right}px ${cssVars.boxPosition.shifts.bottom}px ${cssVars.boxPosition.shifts.left}px`,
+                "text-align": "center",
+                "position": "relative",
+                "background-image": `url('${C.GetImgURL("bgChatGold")}')`,
+                "background-size": "100%"
+            },
+            "block": {
+                "min-width": `${cssVars.boxPosition.width - 24}px`,
+                "margin": "2px 0 0 0",
+                "padding": "0 12px",
+                "text-align": "left"
+            },
+            "title": {
+                "height": "142px",
+                "width": "100%",
+                "margin": "0 0 -30px 0",
+                "background-image": `url('${C.GetImgURL("titleMain")}')`,
+                "background-size": C.GetImgSize("titleMain"),
+                color: C.COLORS.black,
+                "font-family": "Impact, sans-serif",
+                "line-height": "36px",
+                "font-size": "24px",
+                "font-weight": "normal",
+                "text-align": "center"
+            },
+            "h1.flag": {
+                margin: "0",
+                "text-align": "left"
+            },
+            "h2.flag": {
+
+            },
+            "commandHighlight": {
+                padding: "0 7px 0 5px",
+                color: C.COLORS.black,
+                "font-family": "monospace",
+                "font-weight": "bolder",
+                "text-shadow": `0 0 1px ${C.COLORS.black}`,
+                "background-image": `url('${C.GetImgURL("commandGold")}')`,
+                "background-size": "cover",
+                "background-repeat": "no-repeat"
+            },
+            "commandHighlight.shiftLeft": {
+                "padding-right": "17px",
+                "margin-left": "-20px",
+                "text-align": "right",
+                "text-indent": "14px",
+                "background-position": "right"
+            }
+        };
+        // #endregion ░▒▓█[STYLES]█▓▒░
+
+        // #region ░░░░▒▓█[PARSING]█▓▒░ Parsing Style Data to Inline CSS ░░░░░░
+
+        // #region ========== Parsing Functions: Functions for Parsing to Inline CSS ===========
+        const getClassStyleData = (tag, classes = []) => {
+            classes = [classes].flat();
+            const styleData = {};
+
+            // Locate styles for exact class references
+            classes.forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef] || {}));
+
+            // Overwrite with more-specific combination references
+            Object.keys(cssClassStyles).filter((classRef) => classRef.includes(".")
+                                                             && classRef.split(/\./gu).every((className) => classes.includes(className)))
+                .forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef]));
+
+            // Now, repeat for more-specific references that begin with the element's tag
+            const tagClassRefs = Object.keys(cssClassStyles).filter((classRef) => classRef.startsWith(`${tag.toLowerCase()}.`));
+            tagClassRefs.filter((classRef) => classes.includes(classRef.replace(new RegExp(`^${tag.toLowerCase()}\.`), "")))
+                .forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef]));
+
+            // Finally, repeat for more-specific combo references that begin with the element's tag
+            tagClassRefs.filter((classRef) => classRef.split(/\./gu).every((className) => classes.includes(className)))
+                .forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef]));
+
+            return Object.fromEntries(Object.entries(styleData).filter(([propName, propVal]) => propVal !== null));
+        };
+        const getStyleData = (tag, classes = [], styles = {}) => ({
+            ... (cssBaseTagStyles[(tag || "").toLowerCase()] || {}), // 1) Apply base tag style.
+            ... getClassStyleData(tag, classes), //                          2) Apply class styles.
+            ... styles //                                               3) Apply custom (inline) styles.
+        });
+        const parseBGStyle = (bgData = {}) => [
+            bgData.color || false,
+            bgData.image && `url('${C.GetImgURL(bgData.image)})` || bgData.gradient,
+            [bgData.position, bgData.size].filter((prop) => Boolean(prop)).join("/"),
+            bgData.repeat,
+            bgData.origin,
+            bgData.clip,
+            bgData.attachment
+        ].filter((prop) => Boolean(prop)).join(" ");
+        const parseStyleLine = (tag, classes = [], styles = {}) => Object.entries(getStyleData(tag, classes, styles)).map(([propName, propVal]) => `${propName}: ${propVal};` ).join(" ");
+        const hasInlineStyles = (tag, classes = [], styles = {}) => tag in cssBaseTagStyles || Object.values(styles).length || Object.values(getClassStyleData(tag, classes)).length;
+        const Tag = (content, tag, classes = [], styles = {}, attributes = {}) => {
+            if (hasInlineStyles(tag, classes, styles)) {
+                Object.assign(attributes, {style: parseStyleLine(tag, classes, styles)});
+            }
+            const tagHTML = [
+                `<${tag.toLowerCase()} `,
+                Object.entries(attributes).map(([attrName, attrVal]) => `${attrName}="${attrVal}"` ).join(" "),
+                ">",
+                ...(content === false // Passing 'false' to content indicates an element with no content to wrap (e.g. <img>)
+                    ? [""]
+                    : [...[content].flat(), `</${tag.toLowerCase()}>`]
+                )
+            ].join("");
+            // sendChat("Check", `/w gm Returning: <pre>${_.escape(tagHTML)}</pre>`);
+            return [
+                `<${tag.toLowerCase()} `,
+                Object.entries(attributes).map(([attrName, attrVal]) => `${attrName}="${attrVal}"` ).join(" "),
+                ">",
+                ...(content === false // Passing 'false' to content indicates an element with no content to wrap (e.g. <img>)
+                    ? [""]
+                    : [...[content].flat(), `</${tag.toLowerCase()}>`]
+                )
+            ].join("");
+        };
+        // #endregion _______ Parsing Functions _______
+
+        // #region ========== Elements: Basic Element Constructors by Tag ===========
+        const Div = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "div", classes, styles, attributes);
+        const Span = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "span", classes, styles, attributes);
+        const P = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "p", classes, styles, attributes);
+        const Img = (content, classes = [], styles = {}, attributes = {}) => Tag(false, "img", classes, styles, attributes);
+        const A = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "a", classes, styles, attributes);
+        const H1 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h1", classes, styles, attributes);
+        const H2 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h2", classes, styles, attributes);
+        const H3 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h3", classes, styles, attributes);
+        // #endregion _______ Elements _______
+        // #endregion ░▒▓█[PARSING]█▓▒░
+
+        // #region ░░░░▒▓█[CUSTOM ELEMENTS]█▓▒░ Shorthand Element Constructors for Common Use Cases ░░░░░░
+        const Box = (content, styles = {}) => Div(content, ["box"], styles);
+        const Block = (content, styles = {}) => Div(content, ["block"], styles);
+        // #endregion ░▒▓█[CUSTOM ELEMENTS]█▓▒░
+
+        return {
+            Preinitialize, Initialize,
+
+            Tag,
+            Div, Span, P, Img, A, H1, H2, H3,
+
+            Box, Block
         };
 
     })();
@@ -544,8 +724,12 @@ const EunoLIB = (() => {
     return {
         Preinitialize, Initialize,
 
-        MASTER,
         UTILITIES,
-        OBJECTS
+        OBJECTS,
+        HTML
     };
 })();
+// #endregion ▄▄▄▄▄ EunoLIB ▄▄▄▄▄
+
+EunoCORE.regSCRIPT("EunoLIB", EunoLIB);
+void MarkStop("EunoLIB");
