@@ -92,12 +92,11 @@ const EunoCORE = {
     // Shorthand getters for major script components
     get CFG() { return EunoCONFIG },
     get LIB() { return EunoLIB },
-    get U() { log("U Called!"); return EunoLIB.UTILITIES },
+    get U() { return EunoLIB.UTILITIES },
     get O() { return EunoLIB.OBJECTS },
     get H() { return EunoLIB.HTML }
 };
 on("ready", () => {
-    try { EunoCONFIG } catch (noConfigError) { return log("[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?") }
     if (EunoCORE.UpdateNamespace()) {
         // Preinitialize each major script component, then finalize initialization.
         //   - Delays are necessary to ensure each step completes for all scripts before moving to the next.
@@ -117,7 +116,9 @@ const EunoLIB = (() => {
 
     // #region ========== Namespacing: Basic State References & Namespacing ===========
     const SCRIPTNAME = "EunoLIB";
-    const DEFAULTSTATE = { /* initial values for state storage, if any */ };
+    const DEFAULTSTATE = {/* initial values for state storage, if any */
+        isDisplayingHelpAtStart: true
+    };
     const RO = {get OT() { return EunoCORE.ROOT }};
     const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
     // #endregion _______ Namespacing _______
@@ -126,6 +127,7 @@ const EunoLIB = (() => {
     const {C} = EunoCORE;
     let CFG, LIB, U, O, H;
     const Preinitialize = (isResettingState = false) => {
+        try { EunoCONFIG } catch (noConfigError) { return log("[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?") }
         // Reset script state entry, if specified
         if (isResettingState) { delete RO.OT[SCRIPTNAME] }
 
@@ -141,6 +143,8 @@ const EunoLIB = (() => {
         ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Preinitialize());
     };
     const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
+        U.Flag("EunoCONFIG Ready!");
+
         // Reset script state entry, if specified
         if (isResettingState) { Preinitialize(true) }
 
@@ -153,6 +157,11 @@ const EunoLIB = (() => {
         // Report readiness
         U.Flag(`${SCRIPTNAME} Ready!`);
         log(`[Euno] ${SCRIPTNAME} Ready!`);
+
+        // Display Help message, if so configured
+        if (STA.TE.isDisplayingHelpAtStart) {
+            H.DisplayHelp({isAutoDisplaying: true});
+        }
     };
     // #endregion _______ Initialization _______
 
@@ -186,7 +195,7 @@ const EunoLIB = (() => {
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
 
             // Report readiness
-            Flag(`${SCRIPTNAME} Ready!`, 2);
+            Flag(`EunoLIB.${SCRIPTNAME} Ready!`, 2, ["silver"]);
             log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
         };
         // #endregion _______ Initialization _______
@@ -254,7 +263,6 @@ const EunoLIB = (() => {
         // #region ░░░░▒▓█[Scaling]█▓▒░ Scaling & Related Manipulation of Values ░░░░░░
         const ScaleColor = (colorRef, scaleFactor = 1) => {
             const colorVals = [];
-            console.log(`==== ${colorRef} ====`);
             const colorRefType = GetType(colorRef);
             switch (colorRefType) {
                 case "hex": case "hexa": {
@@ -262,7 +270,6 @@ const EunoLIB = (() => {
                     if (colorRef.length === 3) { colorRef = colorRef.split("").map((h) => `${h}${h}`).join("") }
                     if (colorRef.length === 6) { colorRef += "FF" }
                     colorVals.push(...colorRef.match(/.{2}/g).map((hex) => HexToDec(hex)));
-                    console.log(`${colorRef.match(/.{2}/g).join("|")} --- ${colorVals.join(", ")}`);
                     break;
                 }
                 case "rgb": case "rgba": case "hsl": case "hsla": {
@@ -279,7 +286,6 @@ const EunoLIB = (() => {
             }
             for (let i = 0; i < 3; i++) {
                 colorVals[i] = Math.round(colorVals[i] * scaleFactor);
-                console.log(colorVals);
             }
             switch (colorRefType) {
                 case "hex": case "hexa": return `#${colorVals.map((val) => DecToHex(val)).join("")}`;
@@ -334,7 +340,7 @@ const EunoLIB = (() => {
             }
         };
         const Show = (obj, title = "Showing ...") => Alert(JC(obj), title); // Show properties of stringified object to GM.
-        const Flag = (msg, headerLevel = 1) => Alert(null, msg, headerLevel, ["flag"]); // Simple one-line chat flag sent to the GM.
+        const Flag = (msg, headerLevel = 1, classes = []) => Alert(null, msg, headerLevel, ["flag", ...classes]); // Simple one-line chat flag sent to the GM.
         // #endregion ░▒▓█[Chat]█▓▒░
 
         // #region ░░░░▒▓█[Arrays & Objects]█▓▒░ Array & Object Processing ░░░░░░
@@ -392,7 +398,7 @@ const EunoLIB = (() => {
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
 
             // Report readiness
-            U.Flag(`${SCRIPTNAME} Ready!`, 2);
+            U.Flag(`EunoLIB.${SCRIPTNAME} Ready!`, 2, ["silver"]);
             log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
         };
         // #endregion _______ Initialization _______
@@ -422,7 +428,7 @@ const EunoLIB = (() => {
 
         // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "HTML";
-        const DEFAULTSTATE = { /* initial values for state storage, if any */ };
+        const DEFAULTSTATE = {/* initial values for state storage, if any */};
         const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
         // #endregion _______ Namespacing _______
 
@@ -444,7 +450,7 @@ const EunoLIB = (() => {
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
 
             // Report readiness
-            U.Flag(`${SCRIPTNAME} Ready!`, 2);
+            U.Flag(`EunoLIB.${SCRIPTNAME} Ready!`, 2, ["silver"]);
             log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
         };
         // #endregion _______ Initialization _______
@@ -481,7 +487,7 @@ const EunoLIB = (() => {
             },
             "p": {
                 display: "block",
-                margin: "10px",
+                margin: "6px 3px",
                 "font-size": `${cssVars.bodyFontSize}px`,
                 "font-family": "Tahoma, sans-serif",
                 "line-height": `${1.5 * cssVars.bodyFontSize}px`,
@@ -494,9 +500,7 @@ const EunoLIB = (() => {
                 "font-weight": "normal",
                 "background-color": C.COLORS.grey75
             },
-            "img": {
-                display: "block"
-            },
+            "img": {display: "block"},
             "a": {
                 display: "inline-block",
                 width: "90%",
@@ -508,40 +512,35 @@ const EunoLIB = (() => {
                 "font-size": "inherit",
                 "font-weight": "bold",
                 "line-height": "inherit",
-                "vertical-align": "inherit"
+                "vertical-align": "inherit",
+                "text-decoration": "none",
+                "outline": "none", "border": "none"
             },
             "h1": {
                 display: "block",
                 height: "43px",
-                width: "100%",
-                margin: "20px 0 -10px 0",
+                "width": `${cssVars.boxPosition.width}px`,
+                margin: "20px 0 -10px -6px",
                 "font-family": "Impact, sans-serif",
-                "line-height": "36px",
+                "line-height": "28px",
                 "font-size": "24px",
                 "font-weight": "normal",
                 color: "black",
                 "text-align": "center",
                 "background-image": `url('${C.GetImgURL("h1Gold")}')`,
-                "background-size": C.GetImgSize("h1Gold")
+                "background-size": C.GetImgSize("h1Gold").map((dim) => `${dim}px`).join(" ")
             },
             "h2": { // background: bg-color bg-image position/bg-size bg-repeat bg-origin bg-clip bg-attachment initial|inherit;
                 display: "block",
                 height: "26px",
-                width: "100%",
-                "margin": "15px 0 -5px 0",
+                "width": `${cssVars.boxPosition.width}px`,
+                "margin": "5px 0 0px -6px",
                 "font-family": "'Trebuchet MS', sans-serif",
                 "line-height": "23px",
                 "font-size": "16px",
                 color: "black",
                 "text-indent": "10px",
-                "background-image": `url('${C.GetImgURL("h2Gold")}')`/* ,
-                "background": parseBGStyle({
-                    color: C.COLORS.black,
-                    image: "h2Gold",
-                    position: "center top",
-                    repeat: "no-repeat",
-                    origin: "border-box"
-                }) */
+                "background-image": `url('${C.GetImgURL("h2Gold")}')`
             },
             "h3": {
                 display: "block",
@@ -551,14 +550,7 @@ const EunoLIB = (() => {
                 "margin": "0 0 9px 0",
                 color: "gold",
                 "text-indent": "4px",
-                "background-image": `url('${C.GetImgURL("h3BGBlack")}')`/* ,
-                "background": parseBGStyle({
-                    color: C.COLORS.black,
-                    image: "h3BGBlack",
-                    position: "center top",
-                    repeat: "no-repeat",
-                    origin: "border-box"
-                }) */,
+                "background-image": `url('${C.GetImgURL("h3BGBlack")}')`,
                 "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
             }
         };
@@ -576,15 +568,15 @@ const EunoLIB = (() => {
             "block": {
                 "min-width": `${cssVars.boxPosition.width - 24}px`,
                 "margin": "2px 0 0 0",
-                "padding": "0 12px",
+                "padding": "0 6px",
                 "text-align": "left"
             },
             "title": {
-                "height": "142px",
+                "height": `${C.GetImgSize("titleMain").pop()}px`,
                 "width": "100%",
                 "margin": "0 0 -30px 0",
                 "background-image": `url('${C.GetImgURL("titleMain")}')`,
-                "background-size": C.GetImgSize("titleMain"),
+                "background-size": C.GetImgSize("titleMain").map((dim) => `${dim}px`).join(" "),
                 color: C.COLORS.black,
                 "font-family": "Impact, sans-serif",
                 "line-height": "36px",
@@ -592,53 +584,82 @@ const EunoLIB = (() => {
                 "font-weight": "normal",
                 "text-align": "center"
             },
-            "h1.flag": {
-                "height": "31px",
+            "flag": {
                 margin: "0",
                 "text-align": "left",
+                "text-indent": "40px"
+            },
+            "h1.flag": {
+                "height": "31px",
                 "line-height": "29px",
-                "text-indent": "5px",
                 "background-image": `url('${C.GetImgURL("h1FlagGold")}')`
             },
-            "h1.silver": {
-                "background-image": `url('${C.GetImgURL("h1Silver")}')`
-            },
-            "h1.flag.silver": {
-                "background-image": `url('${C.GetImgURL("h1FlagSilver")}')`
+            "h1.silver": {"background-image": `url('${C.GetImgURL("h1Silver")}')`},
+            "h1.flag.silver": {"background-image": `url('${C.GetImgURL("h1FlagSilver")}')`},
+            "h1.tight": {
+                height: "35px",
+                "margin-top": "5px"
             },
             "h2.flag": {
-                height: "22px",
-                margin: "0",
-                "background-size": "283px 30px",
-                "line-height": "19px",
-                "background-image": `url('${C.GetImgURL("h2FlagGold")}')`
+                height: "24px",
+                "line-height": "21px",
+                "background-image": `url('${C.GetImgURL("h2FlagGold")}')`,
+                "background-position": "center -2px"
             },
-            "h2.silver": {
-                "background-image": `url('${C.GetImgURL("h2Silver")}')`
-            },
-            "h2.flag.silver": {
-                "background-image": `url('${C.GetImgURL("h2FlagSilver")}')`
-            },
+            "h2.silver": {"background-image": `url('${C.GetImgURL("h2Silver")}')`},
+            "h2.flag.silver": {"background-image": `url('${C.GetImgURL("h2FlagSilver")}')`},
             "commandHighlight": {
-                padding: "0 7px 0 5px",
+                margin: "0 3px",
+                padding: "0 8px 0 6px",
                 color: C.COLORS.black,
                 "font-family": "monospace",
                 "font-weight": "bolder",
                 "text-shadow": `0 0 1px ${C.COLORS.black}`,
                 "background-image": `url('${C.GetImgURL("commandGold")}')`,
-                "background-size": "cover",
+                "background-size": "100% 100%",
                 "background-repeat": "no-repeat"
             },
-            "commandHighlight.silver": {
-                "background-image": `url('${C.GetImgURL("commandSilver")}')`
-            },
+            "commandHighlight.silver": {"background-image": `url('${C.GetImgURL("commandSilver")}')`},
             "commandHighlight.shiftLeft": {
+                "margin": "0 0 0 -20px",
                 "padding-right": "17px",
-                "margin-left": "-20px",
                 "text-align": "right",
                 "text-indent": "14px",
                 "background-position": "right"
-            }
+            },
+            "footer": {
+                "height": "37px",
+                "margin": "6px 0 0 0",
+                "background-image": `url('${C.GetImgURL("footerGold")}')`,
+                "background-size": "100%",
+                "background-repeat": "no-repeat",
+                "font-weight": "normal"
+            },
+            "footer.silver": {"background-image": `url('${C.GetImgURL("footerSilver")}')`},
+            "footer.hideIntro": {"background-image": `url('${C.GetImgURL("footerHideIntroGold")}')`},
+            "footer.goBack": {"background-image": `url('${C.GetImgURL("footerGoBackGold")}')`},
+            "footer.goBack.silver": {"background-image": `url('${C.GetImgURL("footerGoBackSilver")}')`},
+            "a.button": {
+                "display": "block",
+                "height": "100%", "width": "100%",
+                "margin": "0", "padding": "0",
+                "text-align": "inherit",
+                "font-family": "inherit",
+                "font-size": "inherit",
+                "line-height": "inherit",
+                "font-weight": "inherit",
+                "text-transform": "inherit",
+                "color": "inherit"
+            },
+            "span.buttonRound": {
+                "height": "50px",
+                "width": "50px",
+                "margin": "0 15px"
+            },
+            "span.buttonRound.download": {"background-image": `url('${C.GetImgURL("buttonDownload")}')`},
+            "span.buttonRound.chat": {"background-image": `url('${C.GetImgURL("buttonChat")}')`},
+            "span.buttonRound.bug": {"background-image": `url('${C.GetImgURL("buttonBug")}')`},
+            "fade50": {opacity: "0.5"}
         };
         // #endregion ░▒▓█[STYLES]█▓▒░
 
@@ -663,7 +684,7 @@ const EunoLIB = (() => {
                 .forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef]));
 
             // Finally, repeat for more-specific combo references that begin with the element's tag
-            tagClassRefs.filter((classRef) => classRef.split(/\./gu).every((className) => classes.includes(className)))
+            tagClassRefs.filter((classRef) => classRef.replace(new RegExp(`^${tag.toLowerCase()}\.`), "").split(/\./gu).every((className) => classes.includes(className)))
                 .forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef]));
 
             return Object.fromEntries(Object.entries(styleData).filter(([propName, propVal]) => propVal !== null));
@@ -691,22 +712,15 @@ const EunoLIB = (() => {
             const tagHTML = [
                 `<${tag.toLowerCase()} `,
                 Object.entries(attributes).map(([attrName, attrVal]) => `${attrName}="${attrVal}"` ).join(" "),
-                ">",
-                ...(content === false // Passing 'false' to content indicates an element with no content to wrap (e.g. <img>)
-                    ? [""]
-                    : [...[content].flat(), `</${tag.toLowerCase()}>`]
-                )
-            ].join("");
-            // sendChat("Check", `/w gm Returning: <pre>${_.escape(tagHTML)}</pre>`);
-            return [
-                `<${tag.toLowerCase()} `,
-                Object.entries(attributes).map(([attrName, attrVal]) => `${attrName}="${attrVal}"` ).join(" "),
-                ">",
-                ...(content === false // Passing 'false' to content indicates an element with no content to wrap (e.g. <img>)
-                    ? [""]
-                    : [...[content].flat(), `</${tag.toLowerCase()}>`]
-                )
-            ].join("");
+                ">"
+            ];
+            if (content !== false) {
+                content = [content].flat();
+                tagHTML.push(...content);
+                tagHTML.push(`</${tag.toLowerCase()}>`);
+            }
+            // sendChat("Check", `/w gm Returning: <pre>${_.escape(tagHTML.join(""))}</pre>`);
+            return tagHTML.join("");
         };
         // #endregion _______ Parsing Functions _______
 
@@ -723,17 +737,65 @@ const EunoLIB = (() => {
         // #endregion ░▒▓█[PARSING]█▓▒░
 
         // #region ░░░░▒▓█[CUSTOM ELEMENTS]█▓▒░ Shorthand Element Constructors for Common Use Cases ░░░░░░
-        const Box = (content, styles = {}) => Div(content, ["box"], styles);
-        const Block = (content, styles = {}) => Div(content, ["block"], styles);
+        const Box = (content, styles) => Div(content, ["box"], styles);
+        const Block = (content, styles) => Div(content, ["block"], styles);
+        const ButtonRound = (command, classes = [], styles = {}, attributes = {}) => Span(A("&nbsp;", ["button"], {}, {href: command}), ["buttonRound", ...classes], styles, attributes);
+        const Paras = (content) => [content].flat().map((para) => P(para)).join("");
+        const Spacer = (height) => Div("&nbsp;", ["spacer"], {height: `${height}px`.replace(/pxpx$/u, "px")});
+        const Footer = (content, classes = [], styles = {}, attributes = {}) => Div(content || "&nbsp;", ["footer", ...classes], styles, attributes);
+        const ButtonH1 = (command, content, classes = [], styles = {}, attributes = {}) => H1(A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes);
+        const ButtonH2 = (command, content, classes = [], styles = {}, attributes = {}) => H1(A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes);
+        const ButtonH3 = (command, content, classes = [], styles = {}, attributes = {}) => H1(A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes);
+        const ButtonFooter = (command, content, classes = [], styles = {}, attributes = {}) => Footer(A(content || "&nbsp;", ["button"], {}, {href: command}), classes, styles, attributes);
+        const Command = (command, classes = [], styles = {}, attributes = {}) => Span(command, ["commandHighlight", ...classes], styles, attributes);
+        const ButtonCommand = (command, classes = [], styles = {}, attributes = {}) => Command(A(command, ["button"], {}, {href: command}), ["shiftLeft", ...classes], styles, attributes);
         // #endregion ░▒▓█[CUSTOM ELEMENTS]█▓▒░
 
+        // #region ░░░░▒▓█[HELP MESSAGES]█▓▒░ Main Intro/Help Message for EunoScripts ░░░░░░
+        const DisplayHelp = (options = {}) => {
+            U.Alert(H.Box([
+                H.Span("", ["title"]),
+                H.Block([
+                    H.ButtonRound("https://github.com/Eunomiac/EunosRoll20Scripts/releases", ["download"], {margin: "0 5px 20px 5px"}, {title: "Download the most recent version."}),
+                    H.ButtonRound("https://app.roll20.net/forum/permalink/10184021/", ["chat"], {margin: "0 5px 8px 5px"}, {title: "Join the discussion in the Roll20 forum thread."}),
+                    H.ButtonRound("https://github.com/Eunomiac/EunosRoll20Scripts/issues", ["bug"], {margin: "0 5px 20px 5px"}, {title: "Report bugs, make suggestions and track issues."})
+                ], {"text-align": "center", "margin": "-10px 0 -15px 0"}),
+                H.Block(H.Paras([
+                    "<b>!ETC</b> is in&shy;ten&shy;ded to be a com&shy;pre&shy;hen&shy;sive sol&shy;ution to man&shy;ag&shy;ing Roll20 Text Ob&shy;jects.",
+                    "You can keep ap&shy;prised of new fea&shy;tures, fixes and fu&shy;ture plans as <b>!ETC</b> dev&shy;elop&shy;ment pro&shy;ceeds through its al&shy;pha per&shy;iod by visiting the links above."
+                ])),
+                H.Block([
+                    H.H2("Basic Chat Commands"),
+                    H.Spacer(5),
+                    H.Paras([
+                        `${H.ButtonCommand("!etc", ["shiftLeft"])} — View this help message.`,
+                        `${H.ButtonCommand("!etc setup", ["shiftLeft"])} — Ac&shy;ti&shy;vate or de&shy;ac&shy;ti&shy;vate any of the fea&shy;tures in this script pack&shy;age.`,
+                        `${H.ButtonCommand("!etc purge all", ["shiftLeft"])} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning <b>!ETC</b> to its de&shy;fault in&shy;stall&shy;ation state.`
+                    ]),
+                    H.Paras("Learn more a&shy;bout each of <b>!ETC</b>'s fea&shy;tures by click&shy;ing the head&shy;ings be&shy;low:"),
+                    H.Spacer(5),
+                    H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight"], {}, {title: "Control drop shadow behavior."}),
+                    H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight"], {}, {title: "Configure pruning of empty text objects."}),
+                    H.H1("Attribute Linking", ["fade50", "tight"]),
+                    H.H1("Table & Chart Styling", ["fade50", "tight"]),
+                    H.H1("Timers & Calendars", ["fade50", "tight"]),
+                    H.H1("Miscellaneous", ["fade50", "tight"]),
+                    H.Spacer(5),
+                    options.isAutoDisplaying ? H.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${H.Command("!etc")} com&shy;mand.)</i>`]) : ""
+                ]),
+                options.isAutoDisplaying ? H.ButtonFooter("!etc toggle intro", "", ["hideIntro"]) : H.Footer()
+            ]));
+        };
+        // #endregion ░▒▓█[HELP MESSAGES]█▓▒░
         return {
             Preinitialize, Initialize,
 
             Tag,
             Div, Span, P, Img, A, H1, H2, H3,
 
-            Box, Block
+            Box, Block, ButtonRound, Paras, Spacer, Footer, ButtonH1, ButtonH2, ButtonH3, ButtonFooter, Command, ButtonCommand,
+
+            DisplayHelp
         };
 
     })();
@@ -749,4 +811,6 @@ const EunoLIB = (() => {
 // #endregion ▄▄▄▄▄ EunoLIB ▄▄▄▄▄
 
 EunoCORE.regSCRIPT("EunoLIB", EunoLIB);
+
+
 void MarkStop("EunoLIB");
