@@ -68,8 +68,13 @@ const EunoCORE = {
             buttonBug: ["buttons", "buttonBug.png", [50, 50] ],
             h1Gold: ["emphasis", "h1Gold.png", [283, 40]],
             h1Silver: ["emphasis", "h1Silver.png", [283, 40]],
+            h1FlagGold: ["emphasis", "h1FlagGold.png", [283, 40]],
+            h1FlagSilver: ["emphasis", "h1FlagSilver.png", [283, 40]],
             h2Gold: ["emphasis", "h2Gold.png", [283, 37]],
             h2Silver: ["emphasis", "h2Silver.png", [283, 37]],
+            h2FlagGold: ["emphasis", "h2FlagGold.png", [283, 37]],
+            h2FlagSilver: ["emphasis", "h2FlagSilver.png", [283, 37]],
+            h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]],
             commandGold: ["emphasis", "commandGold.png", [235, 37]],
             commandSilver: ["emphasis", "commandSilver.png", [235, 37]]
         },
@@ -289,12 +294,12 @@ const EunoLIB = (() => {
         // #endregion ░▒▓█[String Parsing]█▓▒░
 
         // #region ░░░░▒▓█[Chat]█▓▒░ Basic Chat Messages ░░░░░░
-        const Alert = (content, title, headerLevel = 1) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
+        const Alert = (content, title, headerLevel = 1, classes = []) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
             const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
             if (content !== false && (content || title)) {
                 if (title) {
                     if (content === null) {
-                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, [], {margin: 0, "text-align": "left", height: "39px", "background-size": "283px 40px"}), {padding: 0}), {"min-height": null})}`, null, {noarchive: true});
+                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, classes), {padding: 0}), {"min-height": "unset"})}`, null, {noarchive: true});
                         /* {
                                 "margin": "0px 0px -10px -14px",
                                 "font-family": "Trebuchet MS",
@@ -307,7 +312,7 @@ const EunoLIB = (() => {
                             })}`, null, {noarchive: true}); */
                     } else {
                         sendChat(randStr(), `/w gm ${H.Box(H.Block([
-                            H[`H${headerLevel}`](title),
+                            H[`H${headerLevel}`](title, classes),
                             H.Block(content)
                         ]))}`, null, {noarchive: true});
                         /* [
@@ -329,7 +334,7 @@ const EunoLIB = (() => {
             }
         };
         const Show = (obj, title = "Showing ...") => Alert(JC(obj), title); // Show properties of stringified object to GM.
-        const Flag = (msg, headerLevel = 1) => Alert(null, `[Euno] ${msg}`.replace(/\[Euno\]\s*\[Euno\]/gu, "[Euno]"), headerLevel); // Simple one-line chat flag sent to the GM.
+        const Flag = (msg, headerLevel = 1) => Alert(null, msg, headerLevel, ["flag"]); // Simple one-line chat flag sent to the GM.
         // #endregion ░▒▓█[Chat]█▓▒░
 
         // #region ░░░░▒▓█[Arrays & Objects]█▓▒░ Array & Object Processing ░░░░░░
@@ -387,7 +392,7 @@ const EunoLIB = (() => {
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
 
             // Report readiness
-            // U.Flag(`${SCRIPTNAME} Ready!`, 2);
+            U.Flag(`${SCRIPTNAME} Ready!`, 2);
             log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
         };
         // #endregion _______ Initialization _______
@@ -439,7 +444,7 @@ const EunoLIB = (() => {
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
 
             // Report readiness
-            // U.Flag(`${SCRIPTNAME} Ready!`, 2);
+            U.Flag(`${SCRIPTNAME} Ready!`, 2);
             log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
         };
         // #endregion _______ Initialization _______
@@ -517,10 +522,7 @@ const EunoLIB = (() => {
                 color: "black",
                 "text-align": "center",
                 "background-image": `url('${C.GetImgURL("h1Gold")}')`,
-                "background-size": "100% 100%"
-            },
-            "h1.silver": {
-                "background-image": `url('${C.GetImgURL("h1Silver")}')`
+                "background-size": C.GetImgSize("h1Gold")
             },
             "h2": { // background: bg-color bg-image position/bg-size bg-repeat bg-origin bg-clip bg-attachment initial|inherit;
                 display: "block",
@@ -531,7 +533,8 @@ const EunoLIB = (() => {
                 "line-height": "23px",
                 "font-size": "16px",
                 color: "black",
-                "text-indent": "10px"/* ,
+                "text-indent": "10px",
+                "background-image": `url('${C.GetImgURL("h2Gold")}')`/* ,
                 "background": parseBGStyle({
                     color: C.COLORS.black,
                     image: "h2Gold",
@@ -540,16 +543,6 @@ const EunoLIB = (() => {
                     origin: "border-box"
                 }) */
             },
-            "h2.silver": {
-                /* "background": parseBGStyle({
-                    color: C.COLORS.black,
-                    image: "h2Silver",
-                    position: "center top",
-                    repeat: "no-repeat",
-                    origin: "border-box"
-                }) */
-                "background-image": `url('${C.GetImgURL("h2Silver")}')`
-            },
             "h3": {
                 display: "block",
                 width: "100%",
@@ -557,7 +550,8 @@ const EunoLIB = (() => {
                 "line-height": "20px",
                 "margin": "0 0 9px 0",
                 color: "gold",
-                "text-indent": "4px"/* ,
+                "text-indent": "4px",
+                "background-image": `url('${C.GetImgURL("h3BGBlack")}')`/* ,
                 "background": parseBGStyle({
                     color: C.COLORS.black,
                     image: "h3BGBlack",
@@ -599,11 +593,31 @@ const EunoLIB = (() => {
                 "text-align": "center"
             },
             "h1.flag": {
+                "height": "31px",
                 margin: "0",
-                "text-align": "left"
+                "text-align": "left",
+                "line-height": "29px",
+                "text-indent": "5px",
+                "background-image": `url('${C.GetImgURL("h1FlagGold")}')`
+            },
+            "h1.silver": {
+                "background-image": `url('${C.GetImgURL("h1Silver")}')`
+            },
+            "h1.flag.silver": {
+                "background-image": `url('${C.GetImgURL("h1FlagSilver")}')`
             },
             "h2.flag": {
-
+                height: "22px",
+                margin: "0",
+                "background-size": "283px 30px",
+                "line-height": "19px",
+                "background-image": `url('${C.GetImgURL("h2FlagGold")}')`
+            },
+            "h2.silver": {
+                "background-image": `url('${C.GetImgURL("h2Silver")}')`
+            },
+            "h2.flag.silver": {
+                "background-image": `url('${C.GetImgURL("h2FlagSilver")}')`
             },
             "commandHighlight": {
                 padding: "0 7px 0 5px",
@@ -614,6 +628,9 @@ const EunoLIB = (() => {
                 "background-image": `url('${C.GetImgURL("commandGold")}')`,
                 "background-size": "cover",
                 "background-repeat": "no-repeat"
+            },
+            "commandHighlight.silver": {
+                "background-image": `url('${C.GetImgURL("commandSilver")}')`
             },
             "commandHighlight.shiftLeft": {
                 "padding-right": "17px",
