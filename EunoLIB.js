@@ -11,7 +11,7 @@ log("Starting!");
 const EunoCORE = {
     ROOTNAME: "Euno", // Namespace under global state variables
 
-    _scripts: {}, // Installed scripts will register themselves here.
+    _scripts: {}, // Installed scripts will register themselves here. EunoCORE.regSCRIPT()
     regSCRIPT: (name, script) => { EunoCORE._scripts[name] = script },
     get SCRIPTS() { return EunoCORE._scripts },
 
@@ -26,8 +26,8 @@ const EunoCORE = {
     UpdateNamespace: () => { /* Checks & Migration functions required for version update */ return true },
 
     // Script initialization calls.
-    Preinitialize: () => Object.values(EunoCORE.SCRIPTS).filter((script) => "Preinitialize" in script).forEach((script) => script.Preinitialize()),
-    Initialize: () => Object.values(EunoCORE.SCRIPTS).filter((script) => "Initialize" in script).forEach((script) => script.Initialize()),
+    Preinitialize: (isResettingState = false) => Object.values(EunoCORE.SCRIPTS).filter((script) => "Preinitialize" in script).forEach((script) => script.Preinitialize(isResettingState)),
+    Initialize: (isRegisteringEventListeners = false, isResettingState = false) => Object.values(EunoCORE.SCRIPTS).filter((script) => "Initialize" in script).forEach((script) => script.Initialize(isRegisteringEventListeners, isResettingState)),
 
     // ████████ [EunoCORE.C] Global References & Constants ████████
     /**
@@ -103,7 +103,7 @@ on("ready", () => {
         // Preinitialize each major script component, then finalize initialization.
         //   - Delays are necessary to ensure each step completes for all scripts before moving to the next.
         setTimeout(EunoCORE.Preinitialize, 1000);
-        setTimeout(EunoCORE.Initialize, 2000);
+        setTimeout(() => EunoCORE.Initialize(true), 2000);
         return true;
     } else {
         return log("[Euno] ERROR: Failure to Update 'Euno' Namespace.");
@@ -164,7 +164,9 @@ const EunoLIB = (() => {
         if (isResettingState) { Preinitialize(true) }
 
         // Register event handlers, if specified
-        if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
+        if (isRegisteringEventListeners) {
+            on("chat:message", handleMessage)
+        }
 
         // Initialize EunoLIB sub-scripts
         ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Initialize(isRegisteringEventListeners));
@@ -178,8 +180,33 @@ const EunoLIB = (() => {
     };
     // #endregion _______ Initialization _______
 
+    // #region ========== Events: Event Handlers ===========
+    const handleMessage = (msg) => {
+        if (msg.content.startsWith("!euno") && playerIsGM(msg.playerid)) {
+            let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
+                .map((x) => x.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1"))
+                .filter((x) => Boolean(x));
+            if (({
+                toggle: () => ({
+                    intro: () => toggleIntroMessage(args.includes("true"))
+                }[(call = args.shift() || "").toLowerCase()] || (() => false))()
+            }[(call = args.shift() || "").toLowerCase()] || (() => false))() === false) {
+                H.DisplayHelp();
+            };
+        }
+    };
+    // #endregion _______ Events _______
+
     // #endregion ░░░░[FRONT]░░░░
 
+    const toggleIntroMessage = (isActive) => {
+        STA.TE.isDisplayingHelpAtStart = isActive === true;
+        if (STA.TE.isDisplayingHelpAtStart) {
+            U.Flag("Showing Help at Start.", 2);
+        } else {
+            U.Flag("Hiding Help at Start.", 2, ["silver"]);
+        }
+    };
     const UTILITIES = (() => {
             
         /** ████████ [EunoLIB.U] Global Utility Functions ████████
@@ -930,7 +957,7 @@ const EunoLIB = (() => {
          * @param {Object} [options] - Options affecting display of help message: isAutoDisplaying (boolean)* @param {Object} myObj description
          * @param {boolean} options.a description
          */
-        const DisplayHelp = (options) => {
+        const DisplayHelp = (options = {}) => {
             U.Alert(H.Box([
                 H.Span(null, ["title", "main"]),
                 H.Block([
