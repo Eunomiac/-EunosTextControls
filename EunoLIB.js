@@ -1,14 +1,13 @@
 void MarkStart("EunoLIB");
 log("Starting!");
 /******▌████████████████████████████████████████████████████████████▐******\
-|*     ▌██▓▒░ EunoLIB: Common Functions for EunosRoll20Scripts ░▒▓██▐     *|
+|*     ▌█░░░░ EunoLIB: Common Functions for EunosRoll20Scripts ░░░░█▐     *|
 |*     ▌████████████████████████████████████████████████████████████▐     *|
-|*     ▌█████████████████████▓▒░ v0.13-alpha ░▒▓████████████████████▐     *|
-|*     ▌████████████████████▓▒░ June 25, 2021 ░▒▓███████████████████▐     *|
-|*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
+|*     ▌████████████████████████ v0.13-alpha ███████████████████████▐     *|
+|*     ▌███████████████████████ June 25, 2021 ██████████████████████▐     *|
+|*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
-// #region █████▓▒░ TOP: Root-Level Namespacing, Initialization, On "Ready" Listener ░▒▓█████
 const EunoCORE = {
     ROOTNAME: "Euno", // Namespace under global state variables
 
@@ -30,10 +29,13 @@ const EunoCORE = {
     Preinitialize: () => Object.values(EunoCORE.SCRIPTS).filter((script) => "Preinitialize" in script).forEach((script) => script.Preinitialize()),
     Initialize: () => Object.values(EunoCORE.SCRIPTS).filter((script) => "Initialize" in script).forEach((script) => script.Initialize()),
 
-    // █████▓▒░ [EunoCORE.C] Global References & Constants ░▒▓█████
+    // ████████ [EunoCORE.C] Global References & Constants ████████
+    /**
+     * @global
+     * @name C */
     C: {
 
-        // #region ░░░░▒▓█[COLORS]█▓▒░ Color Definitions ░░░░░░
+        // #region ░░░░░░░[COLORS]░░░░ Color Definitions ░░░░░░
         COLORS: {
             // Black / Grey / White
             black: "#000",
@@ -48,9 +50,9 @@ const EunoCORE = {
             gold: "#FFD700",
             palegold: "#FFE775"
         },
-        // #endregion ░▒▓█[COLORS]█▓▒░
+        // #endregion ░░░░[COLORS]░░░░
 
-        // #region ░░░░▒▓█[IMAGES]█▓▒░ Image Source URLs ░░░░░░
+        // #region ░░░░░░░[IMAGES]░░░░ Image Source URLs ░░░░░░
         IMGROOT: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images",
         IMAGES: {
             titleMain: ["bookends", "titleMain.png", [283, 208] ],
@@ -85,7 +87,7 @@ const EunoCORE = {
             return [EunoCORE.C.IMGROOT, imgFolder.toLowerCase(), imgKey].join("/");
         },
         GetImgSize: (imgKey) => [...EunoCORE.C.IMAGES[imgKey]].pop()
-        // #endregion ░▒▓█[IMAGES]█▓▒░
+        // #endregion ░░░░[IMAGES]░░░░
 
     },
 
@@ -110,9 +112,13 @@ on("ready", () => {
 // #endregion ▄▄▄▄▄ TOP ▄▄▄▄▄
 
 
-// #region █████▓▒░ EunoLIB: Library of Script Dependencies ░▒▓█████
+// #region ████████ EunoLIB: Library of Script Dependencies ████████
+/**
+ * EunoLIB Library Namespace.
+ * @namespace
+ */
 const EunoLIB = (() => {
-    // #region ░░░░▒▓█[FRONT]█▓▒░ Boilerplate Namespacing & Initialization ░░░░░░
+    // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
     // #region ========== Namespacing: Basic State References & Namespacing ===========
     const SCRIPTNAME = "EunoLIB";
@@ -125,7 +131,15 @@ const EunoLIB = (() => {
 
     // #region ========== Initialization: Script Startup & Event Listeners ===========
     const {C} = EunoCORE;
-    let CFG, LIB, U, O, H;
+    /* eslint-disable */
+    let CFG;
+    let LIB;
+    /**
+     * @borrows UTILITIES as U
+     */
+    let U;
+    let O,
+        H;
     const Preinitialize = (isResettingState = false) => {
         try { EunoCONFIG } catch (noConfigError) { return log("[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?") }
         // Reset script state entry, if specified
@@ -143,6 +157,7 @@ const EunoLIB = (() => {
         ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Preinitialize());
     };
     const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
+        // Report readiness of EunoCONFIG (verified in Preinitialize)
         U.Flag("EunoCONFIG Ready!");
 
         // Reset script state entry, if specified
@@ -155,21 +170,23 @@ const EunoLIB = (() => {
         ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Initialize(isRegisteringEventListeners));
 
         // Report readiness
-        U.Flag(`${SCRIPTNAME} Ready!`);
-        log(`[Euno] ${SCRIPTNAME} Ready!`);
+        U.Flag(`${SCRIPTNAME} Ready!`); log(`[Euno] ${SCRIPTNAME} Ready!`);
 
         // Display Help message, if so configured
-        if (STA.TE.isDisplayingHelpAtStart) {
-            H.DisplayHelp({isAutoDisplaying: true});
-        }
+        if (STA.TE.isDisplayingHelpAtStart) {H.DisplayHelp({isAutoDisplaying: true})}
+        // setTimeout(H.DisplayETCHelp, 1500);
     };
     // #endregion _______ Initialization _______
 
-    // #endregion ░▒▓█[FRONT]█▓▒░
+    // #endregion ░░░░[FRONT]░░░░
 
-    // █████▓▒░ [EunoLIB.U] Global Utility Functions ░▒▓█████
     const UTILITIES = (() => {
-        // #region ░░░░▒▓█[FRONT]█▓▒░ Boilerplate Namespacing & Initialization ░░░░░░
+            
+        /** ████████ [EunoLIB.U] Global Utility Functions ████████
+         * @alias UTILITIES
+         * @namespace
+         */
+        // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
         // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "UTILITIES";
@@ -198,12 +215,21 @@ const EunoLIB = (() => {
             Flag(`EunoLIB.${SCRIPTNAME} Ready!`, 2, ["silver"]);
             log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
         };
-        // #endregion _______ Initialization _______
+            // #endregion _______ Initialization _______
 
-        // #endregion ░▒▓█[FRONT]█▓▒░
+        // #endregion ░░░░[FRONT]░░░░
 
-        // #region ░░░░▒▓█[Validation]█▓▒░ Verification & Type Checking ░░░░░░
-        const GetR20Type = (val) => { // Returns specific type/subtype of R20 object, or false if val isn't an R20 object.
+        // #region ░░░░░░░[Validation]░░░░ Verification & Type Checking ░░░░░░
+
+        /**
+         * @function GetR20Type
+         * @memberof UTILITIES
+         * @description Returns specific type/subtype of R20 object, or false if val isn't an R20 object.
+         *
+         * @param {*} val            the value to retrieve the type of
+         * @return {string|boolean}  the Roll20 type, or "token", "card", "animation" where applicable, or false if not a Roll20 object.
+         */
+        const GetR20Type = (val) => {
             if (val && typeof val === "object" && "id" in val && "get" in val) {
                 const type = val.get("_type");
                 if (type === "graphic") {
@@ -222,7 +248,19 @@ const EunoLIB = (() => {
             }
             return false;
         };
-        const GetType = (val) => { // More discerning 'typeof' replacement: Handles number types and Roll20 object types
+        /**
+         * @function GetType
+         * @memberof UTILITIES
+         * @description More discerning 'typeof' replacement: Handles number types and Roll20 object types. 
+         * Note: Be aware this function returns "int"/"float" for strings that can be parsed into those types,
+         * "id" for strings that could be Roll20 object ids, and "hex", "hexa", "rgb", "rgba", "hsl", "hsla"
+         * for strings that are HTML/CSS color values
+         * 
+         * @param {*} val             the value to retrieve the type of
+         * @return {string}           the type of val
+         */
+        const GetType = (val) => { // 
+            // 
             const valType = Object.prototype.toString.call(val).slice(8, -1).toLowerCase().trim();
             switch (valType) {
                 case "string": {
@@ -232,6 +270,9 @@ const EunoLIB = (() => {
                     if (/^rgba\((\s*\d{1,3}[,\s)]){3}(\s*[\d\.]+[,\s)])$/u.test(val)) { return "rgba" }
                     if (/^hsl\((\s*[\d\.%]+[,\s)]){3}$/u.test(val)) { return "hsl" }
                     if (/^hsla\((\s*[\d\.%]+[,\s)]){3}(\s*[\d\.]+[,\s)])$/u.test(val)) { return "hsla" }
+                    if (/^(-|\+)?[\d,]+$/.test(val)) { return "int" }
+                    if (/^(-|\+|\d)[\d,\s]*\.[\d\s]*$/u.test(val)) { return "float" }
+                    if (/^-[a-zA-Z0-9_-]{19}$/u.test(val)) { return "id" }
                     break;
                 }
                 case "number": return /\./u.test(`${val}`) ? "float" : "int";
@@ -240,9 +281,9 @@ const EunoLIB = (() => {
             }
             return valType;
         };
-        // #endregion ░▒▓█[Validation]█▓▒░
+        // #endregion ░░░░[Validation]░░░░
 
-        // #region ░░░░▒▓█[Conversion]█▓▒░ Converting Data Types & Formats ░░░░░░
+        // #region ░░░░░░░[Conversion]░░░░ Converting Data Types & Formats ░░░░░░
         const HexToDec = (hex) => hex
             .toLowerCase()
             .replace(/[^a-z0-9]/gu, "")
@@ -258,9 +299,9 @@ const EunoLIB = (() => {
             } while (quot > 0);
             return hex.reverse().join("");
         };
-        // #endregion ░▒▓█[Conversion]█▓▒░
+            // #endregion ░░░░[Conversion]░░░░
 
-        // #region ░░░░▒▓█[Scaling]█▓▒░ Scaling & Related Manipulation of Values ░░░░░░
+        // #region ░░░░░░░[Scaling]░░░░ Scaling & Related Manipulation of Values ░░░░░░
         const ScaleColor = (colorRef, scaleFactor = 1) => {
             const colorVals = [];
             const colorRefType = GetType(colorRef);
@@ -292,58 +333,88 @@ const EunoLIB = (() => {
                 default: return `${GetType(colorRef)}(${colorVals.join(", ")})`;
             }
         };
-        // #endregion ░▒▓█[Scaling]█▓▒░
+            // #endregion ░░░░[Scaling]░░░░
 
-        // #region ░░░░▒▓█[String Parsing]█▓▒░ Parsing JSON & Inline CSS for Chat Output ░░░░░░
-        const JS = (val) => JSON.stringify(val, null, 2).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;"); // Stringification for display in R20 chat.
+        // #region ░░░░░░░[Strings]░░░░ String Manipulation, JSON, Type Conversion ░░░░░░
+
+        // #region ========== Case Conversion: Upper, Lower, Sentence & Title Case ===========
+        const UCase = (val) => `${val || ""}`.toUpperCase(); // "Safe" toUpperCase()
+        const LCase = (val) => `${val || ""}`.toLowerCase(); // "Safe" toLowerCase()
+        const SCase = (val) => { // Converts to sentence case, retaining interior uppercase letters UNLESS all uppercase
+            val = `${val || ""}`;
+            if (/[^a-z]/u.test(val)) { val = LCase(val) }
+            return `${UCase(val.charAt(0))}${(val).slice(1)}`;
+        };
+        const TCase = (val) => SCase(val) // Converts to title case
+            .split(/ /gu)
+            .map((subStr) => `${UCase(subStr.charAt(0))}${(/[^a-z]/u.test(subStr) ? LCase(subStr) : subStr).slice(1)}`)
+            .join(" ");
+            // #endregion _______ Case Conversion _______
+
+        // #region ========== Type Conversion: To Numbers, Objects ===========
+        const ParseStrings = (val) => [val].flat().map((str) => { // Converts strings into appropriate data type
+            switch(GetType(val)) {
+                case "int": return parseInt(val);
+                case "float": return parseFloat(val);
+                default: {
+                    switch(`${val}`.toLowerCase()) {
+                        case "true": return true;
+                        case "false": return false;
+                        case "null": return null;
+                        case "undefined": return undefined;
+                        default: return val;
+                    }
+                }
+            }
+        });
+        const ParseParams = (val, delim = ",", propDelim = ":") => Object.fromEntries(val // Converts comma-delimited <key>:<val> pairs to object.
+            .split(delim)
+            .map((kvPair) => kvPair.split(propDelim)));
+        const JS = (val) => JSON.stringify(val, null, 2) // Stringification for display in R20 chat.
+            .replace(/\n/g, "<br>")
+            .replace(/ /g, "&nbsp;");
         const JC = (val) => H.Pre(JS(val)); // Stringification for data objects and other code for display in R20 chat.
-        // #endregion ░▒▓█[String Parsing]█▓▒░
+        // #endregion _______ Type Conversion _______
 
-        // #region ░░░░▒▓█[Chat]█▓▒░ Basic Chat Messages ░░░░░░
-        const Alert = (content, title, headerLevel = 1, classes = []) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
-            const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
+        // #region ========== Numbers to Strings: Convert Numbers to Words, Signed Numbers, Ordinals, Roman Numerals ===========
+        const NumToWords = (num) => {};
+        const NumToOrdinal = (num) => {};
+        const NumToRoman = (num) => {};
+        const NumToSignedNum = (num) => {num = ParseStrings(num); return `${num >= 0 ? "+" : "-"}${Math.abs(num)}`};
+        // #endregion _______ Numbers to Strings _______
+
+        // #endregion ░░░░[Strings]░░░░
+
+        // #region ░░░░░░░[Chat]░░░░ Basic Chat Messages ░░░░░░
+        const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
+        const Alert = (content, title, headerLevel = 1, classes = [], options = {noarchive: true}) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
             if (content !== false && (content || title)) {
                 if (title) {
                     if (content === null) {
-                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, classes), {padding: 0}), {"min-height": "unset"})}`, null, {noarchive: true});
-                        /* {
-                                "margin": "0px 0px -10px -14px",
-                                "font-family": "Trebuchet MS",
-                                "font-weight": "bold",
-                                "font-variant": "small-caps",
-                                "text-indent": "12px",
-                                "font-size": "18px",
-                                "line-height": "34px",
-                                "text-align": "left"
-                            })}`, null, {noarchive: true}); */
+                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, classes), {padding: 0}), {"min-height": "unset"})}`, null, options);
                     } else {
                         sendChat(randStr(), `/w gm ${H.Box(H.Block([
                             H[`H${headerLevel}`](title, classes),
                             H.Block(content)
-                        ]))}`, null, {noarchive: true});
-                        /* [
-                            H.HTML.H(title, 1, {
-                                "margin": "0px 0px -10px -14px",
-                                "font-family": "Trebuchet MS",
-                                "font-weight": "bold",
-                                "font-variant": "small-caps",
-                                "text-indent": "12px",
-                                "font-size": "18px",
-                                "line-height": "34px"
-                            }),
-                            H.HTML.Block(content)
-                        ]))}`, null, {noarchive: true}); */
+                        ]))}`, null, options);
                     }
                 } else {
-                    sendChat(randStr(), `/w gm ${content}`, null, {noarchive: true});
+                    sendChat(randStr(), `/w gm ${content}`.replace(/@@tilde@@/gu, "~")); // Restore escaped tildes), null, options);
                 }
+            }
+        };
+        const Direct = (content, target = "all", options) => {
+            if (LCase(target) === "all") {
+                sendChat(randStr(), `/direct ${content}`.replace(/@@tilde@@/gu, "~"), null, options); // Restore escaped tildes), null, options);
+            } else {
+                Alert(content, null, undefined, undefined, options);
             }
         };
         const Show = (obj, title = "Showing ...") => Alert(JC(obj), title); // Show properties of stringified object to GM.
         const Flag = (msg, headerLevel = 1, classes = []) => Alert(null, msg, headerLevel, ["flag", ...classes]); // Simple one-line chat flag sent to the GM.
-        // #endregion ░▒▓█[Chat]█▓▒░
+        // #endregion ░░░░[Chat]░░░░
 
-        // #region ░░░░▒▓█[Arrays & Objects]█▓▒░ Array & Object Processing ░░░░░░
+        // #region ░░░░░░░[Arrays & Objects]░░░░ Array & Object Processing ░░░░░░
         const KVPMap = (obj, keyFunc = (x) => x, valFunc) => {
             /* An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
             *      If only one function is provided, it's assumed to be mapping the values and will receive (v, k) args. */
@@ -356,23 +427,42 @@ const EunoLIB = (() => {
             });
             return newObj;
         };
-        // #endregion ░▒▓█[Arrays & Objects]█▓▒░
+            // #endregion ░░░░[Arrays & Objects]░░░░
 
         return {
+            // [FRONT: Initialization]
             Preinitialize, Initialize,
 
+            // [Validation]
             GetR20Type, GetType,
-            HexToDec, DecToHex, ScaleColor,
-            JS, JC,
-            Alert, Show, Flag,
+
+            // [Conversion]
+            HexToDec, DecToHex,
+
+            // [Scaling]
+            ScaleColor,
+
+            // [Strings: Case Conversion]
+            UCase, LCase, SCase, TCase,
+            // [Strings: Type Conversion]
+            ParseStrings, ParseParams, JS, JC,
+            // [Strings: Numbers to Strings]
+            NumToWords, NumToOrdinal, NumToRoman, NumToSignedNum,
+
+            // [Chat]
+            Alert, Direct, Show, Flag,
+
+            // [Arrays & Objects]
             KVPMap
         };
-
     })();
 
-    // █████▓▒░ [EunoLIB.O] Roll20 Object Manipulation ░▒▓█████
+    /** ████████ [EunoLIB.O] Roll20 Object Manipulation ████████
+     * @global
+     * @namespace O
+     */
     const OBJECTS = (() => {
-        // #region ░░░░▒▓█[FRONT]█▓▒░ Boilerplate Namespacing & Initialization ░░░░░░
+        // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
         // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "OBJECTS";
@@ -403,16 +493,16 @@ const EunoLIB = (() => {
         };
         // #endregion _______ Initialization _______
 
-        // #endregion ░▒▓█[FRONT]█▓▒░
+        // #endregion ░░░░[FRONT]░░░░
 
-        // #region ░░░░▒▓█[Selections]█▓▒░ Extracting Selected Objects from API Chat Messages ░░░░░░
+        // #region ░░░░░░░[Selections]░░░░ Extracting Selected Objects from API Chat Messages ░░░░░░
         const GetSelObjs = (msg, type = "text") => { // Returns an array of selected objects.
             if (msg.selected && msg.selected.length) {
                 return msg.selected.filter((objData) => objData._type === type).map((objData) => getObj(type, objData._id));
             }
             return [];
         };
-        // #endregion ░▒▓█[Selections]█▓▒░
+        // #endregion ░░░░[Selections]░░░░
 
         return {
             Preinitialize, Initialize,
@@ -422,9 +512,12 @@ const EunoLIB = (() => {
 
     })();
 
-    // █████▓▒░ [EunoLIB.H] HTML/CSS Parsing & Styling for Chat & Handouts ░▒▓█████
+    /** ████████ [EunoLIB.H] HTML/CSS Parsing & Styling for Chat & Handouts ████████
+     * @global
+     * @namespace H
+     */
     const HTML = (() => {
-        // #region ░░░░▒▓█[FRONT]█▓▒░ Boilerplate Namespacing & Initialization ░░░░░░
+        // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
         // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "HTML";
@@ -455,13 +548,13 @@ const EunoLIB = (() => {
         };
         // #endregion _______ Initialization _______
 
-        // #endregion ░▒▓█[FRONT]█▓▒░
+        // #endregion ░░░░[FRONT]░░░░
 
-        // #region ░░░░▒▓█[STYLES]█▓▒░ CSS Class Style Definitions ░░░░░░
+        // #region ░░░░░░░[STYLES]░░░░ CSS Class Style Definitions ░░░░░░
         const cssVars = {
             boxPosition: {
                 width: 283,
-                shifts: {top: -29, right: 0, bottom: -7, left: -45}
+                shifts: {top: -26, right: 0, bottom: -7, left: -45}
             },
             bodyFontSize: 13
         };
@@ -525,7 +618,7 @@ const EunoLIB = (() => {
                 "line-height": "28px",
                 "font-size": "24px",
                 "font-weight": "normal",
-                color: "black",
+                color: C.COLORS.black,
                 "text-align": "center",
                 "background-image": `url('${C.GetImgURL("h1Gold")}')`,
                 "background-size": C.GetImgSize("h1Gold").map((dim) => `${dim}px`).join(" ")
@@ -538,7 +631,7 @@ const EunoLIB = (() => {
                 "font-family": "'Trebuchet MS', sans-serif",
                 "line-height": "23px",
                 "font-size": "16px",
-                color: "black",
+                color: C.COLORS.black,
                 "text-indent": "10px",
                 "background-image": `url('${C.GetImgURL("h2Gold")}')`
             },
@@ -548,7 +641,7 @@ const EunoLIB = (() => {
                 "font-family": "'Trebuchet MS', sans-serif",
                 "line-height": "20px",
                 "margin": "0 0 9px 0",
-                color: "gold",
+                color: C.COLORS.gold,
                 "text-indent": "4px",
                 "background-image": `url('${C.GetImgURL("h3BGBlack")}')`,
                 "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
@@ -572,17 +665,40 @@ const EunoLIB = (() => {
                 "text-align": "left"
             },
             "title": {
-                "height": `${C.GetImgSize("titleMain").pop()}px`,
                 "width": "100%",
                 "margin": "0 0 -30px 0",
-                "background-image": `url('${C.GetImgURL("titleMain")}')`,
-                "background-size": C.GetImgSize("titleMain").map((dim) => `${dim}px`).join(" "),
                 color: C.COLORS.black,
                 "font-family": "Impact, sans-serif",
                 "line-height": "36px",
                 "font-size": "24px",
                 "font-weight": "normal",
                 "text-align": "center"
+            },
+            "title.main": {
+                "height": `${C.GetImgSize("titleMain").pop()}px`,
+                "background-image": `url('${C.GetImgURL("titleMain")}')`,
+                "background-size": C.GetImgSize("titleMain").map((dim) => `${dim}px`).join(" ")
+            },
+            "title.etc": {
+                "height": `${C.GetImgSize("titleETC").pop()}px`,
+                "background-image": `url('${C.GetImgURL("titleETC")}')`,
+                "background-size": C.GetImgSize("titleETC").map((dim) => `${dim}px`).join(" "),
+                "margin-bottom": "-65px"
+            },
+            "subtitle": {
+                "width": "100%",
+                "margin": "0 0 0 0",
+                "color": C.COLORS.black,
+                "font-family": "Impact, sans-serif",
+                "line-height": "36px",
+                "font-size": "24px",
+                "font-weight": "noraml",
+                "text-align": "center"
+            },
+            "subtitle.etc": {
+                "height": `${C.GetImgSize("titleSubETC").pop()}px`,
+                "background-image": `url('${C.GetImgURL("titleSubETC")}')`,
+                "background-size": C.GetImgSize("titleSubETC").map((dim) => `${dim}px`).join(" ")
             },
             "flag": {
                 margin: "0",
@@ -597,8 +713,9 @@ const EunoLIB = (() => {
             "h1.silver": {"background-image": `url('${C.GetImgURL("h1Silver")}')`},
             "h1.flag.silver": {"background-image": `url('${C.GetImgURL("h1FlagSilver")}')`},
             "h1.tight": {
-                height: "35px",
-                "margin-top": "5px"
+                height: "28px",
+                "margin-top": "2px",
+                "margin-bottom": "0px"
             },
             "h2.flag": {
                 height: "24px",
@@ -661,9 +778,9 @@ const EunoLIB = (() => {
             "span.buttonRound.bug": {"background-image": `url('${C.GetImgURL("buttonBug")}')`},
             "fade50": {opacity: "0.5"}
         };
-        // #endregion ░▒▓█[STYLES]█▓▒░
+        // #endregion ░░░░[STYLES]░░░░
 
-        // #region ░░░░▒▓█[PARSING]█▓▒░ Parsing Style Data to Inline CSS ░░░░░░
+        // #region ░░░░░░░[PARSING]░░░░ Parsing Style Data to Inline CSS ░░░░░░
 
         // #region ========== Parsing Functions: Functions for Parsing to Inline CSS ===========
         const getClassStyleData = (tag, classes = []) => {
@@ -715,12 +832,16 @@ const EunoLIB = (() => {
                 ">"
             ];
             if (content !== false) {
-                content = [content].flat();
+                content = [content].flat().filter((part) => part);
+                if (content.length === 0) {
+                    content.push("&nbsp;");
+                }
                 tagHTML.push(...content);
                 tagHTML.push(`</${tag.toLowerCase()}>`);
             }
-            // sendChat("Check", `/w gm Returning: <pre>${_.escape(tagHTML.join(""))}</pre>`);
-            return tagHTML.join("");
+            return tagHTML.join("")
+                .replace(/\\~/gu, "@@tilde@@") // Protect escaped tildes
+                .replace(/~/gu, "&shy;"); // Turn unescaped tildes into soft hyphen breaks
         };
         // #endregion _______ Parsing Functions _______
 
@@ -734,9 +855,10 @@ const EunoLIB = (() => {
         const H2 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h2", classes, styles, attributes);
         const H3 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h3", classes, styles, attributes);
         // #endregion _______ Elements _______
-        // #endregion ░▒▓█[PARSING]█▓▒░
 
-        // #region ░░░░▒▓█[CUSTOM ELEMENTS]█▓▒░ Shorthand Element Constructors for Common Use Cases ░░░░░░
+        // #endregion ░░░░[PARSING]░░░░
+
+        // #region ░░░░░░░[CUSTOM ELEMENTS]░░░░ Shorthand Element Constructors for Common Use Cases ░░░░░░
         const Box = (content, styles) => Div(content, ["box"], styles);
         const Block = (content, styles) => Div(content, ["block"], styles);
         const ButtonRound = (command, classes = [], styles = {}, attributes = {}) => Span(A("&nbsp;", ["button"], {}, {href: command}), ["buttonRound", ...classes], styles, attributes);
@@ -749,30 +871,115 @@ const EunoLIB = (() => {
         const ButtonFooter = (command, content, classes = [], styles = {}, attributes = {}) => Footer(A(content || "&nbsp;", ["button"], {}, {href: command}), classes, styles, attributes);
         const Command = (command, classes = [], styles = {}, attributes = {}) => Span(command, ["commandHighlight", ...classes], styles, attributes);
         const ButtonCommand = (command, classes = [], styles = {}, attributes = {}) => Command(A(command, ["button"], {}, {href: command}), ["shiftLeft", ...classes], styles, attributes);
-        // #endregion ░▒▓█[CUSTOM ELEMENTS]█▓▒░
+        // #endregion ░░░░[CUSTOM ELEMENTS]░░░░
 
-        // #region ░░░░▒▓█[HELP MESSAGES]█▓▒░ Main Intro/Help Message for EunoScripts ░░░░░░
-        const DisplayHelp = (options = {}) => {
+        // #region ░░░░░░░[HELP MESSAGES]░░░░ Main Intro/Help Message for EunoScripts ░░░░░░
+
+        /* ████████ HYPHENATION & TILDE ('~') USE █████████████████████████████████████████████████████████████████████████████████████████████
+           █
+           █ Text displayed in the narrow Roll20 Chat panel is ideal for liberal use of hyphenation to divide words. Unfortunately, browsers
+           █ are not able to hyphenate words automatically: You must manually indicate where hyphens are allowed, permitting the browser to
+           █ insert them if a word division is necessary.
+           █
+           █ Use the tilde symbol ('~') to indicate allowed hyphenation breaks in words. The tilde tells the script "if you need to hyphenate
+           █ this word to make room, hyphenate it here, otherwise ignore me".
+           █
+           █ All such tildes will be stripped from the text before displaying. To include a natural tilde in your text, use an escaped tilde
+           █ (i.e. "\\~").
+           █
+           ████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████ */
+        /* ████████ HYPHENATION GUIDELINES ████████████████████████████████████████████████████████████████████████████████████████████████████
+           █
+           █ ░░░░ GENERAL RULE: DIVIDE BETWEEN SYLLABLES ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+           █ ░    To verify syllable breaks in a word, append it to the end of the link below and click:
+           █ ░       https://www.google.com/search?q=dictionary#dobs=necessary
+           █
+           █ ░░░░ EXCEPTIONS TO THE GENERAL RULE ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+           █ ░    (a) NEVER place two-letter syllables on the next line               (NOT e.g. "ful~ly"; "strick~en")
+           █ ░        NEVER divide a word into one-letter syllables                   (NOT e.g. "e~ven", "a~gain", "e~nough")
+           █          NEVER place a soft/liquid L syllable on the next line           (NOT e.g. "possi~ble", "princi~ples")
+           █      (b) NEVER divide one-syllable words                                     (e.g. "thought", "helped", "phlegm")
+           █      (c) AVOID divisions that would result in awkward segments               (e.g. "every", "only", "eighteen", "people")
+           █      (d) DO divide following a prefix                                        (e.g. "pre~fix", "re~location")
+           █      (e) DO divide between root and suffix                                   (e.g. "care~less", "convert~ible", "world~wide")
+           █      (f) DO divide between doubled consonants                                (e.g. "equip~ping", "rub~ber")
+           █      (g) AVOID misleading breaks that could cause word confusion         (NOT e.g. "read~just", "reap~pear", "wo~men", "of~ten")
+           █      (h) NEVER divide a hyphenated compound word                         (NOT e.g. "court-mar~tial")
+           █          DO divide NON-hyphenated compound words between their elements      (e.g. "hot~house", "sail~boat")
+           █      (i) DO divide before "-ing"...                                          (e.g. "fly~ing", "happen~ing")
+           █            (i.1) ... UNLESS rule (f) applies                                 (e.g. "bid~ding", "control~ling")
+           █            (i.2) ... UNLESS "-ing" is preceded by '<consonant>L'             (e.g. "han~dling", "dwin~dling", "tin~kling")
+           █      (k) NEVER divide abbreviations, contractions or numbers                 (e.g. "UNDP", "won’t", "235,006", "114.37")
+           █      (l) NEVER divide the very last word in your message
+           █
+           █  Source: https://www.btb.termiumplus.gc.ca/tcdnstyl-chap&info0=2.17
+           █
+           ████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████ */
+        /**
+        * Displays top-level help message for script collection to GM.
+        * @param {Object} [options] - Options affecting display of help message: isAutoDisplaying (boolean)
+        */
+        /**
+         *
+         *
+         * @param {*} [options={}]
+         */
+        /**
+         *
+         *
+         * @param {Object} [options] - Options affecting display of help message: isAutoDisplaying (boolean)* @param {Object} myObj description
+         * @param {boolean} options.a description
+         */
+        const DisplayHelp = (options) => {
             U.Alert(H.Box([
-                H.Span("", ["title"]),
+                H.Span(null, ["title", "main"]),
                 H.Block([
                     H.ButtonRound("https://github.com/Eunomiac/EunosRoll20Scripts/releases", ["download"], {margin: "0 5px 20px 5px"}, {title: "Download the most recent version."}),
                     H.ButtonRound("https://app.roll20.net/forum/permalink/10184021/", ["chat"], {margin: "0 5px 8px 5px"}, {title: "Join the discussion in the Roll20 forum thread."}),
                     H.ButtonRound("https://github.com/Eunomiac/EunosRoll20Scripts/issues", ["bug"], {margin: "0 5px 20px 5px"}, {title: "Report bugs, make suggestions and track issues."})
                 ], {"text-align": "center", "margin": "-10px 0 -15px 0"}),
-                H.Block(H.Paras([
-                    "<b>!ETC</b> is in&shy;ten&shy;ded to be a com&shy;pre&shy;hen&shy;sive sol&shy;ution to man&shy;ag&shy;ing Roll20 Text Ob&shy;jects.",
-                    "You can keep ap&shy;prised of new fea&shy;tures, fixes and fu&shy;ture plans as <b>!ETC</b> dev&shy;elop&shy;ment pro&shy;ceeds through its al&shy;pha per&shy;iod by visiting the links above."
-                ])),
                 H.Block([
-                    H.H2("Basic Chat Commands"),
+                    H.Paras([
+                        "<b><u>Euno~miac's Roll20 Scripts</u></b> is a col~lec~tion of stand-alone scripts, each in~tended to pro~vide com~pre~hen~sive con~trol over a par~tic~u~lar as~pect of the Roll20 VTT. You can learn more about each of the avail~able scripts be~low.",
+                        "Keep ap~prised of new fea~tures, fixes and fu~ture plans as dev~elop~ment pro~ceeds through al~pha by vis~it~ing the links above."
+                    ]),
+                    H.H2("General Chat Commands"),
                     H.Spacer(5),
                     H.Paras([
-                        `${H.ButtonCommand("!etc", ["shiftLeft"])} — View this help message.`,
-                        `${H.ButtonCommand("!etc setup", ["shiftLeft"])} — Ac&shy;ti&shy;vate or de&shy;ac&shy;ti&shy;vate any of the fea&shy;tures in this script pack&shy;age.`,
-                        `${H.ButtonCommand("!etc purge all", ["shiftLeft"])} — <b><u>FULLY</u> RE&shy;SET <u>ALL</u></b> script fea&shy;tures, re&shy;tur&shy;ning <b>!ETC</b> to its de&shy;fault in&shy;stall&shy;ation state.`
+                        [H.ButtonCommand("!euno", ["shiftLeft"]), " — View this help mes~sage."]
                     ]),
-                    H.Paras("Learn more a&shy;bout each of <b>!ETC</b>'s fea&shy;tures by click&shy;ing the head&shy;ings be&shy;low:"),
+                    H.Spacer(5),
+                    H.H2("Available Scripts"),
+                    H.Paras("Click the but~tons be~low to learn more about each of <b><u>Euno~miac's Roll20 Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
+                    H.ButtonH1("!etc", "!ETC", ["tight"], {}, {title: "Eunomiac's Text Controls: A comprehensive solution to managing Roll20 text objects."}),
+                    H.ButtonH1("!egc", "!EGC", ["tight", "fade50"], {}, {title: "Eunomiac's Grab Controls: Create buttons and switches in the sandbox for your players to interact with."}),
+                    H.ButtonH1("!ehc", "!EHC", ["tight", "fade50"], {}, {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}),
+                    H.Spacer(5),
+                    H.H2("Configuration"),
+                    H.P("Con~fig~u~ra~tion op~tions for every script in <b><u>Euno~miac's Roll20 Scripts</u></b> col~lec~tion is con~tained in 'EunoCONFIG.js', which you'll find in the API Scripts sec~tion of your game page. Fur~ther in~struc~tions on how to con~fig~ure the scripts to your lik~ing are lo~cated there."),
+                    options.isAutoDisplaying ? H.Spacer(5) : H.Spacer(1),
+                    options.isAutoDisplaying ? H.P(`To pre~vent this mes~sage from dis~play~ing at start~up, click the chev~ron be~low. <i>(View this mes~sage at any time via the ${H.Command("!euno")} command.)</i>`) : ""
+                ]),
+                options.isAutoDisplaying ? H.ButtonFooter("!euno toggle intro", "", ["hideIntro"]) : H.Footer()
+            ]));
+        };
+        /** */
+        const DisplayETCHelp = () => {
+            U.Alert(H.Box([
+                H.Span(null, ["title", "etc"]),
+                H.Block([
+                    H.P("<b>!ETC</b> is in~ten~ded to be a com~pre~hen~sive so~lu~tion to man~ag~ing Roll20 Text Ob~jects."),
+                    H.H2("!ETC Chat Commands"),
+                    H.Spacer(5),
+                    H.Paras([
+                        [H.ButtonCommand("!etc", ["shiftLeft"]), " — View this help mes~sage."],
+                        [H.ButtonCommand("!etc setup", ["shiftLeft"]), " — Ac~ti~vate or de~ac~ti~vate any of the fea~tures in this script pack~age."],
+                        [H.ButtonCommand("!etc reset all", ["shiftLeft"]), " — <b><u>FULLY</u> re~set <u>ALL</u></b> <b>!ETC</b> script fea~tures, re~turn~ing <b>!ETC</b> to its de~fault in~stal~la~tion state."]
+                    ]),
+                    H.Spacer(5),
+                    H.H2("!ETC Features"),
+                    H.Spacer(5),
+                    H.Paras("Learn more about each of <b>!ETC</b>'s fea~tures by click~ing the head~ings be~low:"),
                     H.Spacer(5),
                     H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight"], {}, {title: "Control drop shadow behavior."}),
                     H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight"], {}, {title: "Configure pruning of empty text objects."}),
@@ -780,22 +987,26 @@ const EunoLIB = (() => {
                     H.H1("Table & Chart Styling", ["fade50", "tight"]),
                     H.H1("Timers & Calendars", ["fade50", "tight"]),
                     H.H1("Miscellaneous", ["fade50", "tight"]),
-                    H.Spacer(5),
-                    options.isAutoDisplaying ? H.Paras([`To pre&shy;vent this mes&shy;sage from dis&shy;play&shy;ing at start-up, click the chev&shy;ron be&shy;low. <i>(You can al&shy;ways view this mes&shy;sage again via the ${H.Command("!etc")} com&shy;mand.)</i>`]) : ""
+                    H.Spacer(5)
                 ]),
-                options.isAutoDisplaying ? H.ButtonFooter("!etc toggle intro", "", ["hideIntro"]) : H.Footer()
+                H.ButtonFooter("!euno", "", ["goBack"])
             ]));
         };
-        // #endregion ░▒▓█[HELP MESSAGES]█▓▒░
+        // #endregion ░░░░[HELP MESSAGES]░░░░
+
         return {
+            // [FRONT: Initialization]
             Preinitialize, Initialize,
 
+            // [PARSING]
             Tag,
             Div, Span, P, Img, A, H1, H2, H3,
 
+            // [CUSTOM ELEMENTS]
             Box, Block, ButtonRound, Paras, Spacer, Footer, ButtonH1, ButtonH2, ButtonH3, ButtonFooter, Command, ButtonCommand,
 
-            DisplayHelp
+            // [HELP MESSAGES]
+            DisplayHelp, DisplayETCHelp
         };
 
     })();
@@ -811,6 +1022,4 @@ const EunoLIB = (() => {
 // #endregion ▄▄▄▄▄ EunoLIB ▄▄▄▄▄
 
 EunoCORE.regSCRIPT("EunoLIB", EunoLIB);
-
-
 void MarkStop("EunoLIB");
