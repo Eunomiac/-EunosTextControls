@@ -131,14 +131,10 @@ const EunoLIB = (() => {
 
     // #region ========== Initialization: Script Startup & Event Listeners ===========
     const {C} = EunoCORE;
-    /* eslint-disable */
-    let CFG;
-    let LIB;
-    /**
-     * @borrows UTILITIES as U
-     */
-    let U;
-    let O,
+    let CFG,
+        LIB,
+        U,
+        O,
         H;
     const Preinitialize = (isResettingState = false) => {
         try { EunoCONFIG } catch (noConfigError) { return log("[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?") }
@@ -165,7 +161,7 @@ const EunoLIB = (() => {
 
         // Register event handlers, if specified
         if (isRegisteringEventListeners) {
-            on("chat:message", handleMessage)
+            on("chat:message", handleMessage);
         }
 
         // Initialize EunoLIB sub-scripts
@@ -208,7 +204,7 @@ const EunoLIB = (() => {
         }
     };
     const UTILITIES = (() => {
-            
+
         /** ████████ [EunoLIB.U] Global Utility Functions ████████
          * @alias UTILITIES
          * @namespace
@@ -278,16 +274,16 @@ const EunoLIB = (() => {
         /**
          * @function GetType
          * @memberof UTILITIES
-         * @description More discerning 'typeof' replacement: Handles number types and Roll20 object types. 
+         * @description More discerning 'typeof' replacement: Handles number types and Roll20 object types.
          * Note: Be aware this function returns "int"/"float" for strings that can be parsed into those types,
          * "id" for strings that could be Roll20 object ids, and "hex", "hexa", "rgb", "rgba", "hsl", "hsla"
          * for strings that are HTML/CSS color values
-         * 
+         *
          * @param {*} val             the value to retrieve the type of
          * @return {string}           the type of val
          */
-        const GetType = (val) => { // 
-            // 
+        const GetType = (val) => { //
+            //
             const valType = Object.prototype.toString.call(val).slice(8, -1).toLowerCase().trim();
             switch (valType) {
                 case "string": {
@@ -437,7 +433,7 @@ const EunoLIB = (() => {
                 Alert(content, null, undefined, undefined, options);
             }
         };
-        const Show = (obj, title = "Showing ...") => Alert(JC(obj), title); // Show properties of stringified object to GM.
+        const Show = (obj, title = "Showing ...") => Alert(H.Box(H.Block([H.H1(title, ["tight"], {"margin-top": "0px"}), H.Block(JC(obj), {width: "283px", "margin": "0 0 0 -7px", "padding": "0", "outline": "2px solid black"})]))); // Show properties of stringified object to GM.
         const Flag = (msg, headerLevel = 1, classes = []) => Alert(null, msg, headerLevel, ["flag", ...classes]); // Simple one-line chat flag sent to the GM.
         // #endregion ░░░░[Chat]░░░░
 
@@ -585,259 +581,294 @@ const EunoLIB = (() => {
             },
             bodyFontSize: 13
         };
-        const cssBaseTagStyles = {
-            "div": {
-                display: "block",
-                width: "auto", height: "auto",
-                margin: "0", padding: "0",
-                color: C.COLORS.palegold,
-                "font-size": "0",
-                border: "none", outline: "none", "text-shadow": "none", "box-shadow": "none",
-                overflow: "hidden"
-            },
-            "span": {
-                display: "inline-block",
-                padding: "0",
-                "color": "inherit",
-                "font-family": "inherit",
-                "font-size": "inherit",
-                "font-weight": "inherit",
-                "line-height": "inherit",
-                "vertical-align": "baseline"
-            },
-            "p": {
-                display: "block",
-                margin: "6px 3px",
-                "font-size": `${cssVars.bodyFontSize}px`,
-                "font-family": "Tahoma, sans-serif",
-                "line-height": `${1.5 * cssVars.bodyFontSize}px`,
-                "text-align": "left"
-            },
-            "pre": {
-                "margin": "0", "padding": "0",
-                "font-family": "'Fira Code', Input, monospace",
-                "font-size": "10px",
-                "font-weight": "normal",
-                "background-color": C.COLORS.grey75
-            },
-            "img": {display: "block"},
-            "a": {
-                display: "inline-block",
-                width: "90%",
-                margin: "0",
-                padding: "5px",
-                background: "none",
-                "color": C.COLORS.black,
-                "font-family": "inherit",
-                "font-size": "inherit",
-                "font-weight": "bold",
-                "line-height": "inherit",
-                "vertical-align": "inherit",
-                "text-decoration": "none",
-                "outline": "none", "border": "none"
-            },
-            "h1": {
-                display: "block",
-                height: "43px",
-                "width": `${cssVars.boxPosition.width}px`,
-                margin: "20px 0 -10px -6px",
-                "font-family": "Impact, sans-serif",
-                "line-height": "28px",
-                "font-size": "24px",
-                "font-weight": "normal",
-                color: C.COLORS.black,
-                "text-align": "center",
-                "background-image": `url('${C.GetImgURL("h1Gold")}')`,
-                "background-size": C.GetImgSize("h1Gold").map((dim) => `${dim}px`).join(" ")
-            },
-            "h2": { // background: bg-color bg-image position/bg-size bg-repeat bg-origin bg-clip bg-attachment initial|inherit;
-                display: "block",
-                height: "26px",
-                "width": `${cssVars.boxPosition.width}px`,
-                "margin": "5px 0 0px -6px",
-                "font-family": "'Trebuchet MS', sans-serif",
-                "line-height": "23px",
-                "font-size": "16px",
-                color: C.COLORS.black,
-                "text-indent": "10px",
-                "background-image": `url('${C.GetImgURL("h2Gold")}')`
-            },
-            "h3": {
-                display: "block",
-                width: "100%",
-                "font-family": "'Trebuchet MS', sans-serif",
-                "line-height": "20px",
-                "margin": "0 0 9px 0",
-                color: C.COLORS.gold,
-                "text-indent": "4px",
-                "background-image": `url('${C.GetImgURL("h3BGBlack")}')`,
-                "text-shadow": "1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0)"
-            }
-        };
-        const cssClassStyles = {
-            "box": {
-                "width": `${cssVars.boxPosition.width}px`,
-                "min-width": `${cssVars.boxPosition.width}px`,
-                "min-height": "39px",
-                "margin": `${cssVars.boxPosition.shifts.top}px ${cssVars.boxPosition.shifts.right}px ${cssVars.boxPosition.shifts.bottom}px ${cssVars.boxPosition.shifts.left}px`,
-                "text-align": "center",
-                "position": "relative",
-                "background-image": `url('${C.GetImgURL("bgChatGold")}')`,
-                "background-size": "100%"
-            },
-            "block": {
-                "min-width": `${cssVars.boxPosition.width - 24}px`,
-                "margin": "2px 0 0 0",
-                "padding": "0 6px",
-                "text-align": "left"
-            },
-            "title": {
-                "width": "100%",
-                "margin": "0 0 -30px 0",
-                color: C.COLORS.black,
-                "font-family": "Impact, sans-serif",
-                "line-height": "36px",
-                "font-size": "24px",
-                "font-weight": "normal",
-                "text-align": "center"
-            },
-            "title.main": {
-                "height": `${C.GetImgSize("titleMain").pop()}px`,
-                "background-image": `url('${C.GetImgURL("titleMain")}')`,
-                "background-size": C.GetImgSize("titleMain").map((dim) => `${dim}px`).join(" ")
-            },
-            "title.etc": {
-                "height": `${C.GetImgSize("titleETC").pop()}px`,
-                "background-image": `url('${C.GetImgURL("titleETC")}')`,
-                "background-size": C.GetImgSize("titleETC").map((dim) => `${dim}px`).join(" "),
-                "margin-bottom": "-65px"
-            },
-            "subtitle": {
-                "width": "100%",
-                "margin": "0 0 0 0",
-                "color": C.COLORS.black,
-                "font-family": "Impact, sans-serif",
-                "line-height": "36px",
-                "font-size": "24px",
-                "font-weight": "noraml",
-                "text-align": "center"
-            },
-            "subtitle.etc": {
-                "height": `${C.GetImgSize("titleSubETC").pop()}px`,
-                "background-image": `url('${C.GetImgURL("titleSubETC")}')`,
-                "background-size": C.GetImgSize("titleSubETC").map((dim) => `${dim}px`).join(" ")
-            },
-            "flag": {
-                margin: "0",
-                "text-align": "left",
-                "text-indent": "40px"
-            },
-            "h1.flag": {
-                "height": "31px",
-                "line-height": "29px",
-                "background-image": `url('${C.GetImgURL("h1FlagGold")}')`
-            },
-            "h1.silver": {"background-image": `url('${C.GetImgURL("h1Silver")}')`},
-            "h1.flag.silver": {"background-image": `url('${C.GetImgURL("h1FlagSilver")}')`},
-            "h1.tight": {
-                height: "28px",
-                "margin-top": "2px",
-                "margin-bottom": "0px"
-            },
-            "h2.flag": {
-                height: "24px",
-                "line-height": "21px",
-                "background-image": `url('${C.GetImgURL("h2FlagGold")}')`,
-                "background-position": "center -2px"
-            },
-            "h2.silver": {"background-image": `url('${C.GetImgURL("h2Silver")}')`},
-            "h2.flag.silver": {"background-image": `url('${C.GetImgURL("h2FlagSilver")}')`},
-            "commandHighlight": {
-                margin: "0 3px",
-                padding: "0 8px 0 6px",
-                color: C.COLORS.black,
-                "font-family": "monospace",
-                "font-weight": "bolder",
-                "text-shadow": `0 0 1px ${C.COLORS.black}`,
-                "background-image": `url('${C.GetImgURL("commandGold")}')`,
-                "background-size": "100% 100%",
-                "background-repeat": "no-repeat"
-            },
-            "commandHighlight.silver": {"background-image": `url('${C.GetImgURL("commandSilver")}')`},
-            "commandHighlight.shiftLeft": {
-                "margin": "0 0 0 -20px",
-                "padding-right": "17px",
-                "text-align": "right",
-                "text-indent": "14px",
-                "background-position": "right"
-            },
-            "footer": {
-                "height": "37px",
-                "margin": "6px 0 0 0",
-                "background-image": `url('${C.GetImgURL("footerGold")}')`,
-                "background-size": "100%",
-                "background-repeat": "no-repeat",
-                "font-weight": "normal"
-            },
-            "footer.silver": {"background-image": `url('${C.GetImgURL("footerSilver")}')`},
-            "footer.hideIntro": {"background-image": `url('${C.GetImgURL("footerHideIntroGold")}')`},
-            "footer.goBack": {"background-image": `url('${C.GetImgURL("footerGoBackGold")}')`},
-            "footer.goBack.silver": {"background-image": `url('${C.GetImgURL("footerGoBackSilver")}')`},
-            "a.button": {
-                "display": "block",
-                "height": "100%", "width": "100%",
-                "margin": "0", "padding": "0",
-                "text-align": "inherit",
-                "font-family": "inherit",
-                "font-size": "inherit",
-                "line-height": "inherit",
-                "font-weight": "inherit",
-                "text-transform": "inherit",
-                "color": "inherit"
-            },
-            "span.buttonRound": {
-                "height": "50px",
-                "width": "50px",
-                "margin": "0 15px"
-            },
-            "span.buttonRound.download": {"background-image": `url('${C.GetImgURL("buttonDownload")}')`},
-            "span.buttonRound.chat": {"background-image": `url('${C.GetImgURL("buttonChat")}')`},
-            "span.buttonRound.bug": {"background-image": `url('${C.GetImgURL("buttonBug")}')`},
-            "fade50": {opacity: "0.5"}
-        };
+        const CSS = Object.fromEntries([
+            /* #region Base Element Styles */
+            `    div {
+                    display: block;
+                    width: auto;
+                    height: auto;
+                    margin: 0;
+                    padding: 0;
+                    color: ${C.COLORS.palegold};
+                    font-size: 0;
+                    border: none;
+                    outline: none;
+                    text-shadow: none;
+                    box-shadow: none;
+                    overflow: hidden;
+                }
+                span {
+                    display: inline-block;
+                    padding: 0;
+                    color: inherit;
+                    font-family: inherit;
+                    font-size: inherit;
+                    font-weight: inherit;
+                    line-height: inherit;
+                    vertical-align: baseline;
+                }
+                p {
+                    display: block;
+                    margin: 6px 3px;
+                    font-size: ${cssVars.bodyFontSize}px;
+                    font-family: Tahoma, sans-serif;
+                    line-height: ${1.5 * cssVars.bodyFontSize}px;
+                    text-align: left;
+                }
+                pre {
+                    margin: 0;
+                    padding: 0;
+                    font-family: 'Fira Code', Input, monospace;
+                    font-size: 8px;
+                    font-weight: bold;
+                    background-color: #DDD;
+                }
+                img {display: block}
+                a {
+                    display: inline-block;
+                    width: 90%;
+                    margin: 0;
+                    padding: 5px;
+                    background: none;
+                    color: ${C.COLORS.black};
+                    font-family: inherit;
+                    font-size: inherit;
+                    font-weight: bold;
+                    line-height: inherit;
+                    vertical-align: inherit;
+                    text-decoration: none;
+                    outline: none;
+                    border: none;
+                }
+                h1 {
+                    display: block;
+                    height: 43px;
+                    width: ${cssVars.boxPosition.width}px;
+                    margin: 20px 0 -10px -6px;
+                    font-family: Impact, sans-serif;
+                    line-height: 28px;
+                    font-size: 24px;
+                    font-weight: normal;
+                    color: ${C.COLORS.black};
+                    text-align: center;
+                    background-image: url('${C.GetImgURL("h1Gold")}');
+                    background-size: ${C.GetImgSize("h1Gold").map((dim) => `${dim}px`).join(" ")};
+                }
+                h2 { /* background: bg-color bg-image position/bg-size bg-repeat bg-origin bg-clip bg-attachment initial|inherit, */
+                    display: block;
+                    height: 26px;
+                    width: ${cssVars.boxPosition.width}px;
+                    margin: 5px 0 0px -6px;
+                    font-family: 'Trebuchet MS', sans-serif;
+                    line-height: 23px;
+                    font-size: 16px;
+                    color: ${C.COLORS.black};
+                    text-indent: 10px;
+                    background-image: url('${C.GetImgURL("h2Gold")}');
+                }
+                h3 {
+                    display: block;
+                    width: 100%;
+                    font-family: 'Trebuchet MS', sans-serif;
+                    line-height: 20px;
+                    margin: 0 0 9px 0;
+                    color: ${C.COLORS.gold};
+                    text-indent: 4px;
+                    background-image: url('${C.GetImgURL("h3BGBlack")}');
+                    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0),
+                }
+            `,
+            /* #endregion Base Styles */
+            /* #region Class Styles */
+            `   .box {
+                    width: ${cssVars.boxPosition.width}px;
+                    min-width: ${cssVars.boxPosition.width}px;
+                    min-height: 39px;
+                    margin: ${cssVars.boxPosition.shifts.top}px ${cssVars.boxPosition.shifts.right}px ${cssVars.boxPosition.shifts.bottom}px ${cssVars.boxPosition.shifts.left}px;
+                    text-align: center;
+                    position: relative;
+                    background-image: url('${C.GetImgURL("bgChatGold")}');
+                    background-size: 100%;
+                }
+                .block {
+                    min-width: ${cssVars.boxPosition.width - 24}px;
+                    margin: 2px 0 0 0;
+                    padding: 0 6px;
+                    text-align: left;
+                }
+                .title {
+                    width: 100%;
+                    margin: 0 0 -30px 0;
+                    color: ${C.COLORS.black}
+                    font-family: Impact; sans-serif;
+                    line-height: 36px;
+                    font-size: 24px;
+                    font-weight: normal;
+                    text-align: center;
+                }
+                .title.main {
+                    height: ${C.GetImgSize("titleMain").pop()}px;
+                    background-image: url('${C.GetImgURL("titleMain")}');
+                    background-size: ${C.GetImgSize("titleMain").map((dim) => `${dim}px`).join(" ")};
+                }
+                .title.etc {
+                    height: ${C.GetImgSize("titleETC").pop()}px;
+                    background-image: url('${C.GetImgURL("titleETC")}');
+                    background-size: ${C.GetImgSize("titleETC").map((dim) => `${dim}px`).join(" ")};
+                    margin-bottom: -65px;
+                }
+                .subtitle {
+                    width: 100%;
+                    margin: 0 0 0 0;
+                    color: ${C.COLORS.black}
+                    font-family: Impact; sans-serif;
+                    line-height: 36px;
+                    font-size: 24px;
+                    font-weight: noraml;
+                    text-align: center;
+                }
+                .subtitle.etc {
+                    height: ${C.GetImgSize("titleSubETC").pop()}px;
+                    background-image: url('${C.GetImgURL("titleSubETC")}');
+                    background-size: ${C.GetImgSize("titleSubETC").map((dim) => `${dim}px`).join(" ")}
+                }
+                .flag {
+                    margin: 0;
+                    text-align: left;
+                    text-indent: 40px;
+                }
+                h1.flag {
+                    height: 31px;
+                    line-height: 29px;
+                    background-image: url('${C.GetImgURL("h1FlagGold")}');
+                }
+                h1.silver {background-image: url('${C.GetImgURL("h1Silver")}')}
+                h1.flag.silver {background-image: url('${C.GetImgURL("h1FlagSilver")}')}
+                h1.tight {
+                    height: 28px;
+                    margin-top: 2px;
+                    margin-bottom: 0px;
+                }
+                h2.flag {
+                    height: 24px;
+                    line-height: 21px;
+                    background-image: url('${C.GetImgURL("h2FlagGold")}');
+                    background-position: center -2px;
+                }
+                h2.silver {background-image: url('${C.GetImgURL("h2Silver")}')}
+                h2.flag.silver {background-image: url('${C.GetImgURL("h2FlagSilver")}')}
+                .commandHighlight {
+                    margin: 0 3px;
+                    padding: 0 8px 0 6px;
+                    color: ${C.COLORS.black};
+                    font-family: monospace;
+                    font-weight: bolder;
+                    text-shadow: 0 0 1px ${C.COLORS.black};
+                    background-image: url('${C.GetImgURL("commandGold")}');
+                    background-size: 100% 100%;
+                    background-repeat: no-repeat;
+                }
+                .commandHighlight.silver {background-image: url('${C.GetImgURL("commandSilver")}')}
+                .commandHighlight.shiftLeft {
+                    margin: 0 0 0 -20px;
+                    padding-right: 17px;
+                    text-align: right;
+                    text-indent: 14px;
+                    background-position: right;
+                }
+                .footer {
+                    height: 37px;
+                    margin: 6px 0 0 0;
+                    background-image: url('${C.GetImgURL("footerGold")}');
+                    background-size: 100%;
+                    background-repeat: no-repeat;
+                    font-weight: normal;
+                }
+                .footer.silver {background-image: url('${C.GetImgURL("footerSilver")}')}
+                .footer.hideIntro {background-image: url('${C.GetImgURL("footerHideIntroGold")}')}
+                .footer.goBack {background-image: url('${C.GetImgURL("footerGoBackGold")}')}
+                .footer.goBack.silver {background-image: url('${C.GetImgURL("footerGoBackSilver")}')}
+                a.button {
+                    display: block;
+                    height: 100%;
+                    width: 100%;
+                    margin: 0; padding: 0;
+                    text-align: inherit;
+                    font-family: inherit;
+                    font-size: inherit;
+                    line-height: inherit;
+                    font-weight: inherit;
+                    text-transform: inherit;
+                    color: inherit;
+                }
+                span.buttonRound {
+                    height: 50px;
+                    width: 50px;
+                    margin: 0 15px;
+                }
+                span.buttonRound.download {background-image: url('${C.GetImgURL("buttonDownload")}')}
+                span.buttonRound.chat {background-image: url('${C.GetImgURL("buttonChat")}')}
+                span.buttonRound.bug {background-image: url('${C.GetImgURL("buttonBug")}')}
+                .fade50 {opacity: 0.5}
+            `
+            /* #endregion Class Styles */
+        ].join("")
+            .replace(/\/\*.*?\*\//g, "") // strip CSS comments
+            .replace(/\s+/g, " ") // remove excess white space
+            .replace(/("|')[a-z]+:\/\/.+?\1/gu, (url) => url.replace(/:/gu, "^")) // escape colons in url entries
+            .split(/\}/) // capture selector blocks
+            .map((selBlock) => selBlock.split(/\{/).map((selBlock) => (selBlock || "").trim())) // separate selector from block
+            .filter(([sel, block]) => sel && block) // filter out null values
+            .map(([sel, block]) => sel.split(/\s*,\s*/) // separate comma-delimited selectors ...
+                .map((ssel) => [ // ... and give each one its own copy of the associated properties
+                    ssel.trim(),
+                    Object.fromEntries(block.split(/;/) // separate 'property: value' lines
+                        .map((propVal) => (propVal || "").trim().split(/:/)) // separate 'property' and 'value' into key/val
+                        .filter(([prop, val]) => prop && val) // filter out null values
+                        .map(([prop, val]) => [prop.trim(), val.trim().replace(/\^/g, ":")])) // restore colons to urls
+                ])).flat()); // flatten duplicated selectors (from comma-delimiting) into main array of [key, val] entries for object creation
         // #endregion ░░░░[STYLES]░░░░
 
         // #region ░░░░░░░[PARSING]░░░░ Parsing Style Data to Inline CSS ░░░░░░
 
         // #region ========== Parsing Functions: Functions for Parsing to Inline CSS ===========
-        const getClassStyleData = (tag, classes = []) => {
+        const getStyles = (tag, classes = []) => {
             classes = [classes].flat();
-            const styleData = {};
+            const styleSteps = [{classes}];
+
+            // Apply general tag styles
+            const styleData = {...(CSS[tag] || {})};
+            styleSteps.push({...styleData});
 
             // Locate styles for exact class references
-            classes.forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef] || {}));
+            classes.forEach((classRef) => Object.assign(styleData, CSS[`.${classRef}`] || {}));
+            styleSteps.push({...styleData});
 
             // Overwrite with more-specific combination references
-            Object.keys(cssClassStyles).filter((classRef) => classRef.includes(".")
-                                                             && classRef.split(/\./gu).every((className) => classes.includes(className)))
-                .forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef]));
+            Object.keys(CSS).filter((classRef) => /^\..*\./.test(classRef)
+                                                  && classRef.split(/\./gu)
+                                                      .filter((className) => Boolean((className || "").trim()))
+                                                      .map((className) => className.replace(/^\./u, ""))
+                                                      .every((className) => classes.includes(className)))
+                .forEach((classRef) => Object.assign(styleData, CSS[classRef]));
+            styleSteps.push({...styleData});
 
             // Now, repeat for more-specific references that begin with the element's tag
-            const tagClassRefs = Object.keys(cssClassStyles).filter((classRef) => classRef.startsWith(`${tag.toLowerCase()}.`));
+            const tagClassRefs = Object.keys(CSS).filter((classRef) => classRef.startsWith(`${tag.toLowerCase()}.`));
             tagClassRefs.filter((classRef) => classes.includes(classRef.replace(new RegExp(`^${tag.toLowerCase()}\.`), "")))
-                .forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef]));
+                .forEach((classRef) => Object.assign(styleData, CSS[classRef]));
+            styleSteps.push({...styleData});
 
             // Finally, repeat for more-specific combo references that begin with the element's tag
             tagClassRefs.filter((classRef) => classRef.replace(new RegExp(`^${tag.toLowerCase()}\.`), "").split(/\./gu).every((className) => classes.includes(className)))
-                .forEach((classRef) => Object.assign(styleData, cssClassStyles[classRef]));
+                .forEach((classRef) => Object.assign(styleData, CSS[classRef]));
+            styleSteps.push({...styleData});
+            if (classes.includes("block") && styleData.height === "37px" && /chatBGGold\.jpg/.test(styleData["background-image"] || "")) {
+                U.Direct(H.Box(H.Pre(U.JS(styleSteps))));
+            }
 
             return Object.fromEntries(Object.entries(styleData).filter(([propName, propVal]) => propVal !== null));
         };
-        const getStyleData = (tag, classes = [], styles = {}) => ({
-            ... (cssBaseTagStyles[(tag || "").toLowerCase()] || {}), // 1) Apply base tag style.
-            ... getClassStyleData(tag, classes), //                          2) Apply class styles.
-            ... styles //                                               3) Apply custom (inline) styles.
-        });
         const parseBGStyle = (bgData = {}) => [
             bgData.color || false,
             bgData.image && `url('${C.GetImgURL(bgData.image)})` || bgData.gradient,
@@ -847,8 +878,8 @@ const EunoLIB = (() => {
             bgData.clip,
             bgData.attachment
         ].filter((prop) => Boolean(prop)).join(" ");
-        const parseStyleLine = (tag, classes = [], styles = {}) => Object.entries(getStyleData(tag, classes, styles)).map(([propName, propVal]) => `${propName}: ${propVal};` ).join(" ");
-        const hasInlineStyles = (tag, classes = [], styles = {}) => tag in cssBaseTagStyles || Object.values(styles).length || Object.values(getClassStyleData(tag, classes)).length;
+        const parseStyleLine = (tag, classes = [], styles = {}) => Object.entries({...getStyles(tag, classes), ...styles}).map(([propName, propVal]) => `${propName}: ${propVal};` ).join(" ");
+        const hasInlineStyles = (tag, classes = [], styles = {}) => tag in CSS || Object.values(styles).length || Object.values(getStyles(tag, classes)).length;
         const Tag = (content, tag, classes = [], styles = {}, attributes = {}) => {
             if (hasInlineStyles(tag, classes, styles)) {
                 Object.assign(attributes, {style: parseStyleLine(tag, classes, styles)});
@@ -878,6 +909,7 @@ const EunoLIB = (() => {
         const P = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "p", classes, styles, attributes);
         const Img = (content, classes = [], styles = {}, attributes = {}) => Tag(false, "img", classes, styles, attributes);
         const A = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "a", classes, styles, attributes);
+        const Pre = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "pre", classes, styles, attributes);
         const H1 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h1", classes, styles, attributes);
         const H2 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h2", classes, styles, attributes);
         const H3 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h3", classes, styles, attributes);
@@ -919,12 +951,12 @@ const EunoLIB = (() => {
            █
            █ ░░░░ GENERAL RULE: DIVIDE BETWEEN SYLLABLES ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
            █ ░    To verify syllable breaks in a word, append it to the end of the link below and click:
-           █ ░       https://www.google.com/search?q=dictionary#dobs=necessary
+           █ ░       https://www.google.com/search?q=dictionary#dobs=
            █
            █ ░░░░ EXCEPTIONS TO THE GENERAL RULE ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
            █ ░    (a) NEVER place two-letter syllables on the next line               (NOT e.g. "ful~ly"; "strick~en")
            █ ░        NEVER divide a word into one-letter syllables                   (NOT e.g. "e~ven", "a~gain", "e~nough")
-           █          NEVER place a soft/liquid L syllable on the next line           (NOT e.g. "possi~ble", "princi~ples")
+           █          NEVER place a soft/liquid 'L' syllable on the next line         (NOT e.g. "possi~ble", "princi~ples")
            █      (b) NEVER divide one-syllable words                                     (e.g. "thought", "helped", "phlegm")
            █      (c) AVOID divisions that would result in awkward segments               (e.g. "every", "only", "eighteen", "people")
            █      (d) DO divide following a prefix                                        (e.g. "pre~fix", "re~location")
@@ -1027,7 +1059,7 @@ const EunoLIB = (() => {
 
             // [PARSING]
             Tag,
-            Div, Span, P, Img, A, H1, H2, H3,
+            Div, Span, P, Img, A, Pre, H1, H2, H3,
 
             // [CUSTOM ELEMENTS]
             Box, Block, ButtonRound, Paras, Spacer, Footer, ButtonH1, ButtonH2, ButtonH3, ButtonFooter, Command, ButtonCommand,
