@@ -56,29 +56,46 @@ const EunoCORE = {
         IMGROOT: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images",
         IMAGES: {
             titleMain: ["bookends", "titleMain.png", [283, 208] ],
+            titleMainButtons: ["bookends", "titleMainButtons.png", [283, 208] ],
             titleETC: ["bookends", "titleETC.png", [283, 142] ],
-            titleSubETC: ["bookends", "titleSubETC.png", [283, 60] ],
+            subtitleGold: ["bookends", "subtitleGold.png", [283, 60] ],
+            subtitleSilver: ["bookends", "subtitleSilver.png", [283, 60] ],
+            subtitleBronze: ["bookends", "subtitleBronze.png", [283, 60] ],
+            subtitleSilverETC: ["bookends", "subtitleSilverETC.png", [283, 60] ],
+            subtitleBronzeETC: ["bookends", "subtitleBronzeETC.png", [283, 60] ],
             bgChatGold: ["backgrounds", "chatBGGold.jpg", [283, 563] ],
             bgChatSilver: ["backgrounds", "chatBGSilver.jpg", [283, 563] ],
+            bgChatBronze: ["backgrounds", "chatBGBronze.jpg", [283, 563] ],
             footerGold: ["bookends", "footerGold.png", [283, 37] ],
             footerSilver: ["bookends", "footerSilver.png", [283, 37] ],
+            footerBronze: ["bookends", "footerBronze.png", [283, 37] ],
             footerGoBackGold: ["bookends", "footerGoBackGold.png", [283, 37] ],
             footerGoBackSilver: ["bookends", "footerGoBackSilver.png", [283, 37] ],
+            footerGoBackBronze: ["bookends", "footerGoBackBronze.png", [283, 37] ],
             footerHideIntroGold: ["bookends", "footerHideIntroGold.png", [283, 37] ],
             buttonDownload: ["buttons", "buttonDownload.png", [50, 50] ],
             buttonChat: ["buttons", "buttonChat.png", [50, 50] ],
             buttonBug: ["buttons", "buttonBug.png", [50, 50] ],
             h1Gold: ["emphasis", "h1Gold.png", [283, 40]],
             h1Silver: ["emphasis", "h1Silver.png", [283, 40]],
+            h1Bronze: ["emphasis", "h1Bronze.png", [283, 40]],
+            h1GoldDim: ["emphasis", "h1GoldDim.png", [283, 40]],
+            h1SilverDim: ["emphasis", "h1SilverDim.png", [283, 40]],
+            h1BronzeDim: ["emphasis", "h1BronzeDim.png", [283, 40]],
             h1FlagGold: ["emphasis", "h1FlagGold.png", [283, 40]],
             h1FlagSilver: ["emphasis", "h1FlagSilver.png", [283, 40]],
             h2Gold: ["emphasis", "h2Gold.png", [283, 37]],
             h2Silver: ["emphasis", "h2Silver.png", [283, 37]],
+            h2Bronze: ["emphasis", "h2Bronze.png", [283, 37]],
+            h2GoldDim: ["emphasis", "h2GoldDim.png", [283, 37]],
+            h2SilverDim: ["emphasis", "h2SilverDim.png", [283, 37]],
+            h2BronzeDim: ["emphasis", "h2BronzeDim.png", [283, 37]],
             h2FlagGold: ["emphasis", "h2FlagGold.png", [283, 37]],
             h2FlagSilver: ["emphasis", "h2FlagSilver.png", [283, 37]],
             h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]],
             commandGold: ["emphasis", "commandGold.png", [235, 37]],
-            commandSilver: ["emphasis", "commandSilver.png", [235, 37]]
+            commandSilver: ["emphasis", "commandSilver.png", [235, 37]],
+            commandBronze: ["emphasis", "commandBronze.png", [235, 37]]
         },
         GetImgURL: (imgKey, imgFolder) => {
             if (!imgFolder && imgKey in EunoCORE.C.IMAGES) {
@@ -414,7 +431,7 @@ const EunoLIB = (() => {
             if (content !== false && (content || title)) {
                 if (title) {
                     if (content === null) {
-                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, classes), {padding: 0}), {"min-height": "unset"})}`, null, options);
+                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, classes), {padding: 0}), {"min-height": "auto", "border": "none"})}`, null, options);
                     } else {
                         sendChat(randStr(), `/w gm ${H.Box(H.Block([
                             H[`H${headerLevel}`](title, classes),
@@ -577,9 +594,10 @@ const EunoLIB = (() => {
         const cssVars = {
             boxPosition: {
                 width: 283,
-                shifts: {top: -26, right: 0, bottom: -7, left: -45}
+                borderWidth: 2,
+                shifts: {top: -27, right: 0, bottom: -6, left: -45}
             },
-            bodyFontSize: 13
+            bodyFontSize: 10
         };
         const CSS = Object.fromEntries([
             /* #region Base Element Styles */
@@ -689,6 +707,7 @@ const EunoLIB = (() => {
                     position: relative;
                     background-image: url('${C.GetImgURL("bgChatGold")}');
                     background-size: 100%;
+                    box-shadow: inset 0 0 5px ${C.COLORS.black}, inset 0 0 5px ${C.COLORS.black}, inset 0 0 5px ${C.COLORS.black};
                 }
                 .block {
                     min-width: ${cssVars.boxPosition.width - 24}px;
@@ -705,16 +724,19 @@ const EunoLIB = (() => {
                     font-size: 24px;
                     font-weight: normal;
                     text-align: center;
+                    background-image: url('${C.GetImgURL("titleMain")}');
+                    background-origin: padding-box;
+                    background-repeat: no-repeat;
+                    background-position: center 3px;
                 }
                 .title.main {
                     height: ${C.GetImgSize("titleMain").pop()}px;
-                    background-image: url('${C.GetImgURL("titleMain")}');
-                    background-size: ${C.GetImgSize("titleMain").map((dim) => `${dim}px`).join(" ")};
+                    background-size: 280px;
                 }
                 .title.etc {
                     height: ${C.GetImgSize("titleETC").pop()}px;
                     background-image: url('${C.GetImgURL("titleETC")}');
-                    background-size: ${C.GetImgSize("titleETC").map((dim) => `${dim}px`).join(" ")};
+                    background-size: 280px;
                     margin-bottom: -65px;
                 }
                 .subtitle {
@@ -724,13 +746,17 @@ const EunoLIB = (() => {
                     font-family: Impact; sans-serif;
                     line-height: 36px;
                     font-size: 24px;
-                    font-weight: noraml;
+                    font-weight: normal;
                     text-align: center;
+                    background-image: url('${C.GetImgURL("subtitleSilverETC")}');
+                    background-origin: padding-box;
+                    background-repeat: no-repeat;
+                    background-position: center 3px;
                 }
                 .subtitle.etc {
-                    height: ${C.GetImgSize("titleSubETC").pop()}px;
-                    background-image: url('${C.GetImgURL("titleSubETC")}');
-                    background-size: ${C.GetImgSize("titleSubETC").map((dim) => `${dim}px`).join(" ")}
+                    height: ${C.GetImgSize("subtitleSilverETC").pop()}px;
+                    background-image: url('${C.GetImgURL("subtitleSilverETC")}');
+                    background-size: 280px;
                 }
                 .flag {
                     margin: 0;
@@ -742,7 +768,11 @@ const EunoLIB = (() => {
                     line-height: 29px;
                     background-image: url('${C.GetImgURL("h1FlagGold")}');
                 }
+                h1.dim {background-image: url('${C.GetImgURL("h1GoldDim")}')}
                 h1.silver {background-image: url('${C.GetImgURL("h1Silver")}')}
+                h1.silver.dim {background-image: url('${C.GetImgURL("h1SilverDim")}')}
+                h1.bronze {background-image: url('${C.GetImgURL("h1Bronze")}')}
+                h1.bronze.dim {background-image: url('${C.GetImgURL("h1BronzeDim")}')}
                 h1.flag.silver {background-image: url('${C.GetImgURL("h1FlagSilver")}')}
                 h1.tight {
                     height: 28px;
@@ -755,7 +785,11 @@ const EunoLIB = (() => {
                     background-image: url('${C.GetImgURL("h2FlagGold")}');
                     background-position: center -2px;
                 }
+                h2.dim {background-image: url('${C.GetImgURL("h2GoldDim")}')}
                 h2.silver {background-image: url('${C.GetImgURL("h2Silver")}')}
+                h2.silver.dim {background-image: url('${C.GetImgURL("h2SilverDim")}')}
+                h2.bronze {background-image: url('${C.GetImgURL("h2Bronze")}')}
+                h2.bronze.dim {background-image: url('${C.GetImgURL("h2BronzeDim")}')}
                 h2.flag.silver {background-image: url('${C.GetImgURL("h2FlagSilver")}')}
                 .commandHighlight {
                     margin: 0 3px;
@@ -769,6 +803,7 @@ const EunoLIB = (() => {
                     background-repeat: no-repeat;
                 }
                 .commandHighlight.silver {background-image: url('${C.GetImgURL("commandSilver")}')}
+                .commandHighlight.bronze {background-image: url('${C.GetImgURL("commandBronze")}')}
                 .commandHighlight.shiftLeft {
                     margin: 0 0 0 -20px;
                     padding-right: 17px;
@@ -780,8 +815,9 @@ const EunoLIB = (() => {
                     height: 37px;
                     margin: 6px 0 0 0;
                     background-image: url('${C.GetImgURL("footerGold")}');
-                    background-size: 100%;
+                    background-size: 280px;
                     background-repeat: no-repeat;
+                    background-position: center -2px;
                     font-weight: normal;
                 }
                 .footer.silver {background-image: url('${C.GetImgURL("footerSilver")}')}
@@ -809,7 +845,6 @@ const EunoLIB = (() => {
                 span.buttonRound.download {background-image: url('${C.GetImgURL("buttonDownload")}')}
                 span.buttonRound.chat {background-image: url('${C.GetImgURL("buttonChat")}')}
                 span.buttonRound.bug {background-image: url('${C.GetImgURL("buttonBug")}')}
-                .fade50 {opacity: 0.5}
             `
             /* #endregion Class Styles */
         ].join("")
@@ -1011,8 +1046,8 @@ const EunoLIB = (() => {
                     H.H2("Available Scripts"),
                     H.Paras("Click the but~tons be~low to learn more about each of <b><u>Euno~miac's Roll20 Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
                     H.ButtonH1("!etc", "!ETC", ["tight"], {}, {title: "Eunomiac's Text Controls: A comprehensive solution to managing Roll20 text objects."}),
-                    H.ButtonH1("!egc", "!EGC", ["tight", "fade50"], {}, {title: "Eunomiac's Grab Controls: Create buttons and switches in the sandbox for your players to interact with."}),
-                    H.ButtonH1("!ehc", "!EHC", ["tight", "fade50"], {}, {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}),
+                    H.ButtonH1("!egc", "!EGC", ["tight", "dim"], {}, {title: "Eunomiac's Grab Controls: Create buttons and switches in the sandbox for your players to interact with."}),
+                    H.ButtonH1("!ehc", "!EHC", ["tight", "dim"], {}, {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}),
                     H.Spacer(5),
                     H.H2("Configuration"),
                     H.P("Con~fig~u~ra~tion op~tions for every script in <b><u>Euno~miac's Roll20 Scripts</u></b> col~lec~tion is con~tained in 'EunoCONFIG.js', which you'll find in the API Scripts sec~tion of your game page. Fur~ther in~struc~tions on how to con~fig~ure the scripts to your lik~ing are lo~cated there."),
@@ -1042,10 +1077,10 @@ const EunoLIB = (() => {
                     H.Spacer(5),
                     H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight"], {}, {title: "Control drop shadow behavior."}),
                     H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight"], {}, {title: "Configure pruning of empty text objects."}),
-                    H.H1("Attribute Linking", ["fade50", "tight"]),
-                    H.H1("Table & Chart Styling", ["fade50", "tight"]),
-                    H.H1("Timers & Calendars", ["fade50", "tight"]),
-                    H.H1("Miscellaneous", ["fade50", "tight"]),
+                    H.H1("Attribute Linking", ["dim", "tight"]),
+                    H.H1("Table & Chart Styling", ["dim", "tight"]),
+                    H.H1("Timers & Calendars", ["dim", "tight"]),
+                    H.H1("Miscellaneous", ["dim", "tight"]),
                     H.Spacer(5)
                 ]),
                 H.ButtonFooter("!euno", "", ["goBack"])
