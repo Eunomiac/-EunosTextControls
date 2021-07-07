@@ -148,6 +148,7 @@ const EunoLIB = (() => {
 
     // #region ========== Initialization: Script Startup & Event Listeners ===========
     const {C} = EunoCORE;
+    const scriptReadinessLog = {};
     let CFG,
         LIB,
         U,
@@ -165,6 +166,9 @@ const EunoLIB = (() => {
 
         // Define local-scope shorthand references for main script components
         ({CFG, LIB, U, O, H} = EunoCORE);
+
+        // List scripts to wait for check-in before confirming full initialization is complete
+        Object.assign(scriptReadinessLog, EunoCORE.SCRIPTS);
 
         // Preinitialize EunoLIB sub-scripts
         ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Preinitialize());
@@ -185,11 +189,29 @@ const EunoLIB = (() => {
         ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Initialize(isRegisteringEventListeners));
 
         // Report readiness
-        U.Flag(`${SCRIPTNAME} Ready!`); log(`[Euno] ${SCRIPTNAME} Ready!`);
+        ReportReady(SCRIPTNAME, "Euno");
+
+        // setTimeout(H.DisplayETCHelp, 1500);
+    };
+    const ReportReady = (scriptName, prefix) => {
+        const scriptRef = (scriptName || "").replace(/^!/, "");
+        if (typeof prefix === "string") {
+            prefix = `[${prefix}]`;
+        }
+        prefix = prefix || "";
+        if (scriptRef in scriptReadinessLog) {
+            U.Flag(`${scriptName} Ready!`); log([prefix, scriptName, "Ready!"].join(" "));
+            scriptReadinessLog[scriptRef] = true;
+        }
+        if (Object.values(scriptReadinessLog).every((scriptStatus) => scriptStatus === true)) {
+            PostInitialize();
+        }
+    };
+    const PostInitialize = () => {
+        U.Flag("EunoScripts Ready!"); log("[Euno] EunoScripts Ready!");
 
         // Display Help message, if so configured
         if (STA.TE.isDisplayingHelpAtStart) {H.DisplayHelp({isAutoDisplaying: true})}
-        // setTimeout(H.DisplayETCHelp, 1500);
     };
     // #endregion _______ Initialization _______
 
@@ -262,33 +284,6 @@ const EunoLIB = (() => {
         // #region ░░░░░░░[Validation]░░░░ Verification & Type Checking ░░░░░░
 
         /**
-         * @function GetR20Type
-         * @memberof UTILITIES
-         * @description Returns specific type/subtype of R20 object, or false if val isn't an R20 object.
-         *
-         * @param {*} val            the value to retrieve the type of
-         * @return {string|boolean}  the Roll20 type, or "token", "card", "animation" where applicable, or false if not a Roll20 object.
-         */
-        const GetR20Type = (val) => {
-            if (val && typeof val === "object" && "id" in val && "get" in val) {
-                const type = val.get("_type");
-                if (type === "graphic") {
-                    if (val.get("represents")) {
-                        return "token";
-                    }
-                    if (val.get("_subtype") === "card") {
-                        return "card";
-                    }
-                    if (/\.webm/u.test(val.get("imgsrc"))) {
-                        return "animation";
-                    }
-                    return "graphic";
-                }
-                return type;
-            }
-            return false;
-        };
-        /**
          * @function GetType
          * @memberof UTILITIES
          * @description More discerning 'typeof' replacement: Handles number types and Roll20 object types.
@@ -316,7 +311,7 @@ const EunoLIB = (() => {
                     break;
                 }
                 case "number": return /\./u.test(`${val}`) ? "float" : "int";
-                case "object": return GetR20Type(val) || "list";
+                case "object": return O.GetR20Type(val) || "list";
                 // no default
             }
             return valType;
@@ -431,7 +426,7 @@ const EunoLIB = (() => {
             if (content !== false && (content || title)) {
                 if (title) {
                     if (content === null) {
-                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, classes), {padding: 0}), {"min-height": "auto", "border": "none"})}`, null, options);
+                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, classes), [], {padding: 0}), [], {"min-height": "auto", "border": "none"})}`, null, options);
                     } else {
                         sendChat(randStr(), `/w gm ${H.Box(H.Block([
                             H[`H${headerLevel}`](title, classes),
@@ -450,22 +445,27 @@ const EunoLIB = (() => {
                 Alert(content, null, undefined, undefined, options);
             }
         };
-        const Show = (obj, title = "Showing ...") => Alert(H.Box(H.Block([H.H1(title, ["tight"], {"margin-top": "0px"}), H.Block(JC(obj), {width: "283px", "margin": "0 0 0 -7px", "padding": "0", "outline": "2px solid black"})]))); // Show properties of stringified object to GM.
+        const Show = (obj, title = "Showing ...") => Alert(H.Box(H.Block([H.H1(title, ["tight"], {"margin-top": "0px"}), H.Block(JC(obj), [], {width: "283px", "margin": "0 0 0 -7px", "padding": "0", "outline": "2px solid black"})]))); // Show properties of stringified object to GM.
         const Flag = (msg, headerLevel = 1, classes = []) => Alert(null, msg, headerLevel, ["flag", ...classes]); // Simple one-line chat flag sent to the GM.
         // #endregion ░░░░[Chat]░░░░
 
         // #region ░░░░░░░[Arrays & Objects]░░░░ Array & Object Processing ░░░░░░
+        const Arrayify = (vals, cleanFunc = (val) => Boolean(val)) => [vals].flat().filter(cleanFunc);
+        const Unarrayify = (qArray) => {
+            qArray = Arrayify(qArray);
+            switch (qArray.length) {
+                case 0: return false;
+                case 1: return qArray.pop();
+                default: return qArray;
+            }
+        };
         const KVPMap = (obj, keyFunc = (x) => x, valFunc) => {
             /* An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
             *      If only one function is provided, it's assumed to be mapping the values and will receive (v, k) args. */
-            [valFunc, keyFunc] = [valFunc, keyFunc].filter((x) => typeof x === "function" || typeof x === "boolean");
+            [valFunc, keyFunc] = Arrayify([valFunc, keyFunc], (x) => typeof x === "function" || typeof x === "boolean");
             keyFunc = keyFunc || ((k) => k);
             valFunc = valFunc || ((v) => v);
-            const newObj = {};
-            Object.entries(obj).forEach(([key, val]) => {
-                newObj[keyFunc(key, val)] = valFunc(val, key);
-            });
-            return newObj;
+            return Object.fromEntries(Object.entries(obj).map(([key, val]) => [keyFunc(key, val), valFunc(val, key)]));
         };
             // #endregion ░░░░[Arrays & Objects]░░░░
 
@@ -474,7 +474,7 @@ const EunoLIB = (() => {
             Preinitialize, Initialize,
 
             // [Validation]
-            GetR20Type, GetType,
+            GetType,
 
             // [Conversion]
             HexToDec, DecToHex,
@@ -493,7 +493,7 @@ const EunoLIB = (() => {
             Alert, Direct, Show, Flag,
 
             // [Arrays & Objects]
-            KVPMap
+            Arrayify, Unarrayify, KVPMap
         };
     })();
 
@@ -535,14 +535,119 @@ const EunoLIB = (() => {
 
         // #endregion ░░░░[FRONT]░░░░
 
-        // #region ░░░░░░░[Selections]░░░░ Extracting Selected Objects from API Chat Messages ░░░░░░
-        const GetSelObjs = (msg, type = "text") => { // Returns an array of selected objects.
+        // #region ░░░░░░░[Getters]░░░░ Retrieving Sandbox Objects ░░░░░░
+
+        const GetR20Type = (val) => {
+            if (val && typeof val === "object" && "id" in val && "get" in val) {
+                const type = val.get("_type");
+                if (type === "graphic") {
+                    if (val.get("represents")) {
+                        return "token";
+                    }
+                    if (val.get("_subtype") === "card") {
+                        return "card";
+                    }
+                    if (/\.webm/u.test(val.get("imgsrc"))) {
+                        return "animation";
+                    }
+                    return "graphic";
+                }
+                return type;
+            }
+            return false;
+        };
+        const GetObj = (qObj, type, registry = {}) => {
+            qObj = U.Arrayify(qObj); // Wait this won't work --- what if an array only ends up with one value? Will have to use GetObjs functions so user knows return type
+            const objs = [];
+            switch (type) {
+                case "card": case "token": case "animation": {
+                    objs.push(...U.Arrayify(GetObj(qObj, "graphic", registry))
+                        .filter((obj) => GetR20Type(obj) === type));
+                    break;
+                }
+                case "pc": case "npc": {
+                    objs.push(...U.Arrayify(GetChar(qObj, type, registry)));
+                    break;
+                }
+                case "character": {
+                    if (qObj.every((qO) => GetR20Type(qO) === "id")) {
+                        objs.push(...qObj.map((id) => getObj("character", id)));
+                    } else {
+                        objs.push(...qObj.map((qO) => GetChar(qO, type, registry)));
+                    }
+                    break;
+                }
+                case "graphic": case "text": case "path": /* ... */ {
+                    objs.push(...U.Arrayify(qObj.map((qObjElem) => {
+                        switch (qObjElem) {
+                            case "all": return findObjs({_type: type});
+                            case "registered": return U.Arrayify(GetObj("all", type)).filter((obj) => obj.id in registry);
+                            case "unregistered": return U.Arrayify(GetObj("all", type)).filter((obj) => !(obj.id in registry));
+                            default: {
+                                switch (U.GetType(qObjElem)) {
+                                    case "id": return getObj(type, qObjElem) || false;
+                                    case "array": return U.Arrayify(qObjElem).map((qObjSubElem) => GetObj(qObjSubElem, type, registry));
+                                    default: return GetR20Type(qObjElem) === type ? qObjElem : false;
+                                }
+                            }
+                        }
+                    })));
+                    break;
+                }
+                // no default
+            }
+            return U.Unarrayify(objs);
+        };
+        const GetChar = (qChar, type = "all", registry = {}) => {
+            const charIDs = []; // ... get ids for char objs
+            return GetObj(charIDs, "character");
+        };
+        const GetSelObjs = (msg, type) => { // Returns an array of selected objects.
+            switch (type) {
+                case "all": {
+
+                    break;
+                }
+                case "token": case "card": case "animation": {
+
+                    break;
+                }
+                case "pc": case "npc": case "character": {
+
+                    break;
+                }
+                case "player": {
+
+                    break;
+                }
+                default: {
+
+                    break;
+                }
+            }
+            return U.Arrayify(msg.selected, (objData) => objData._type === type);
             if (msg.selected && msg.selected.length) {
                 return msg.selected.filter((objData) => objData._type === type).map((objData) => getObj(type, objData._id));
             }
             return [];
         };
-        // #endregion ░░░░[Selections]░░░░
+        // #endregion ░░░░[Getters]░░░░
+
+        const GetTextObj = (qText, registry = {}) => {
+            switch (qText) {
+                case "all": return findObjs({_type: "text"}); /* !!! NEED A GET-CURRENT-PAGE FUNCTION IN OBJECTS !!! */
+                case "registered": return Object.keys(registry).map(([id]) => getObj("text", id)).filter((textObj) => Boolean(textObj));
+                case "unregistered": return GetTextObj("all").filter((textObj) => !(textObj.id in registry));
+                default: {
+                    switch (U.GetType(qText)) {
+                        case "id": return getObj("text", qText) || false;
+                        case "text": return qText;
+                        case "array": return qText.map((qTextElem) => GetTextObj(qTextElem)).filter((textObj) => Boolean(textObj));
+                        default: return false;
+                    }
+                }
+            }
+        };
 
         return {
             Preinitialize, Initialize,
@@ -715,22 +820,31 @@ const EunoLIB = (() => {
                     padding: 0 6px;
                     text-align: left;
                 }
+                .block.titleButtons {
+                    width: 40px;
+                    min-width: 40px;
+                    margin: 0;
+                    padding: 0;
+                    position: relative;
+                    top: -165px;
+                    left: 240px;
+                }
                 .title {
                     width: 100%;
                     margin: 0 0 -30px 0;
-                    color: ${C.COLORS.black}
+                    color: ${C.COLORS.black};
                     font-family: Impact; sans-serif;
                     line-height: 36px;
                     font-size: 24px;
                     font-weight: normal;
                     text-align: center;
-                    background-image: url('${C.GetImgURL("titleMain")}');
+                    background-image: url('${C.GetImgURL("titleMainButtons")}');
                     background-origin: padding-box;
                     background-repeat: no-repeat;
                     background-position: center 3px;
                 }
                 .title.main {
-                    height: ${C.GetImgSize("titleMain").pop()}px;
+                    height: ${C.GetImgSize("titleMainButtons").pop()}px;
                     background-size: 280px;
                 }
                 .title.etc {
@@ -824,6 +938,24 @@ const EunoLIB = (() => {
                 .footer.hideIntro {background-image: url('${C.GetImgURL("footerHideIntroGold")}')}
                 .footer.goBack {background-image: url('${C.GetImgURL("footerGoBackGold")}')}
                 .footer.goBack.silver {background-image: url('${C.GetImgURL("footerGoBackSilver")}')}
+                h1.button {
+                    text-align: left;
+                    text-indent: 10px;
+                }
+                span.buttonLabel {
+                    display: inline-block;
+                    min-width: 50px;
+                    text-indent: 0;
+                    text-align: center;
+                }
+                span.buttonDesc {
+                    display: inline-block;
+                    font-family: 'Trebuchet MS';
+                    font-size: 20px;
+                    vertical-align: middle;
+                    padding-bottom: 2px;
+                    text-indent: 0px;
+                }
                 a.button {
                     display: block;
                     height: 100%;
@@ -841,6 +973,11 @@ const EunoLIB = (() => {
                     height: 50px;
                     width: 50px;
                     margin: 0 15px;
+                }
+                span.buttonRound.titleButtons {
+                    height: 37px;
+                    width: 40px;
+                    margin: 0;
                 }
                 span.buttonRound.download {background-image: url('${C.GetImgURL("buttonDownload")}')}
                 span.buttonRound.chat {background-image: url('${C.GetImgURL("buttonChat")}')}
@@ -939,32 +1076,37 @@ const EunoLIB = (() => {
         // #endregion _______ Parsing Functions _______
 
         // #region ========== Elements: Basic Element Constructors by Tag ===========
-        const Div = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "div", classes, styles, attributes);
-        const Span = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "span", classes, styles, attributes);
-        const P = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "p", classes, styles, attributes);
-        const Img = (content, classes = [], styles = {}, attributes = {}) => Tag(false, "img", classes, styles, attributes);
-        const A = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "a", classes, styles, attributes);
-        const Pre = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "pre", classes, styles, attributes);
-        const H1 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h1", classes, styles, attributes);
-        const H2 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h2", classes, styles, attributes);
-        const H3 = (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h3", classes, styles, attributes);
+        const baseElements = {
+            Div: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "div", classes, styles, attributes),
+            Span: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "span", classes, styles, attributes),
+            P: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "p", classes, styles, attributes),
+            Img: (content, classes = [], styles = {}, attributes = {}) => Tag(false, "img", classes, styles, attributes),
+            A: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "a", classes, styles, attributes),
+            Pre: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "pre", classes, styles, attributes),
+            H1: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h1", classes, styles, attributes),
+            H2: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h2", classes, styles, attributes),
+            H3: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h3", classes, styles, attributes)
+        };
         // #endregion _______ Elements _______
 
         // #endregion ░░░░[PARSING]░░░░
 
         // #region ░░░░░░░[CUSTOM ELEMENTS]░░░░ Shorthand Element Constructors for Common Use Cases ░░░░░░
-        const Box = (content, styles) => Div(content, ["box"], styles);
-        const Block = (content, styles) => Div(content, ["block"], styles);
-        const ButtonRound = (command, classes = [], styles = {}, attributes = {}) => Span(A("&nbsp;", ["button"], {}, {href: command}), ["buttonRound", ...classes], styles, attributes);
-        const Paras = (content) => [content].flat().map((para) => P(para)).join("");
-        const Spacer = (height) => Div("&nbsp;", ["spacer"], {height: `${height}px`.replace(/pxpx$/u, "px")});
-        const Footer = (content, classes = [], styles = {}, attributes = {}) => Div(content || "&nbsp;", ["footer", ...classes], styles, attributes);
-        const ButtonH1 = (command, content, classes = [], styles = {}, attributes = {}) => H1(A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes);
-        const ButtonH2 = (command, content, classes = [], styles = {}, attributes = {}) => H1(A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes);
-        const ButtonH3 = (command, content, classes = [], styles = {}, attributes = {}) => H1(A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes);
-        const ButtonFooter = (command, content, classes = [], styles = {}, attributes = {}) => Footer(A(content || "&nbsp;", ["button"], {}, {href: command}), classes, styles, attributes);
-        const Command = (command, classes = [], styles = {}, attributes = {}) => Span(command, ["commandHighlight", ...classes], styles, attributes);
-        const ButtonCommand = (command, classes = [], styles = {}, attributes = {}) => Command(A(command, ["button"], {}, {href: command}), ["shiftLeft", ...classes], styles, attributes);
+        const customElements = {
+            Box: (content, classes = [], styles = {}) => H.Div(content, ["box", ...classes], styles),
+            Block: (content, classes = [], styles = {}) => H.Div(content, ["block", ...classes], styles),
+            Subtitle: (content, classes = [], styles = {}) => H.Div(content, ["subtitle", ...classes], styles),
+            ButtonRound: (command, classes = [], styles = {}, attributes = {}) => H.Span(H.A("&nbsp;", ["button"], {}, {href: command}), ["buttonRound", ...classes], styles, attributes),
+            Paras: (content) => [content].flat().map((para) => H.P(para)).join(""),
+            Spacer: (height) => H.Div("&nbsp;", ["spacer"], {height: `${height}px`.replace(/pxpx$/u, "px")}),
+            Footer: (content, classes = [], styles = {}, attributes = {}) => H.Div(content || "&nbsp;", ["footer", ...classes], styles, attributes),
+            ButtonH1: (command, content, classes = [], styles = {}, attributes = {}) => H.H1(H.A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes),
+            ButtonH2: (command, content, classes = [], styles = {}, attributes = {}) => H.H1(H.A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes),
+            ButtonH3: (command, content, classes = [], styles = {}, attributes = {}) => H.H1(H.A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes),
+            ButtonFooter: (command, content, classes = [], styles = {}, attributes = {}) => H.Footer(H.A(content || "&nbsp;", ["button"], {}, {href: command}), classes, styles, attributes),
+            Command: (command, classes = [], styles = {}, attributes = {}) => H.Span(command, ["commandHighlight", ...classes], styles, attributes),
+            ButtonCommand: (command, classes = [], styles = {}, attributes = {}) => H.Command(H.A(command, ["button"], {}, {href: command}), ["shiftLeft", ...classes], styles, attributes)
+        };
         // #endregion ░░░░[CUSTOM ELEMENTS]░░░░
 
         // #region ░░░░░░░[HELP MESSAGES]░░░░ Main Intro/Help Message for EunoScripts ░░░░░░
@@ -1028,14 +1170,13 @@ const EunoLIB = (() => {
             U.Alert(H.Box([
                 H.Span(null, ["title", "main"]),
                 H.Block([
-                    H.ButtonRound("https://github.com/Eunomiac/EunosRoll20Scripts/releases", ["download"], {margin: "0 5px 20px 5px"}, {title: "Download the most recent version."}),
-                    H.ButtonRound("https://app.roll20.net/forum/permalink/10184021/", ["chat"], {margin: "0 5px 8px 5px"}, {title: "Join the discussion in the Roll20 forum thread."}),
-                    H.ButtonRound("https://github.com/Eunomiac/EunosRoll20Scripts/issues", ["bug"], {margin: "0 5px 20px 5px"}, {title: "Report bugs, make suggestions and track issues."})
-                ], {"text-align": "center", "margin": "-10px 0 -15px 0"}),
+                    H.ButtonRound("https://github.com/Eunomiac/EunosRoll20Scripts/releases", ["titleButtons"], {}, {title: "Download the most recent version."}),
+                    H.ButtonRound("https://app.roll20.net/forum/permalink/10184021/", ["titleButtons"], {}, {title: "Join the discussion in the Roll20 forum thread."}),
+                    H.ButtonRound("https://github.com/Eunomiac/EunosRoll20Scripts/issues", ["titleButtons"], {}, {title: "Report bugs, make suggestions and track issues."})
+                ], ["titleButtons"]),
                 H.Block([
                     H.Paras([
-                        "<b><u>Euno~miac's Roll20 Scripts</u></b> is a col~lec~tion of stand-alone scripts, each in~tended to pro~vide com~pre~hen~sive con~trol over a par~tic~u~lar as~pect of the Roll20 VTT. You can learn more about each of the avail~able scripts be~low.",
-                        "Keep ap~prised of new fea~tures, fixes and fu~ture plans as dev~elop~ment pro~ceeds through al~pha by vis~it~ing the links above."
+                        "<b><u>Euno~miac's Roll20 Scripts</u></b> is a col~lec~tion of stand-alone scripts, each in~tended to pro~vide com~pre~hen~sive con~trol over a par~tic~u~lar as~pect of the Roll20 VTT. You can learn more about each of the avail~able scripts be~low, and keep ap~prised of new fea~tures, fixes and fu~ture plans through~out dev~elop~ment by vis~it~ing the links above."
                     ]),
                     H.H2("General Chat Commands"),
                     H.Spacer(5),
@@ -1045,45 +1186,16 @@ const EunoLIB = (() => {
                     H.Spacer(5),
                     H.H2("Available Scripts"),
                     H.Paras("Click the but~tons be~low to learn more about each of <b><u>Euno~miac's Roll20 Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
-                    H.ButtonH1("!etc", "!ETC", ["tight"], {}, {title: "Eunomiac's Text Controls: A comprehensive solution to managing Roll20 text objects."}),
-                    H.ButtonH1("!egc", "!EGC", ["tight", "dim"], {}, {title: "Eunomiac's Grab Controls: Create buttons and switches in the sandbox for your players to interact with."}),
-                    H.ButtonH1("!ehc", "!EHC", ["tight", "dim"], {}, {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}),
+                    H.ButtonH1("!etc", [H.Span("!ETC", ["buttonLabel"], {}), H.Span(" - Euno's Text Controls", ["buttonDesc"])], ["tight"], {}, {title: "Eunomiac's Text Controls: A comprehensive solution to managing Roll20 text objects."}),
+                    H.ButtonH1("!egc", [H.Span("!EGC", ["buttonLabel"], {}), H.Span(" - Euno's Grab Controls", ["buttonDesc"])], ["tight", "bronze"], {}, {title: "Eunomiac's Grab Controls: Create buttons and switches in the sandbox for your players to interact with."}),
+                    H.ButtonH1("!ehc", [H.Span("!EHC", ["buttonLabel"], {}), H.Span(" - Euno's HTML Controls", ["buttonDesc"])], ["tight", "bronze"], {}, {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}),
                     H.Spacer(5),
                     H.H2("Configuration"),
                     H.P("Con~fig~u~ra~tion op~tions for every script in <b><u>Euno~miac's Roll20 Scripts</u></b> col~lec~tion is con~tained in 'EunoCONFIG.js', which you'll find in the API Scripts sec~tion of your game page. Fur~ther in~struc~tions on how to con~fig~ure the scripts to your lik~ing are lo~cated there."),
                     options.isAutoDisplaying ? H.Spacer(5) : H.Spacer(1),
                     options.isAutoDisplaying ? H.P(`To pre~vent this mes~sage from dis~play~ing at start~up, click the chev~ron be~low. <i>(View this mes~sage at any time via the ${H.Command("!euno")} command.)</i>`) : ""
-                ]),
+                ], [], {"margin-top": "-130px"}),
                 options.isAutoDisplaying ? H.ButtonFooter("!euno toggle intro", "", ["hideIntro"]) : H.Footer()
-            ]));
-        };
-        /** */
-        const DisplayETCHelp = () => {
-            U.Alert(H.Box([
-                H.Span(null, ["title", "etc"]),
-                H.Block([
-                    H.P("<b>!ETC</b> is in~ten~ded to be a com~pre~hen~sive so~lu~tion to man~ag~ing Roll20 Text Ob~jects."),
-                    H.H2("!ETC Chat Commands"),
-                    H.Spacer(5),
-                    H.Paras([
-                        [H.ButtonCommand("!etc", ["shiftLeft"]), " — View this help mes~sage."],
-                        [H.ButtonCommand("!etc setup", ["shiftLeft"]), " — Ac~ti~vate or de~ac~ti~vate any of the fea~tures in this script pack~age."],
-                        [H.ButtonCommand("!etc reset all", ["shiftLeft"]), " — <b><u>FULLY</u> re~set <u>ALL</u></b> <b>!ETC</b> script fea~tures, re~turn~ing <b>!ETC</b> to its de~fault in~stal~la~tion state."]
-                    ]),
-                    H.Spacer(5),
-                    H.H2("!ETC Features"),
-                    H.Spacer(5),
-                    H.Paras("Learn more about each of <b>!ETC</b>'s fea~tures by click~ing the head~ings be~low:"),
-                    H.Spacer(5),
-                    H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight"], {}, {title: "Control drop shadow behavior."}),
-                    H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight"], {}, {title: "Configure pruning of empty text objects."}),
-                    H.H1("Attribute Linking", ["dim", "tight"]),
-                    H.H1("Table & Chart Styling", ["dim", "tight"]),
-                    H.H1("Timers & Calendars", ["dim", "tight"]),
-                    H.H1("Miscellaneous", ["dim", "tight"]),
-                    H.Spacer(5)
-                ]),
-                H.ButtonFooter("!euno", "", ["goBack"])
             ]));
         };
         // #endregion ░░░░[HELP MESSAGES]░░░░
@@ -1094,19 +1206,19 @@ const EunoLIB = (() => {
 
             // [PARSING]
             Tag,
-            Div, Span, P, Img, A, Pre, H1, H2, H3,
+            ... baseElements,
 
             // [CUSTOM ELEMENTS]
-            Box, Block, ButtonRound, Paras, Spacer, Footer, ButtonH1, ButtonH2, ButtonH3, ButtonFooter, Command, ButtonCommand,
+            ... customElements,
 
             // [HELP MESSAGES]
-            DisplayHelp, DisplayETCHelp
+            DisplayHelp
         };
 
     })();
 
     return {
-        Preinitialize, Initialize,
+        Preinitialize, Initialize, ReportReady,
 
         UTILITIES,
         OBJECTS,

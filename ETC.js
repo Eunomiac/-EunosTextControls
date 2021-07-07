@@ -15,17 +15,17 @@ const ETC = (() => {
     const DEFAULTSTATE = {/* initial values for state storage, if any */
         REGISTRY: {},
         IsAutoShadowing: false,
-        IsAutoPruning: false,
-        IsShowingIntro: true
+        IsAutoPruning: false
     };
-    const RO = {get OT() { return EunoCORE.ROOT }};
+
     const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
     const RE = {get G() { return STA.TE.REGISTRY }};
     // #endregion _______ Namespacing _______
 
     // #region ========== Initialization: Script Startup & Event Listeners ===========
-    const {C} = EunoCORE;
-    let CFG, LIB, U, O, H;
+
+    // Define shorthand references to major script components.
+    const {C} = EunoCORE; let CFG, LIB, U, O, H; // these have to be declared now, but must wait for intialization to be assigned
     const Preinitialize = (isResettingState = false) => {
         // Reset script state entry, if specified
         if (isResettingState) { delete EunoCORE.ROOT[SCRIPTNAME] }
@@ -34,11 +34,10 @@ const ETC = (() => {
         Object.entries(DEFAULTSTATE)
             .filter(([key]) => !(key in STA.TE))
             .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
-
-        // Define local-scope shorthand references for main script components
-        ({CFG, LIB, U, O, H} = EunoCORE);
     };
     const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
+        // Assign shorthand script references to their (now preinitialized) scripts
+        ({CFG, LIB, U, O, H} = EunoCORE);
 
         // Reset script state entry, if specified
         if (isResettingState) { Preinitialize(true) }
@@ -52,59 +51,54 @@ const ETC = (() => {
         }
 
         // Report readiness
-        U.Flag(`${SCRIPTNAME} Ready!`); log(`[Euno] ${SCRIPTNAME} Ready!`);
-
-        // Display Help message, if so configured
-        if (STA.TE.isDisplayingHelpAtStart) {H.DisplayETCHelp()}
+        LIB.ReportReady(`!${SCRIPTNAME}`, "Euno");
     };
     // #endregion _______ Initialization _______
 
     // #region ========== Events: Event Handlers ===========
     const handleMessage = (msg) => {
         if (msg.content.startsWith("!etc") && playerIsGM(msg.playerid)) {
-            let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
+            let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s"[^"]*"|\s[^\s]*/gu) || [])
                 .map((x) => x.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1"))
                 .filter((x) => Boolean(x));
-            // *** INSTEAD OF ALL THE CHECKS, JUST USE A TRY/CATCH BLOCK WITH HELP MESSAGE AS DEFAULT
-            if (({
-                shadow: () => makeTextShadow(U.GetSelObjs(msg, "text")),
-                toggle: () => ({
-                    autoshadow: () => toggleAutoShadow(args.includes("true")),
-                    autoprune: () => toggleAutoPrune(args.includes("true"))
-                }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
-                clear: () => {
-                    if (args.includes("all")) {
-                        Object.entries(RE.G).filter(([id, textData]) => "masterID" in textData).forEach(([id, textData]) => unregTextShadow(id));
-                        U.Flag("Shadows unregistered.");
-                        U.Flag("Shadows removed.");
-                    } else {
-                        unregTextShadow(U.GetSelObjs(msg, "text").map((obj) => obj.id));
-                    }
-                },
-                fix: () => { if (args.includes("all")) { fixTextShadows() } },
-                prune: () => { pruneText(args.includes("all") ? "all" : U.GetSelObjs(msg, "text")) },
-                setup: () => { displayToggles() },
-                help: () => {
-                    if (({
-                        shadow: () => toggleAutoShadow(args.includes("true")),
-                        prune: () => toggleAutoPrune(args.includes("true"))
-                    }[(call = args.shift() || "").toLowerCase()] || (() => false))() === false) {
-                        H.DisplayETCHelp();
-                    }
-                },
-                purge: () => ({
-                    state: () => Preinitialize(true),
-                    reg: () => STA.TE.REGISTRY = {}
-                }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
-                test: () => ({
-                    state: () => U.Show(state),
-                    root: () => U.Show(EunoCORE.ROOT),
-                    stateref: () => U.Show(STA.TE),
-                    data: () => { U.Show((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) }
-                }[(call = args.shift() || "").toLowerCase()] || (() => false))()
-            }[(call = args.shift() || "").toLowerCase()] || (() => false))() === false) {
-                H.DisplayETCHelp();
-            };
+            try {
+                ({
+                    shadow: () => makeTextShadow(O.GetSelObjs(msg, "text")),
+                    toggle: () => ({
+                        autoshadow: () => toggleAutoShadow(args.includes("true")),
+                        autoprune: () => toggleAutoPrune(args.includes("true"))
+                    }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
+                    clear: () => {
+                        if (args.includes("all")) {
+                            getTextShadow("registered").forEach(((shadow) => unregTextShadow(shadow)));
+                            U.Flag("Shadows Removed & Unregistered.", 2);
+                        } else {
+                            unregTextShadow(O.GetSelObjs(msg, "text").map((obj) => obj.id));
+                        }
+                    },
+                    fix: () => { if (args.includes("all")) { fixTextShadows() } },
+                    prune: () => { pruneText(args.includes("all") ? "all" : O.GetSelObjs(msg, "text")) },
+                    setup: () => { displayToggles() },
+                    help: () => {
+                        ({
+                            shadow: () => toggleAutoShadow(args.includes("true")),
+                            prune: () => toggleAutoPrune(args.includes("true"))
+                        }[(call = args.shift() || "").toLowerCase()] || (() => false))();
+                    },
+                    purge: () => ({
+                        state: () => Preinitialize(true),
+                        reg: () => STA.TE.REGISTRY = {}
+                    }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
+                    test: () => ({
+                        state: () => U.Show(state),
+                        root: () => U.Show(EunoCORE.ROOT),
+                        stateref: () => U.Show(STA.TE),
+                        data: () => { U.Show((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) }
+                    }[(call = args.shift() || "").toLowerCase()] || (() => false))()
+                }[(call = args.shift() || "").toLowerCase()] || (() => false))();
+            } catch (err) {
+                displayHelp();
+            }
         }
     };
     const handleTextChange = (textObj) => {
@@ -144,10 +138,35 @@ const ETC = (() => {
     // #endregion _______ Events _______
 
     // #region *** *** UTILITY *** ***
-    const isShadowObj = (val) => U.GetR20Type(val) === "text" && /etcshadowobj/u.test(val.get("controlledby"));
+
+    const getTextData = (qText) => {
+        const textObjs = [getText(qText)].flat();
+        switch (textObjs.length) {
+            case 0: return false;
+            case 1: return textObjs[0].id in RE.G ? RE.G[textObjs[0].id] : false;
+            default: return textObjs.map((textObj) => getTextData(textObj));
+        }
+    };
+    const isShadowObj = (qTextObj) => U.GetR20Type(qTextObj) === "text" && /etcshadowobj/u.test(qTextObj.get("controlledby"));
+    const getTextShadow = (qShadow) => {
+        switch (qShadow) {
+            case "all": return getText("all").filter((textObj) => isShadowObj(textObj));
+            case "unregistered": return getText("unregistered").filter((textObj) => isShadowObj(textObj));
+            default: {
+                const textDatas = [getTextData(qShadow)].flat();
+                switch (textDatas.length) {
+                    case 0: return false;
+                    case 1: return (textDatas[0].isShadow && getText(textDatas[0].id))
+                                || (textDatas[0].hasShadow && getText(textDatas[0].shadowID))
+                                || false;
+                    default: return textDatas.map((textData) => getTextShadow(textData.id));
+                }
+            }
+        }
+    };
     const getOffsets = (fontFamily, fontSize) => ({
-        ...CFG.TextShadows.OFFSETS.generic,
-        ...(fontFamily in CFG.TextShadows.OFFSETS ? CFG.TextShadows.OFFSETS[fontFamily] : CFG.TextShadows.OFFSETS.generic)
+        ...CFG.ETC.DropShadows.OFFSETS.generic,
+        ...(fontFamily in CFG.ETC.DropShadows.OFFSETS ? CFG.ETC.DropShadows.OFFSETS[fontFamily] : CFG.ETC.DropShadows.OFFSETS.generic)
     }[fontSize]);
     // #endregion *** *** UTILITY *** ***
 
@@ -171,7 +190,7 @@ const ETC = (() => {
             if (!isSkipping) {
                 if (U.GetR20Type(masterObj) === "text") {
                     const [leftOffset, topOffset] = getOffsets(masterObj.get("font_family"), masterObj.get("font_size"));
-                    const shadowOffsets = CFG.TextShadows.OFFSETS[masterObj.get("font_family") in CFG.TextShadows.OFFSETS ? masterObj.get("font_family") : "generic"];
+                    const shadowOffsets = CFG.ETC.DropShadows.OFFSETS[masterObj.get("font_family") in CFG.ETC.DropShadows.OFFSETS ? masterObj.get("font_family") : "generic"];
                     const shadowObj = createObj("text", {
                         _pageid: masterObj.get("_pageid"),
                         left: masterObj.get("left") + leftOffset,
@@ -180,8 +199,8 @@ const ETC = (() => {
                         font_size: masterObj.get("font_size"),
                         rotation: masterObj.get("rotation"),
                         font_family: masterObj.get("font_family"),
-                        color: CFG.TextShadows.COLOR,
-                        layer: CFG.TextShadows.LAYER,
+                        color: CFG.ETC.DropShadows.COLOR,
+                        layer: CFG.ETC.DropShadows.LAYER,
                         controlledby: "etcshadowobj"
                     });
                     regTextShadow(masterObj, shadowObj);
@@ -199,39 +218,32 @@ const ETC = (() => {
     const regTextShadow = (masterObj, shadowObj) => {
         RE.G[masterObj.id] = {
             id: masterObj.id,
+            hasShadow: true,
             shadowID: shadowObj.id
         };
         RE.G[shadowObj.id] = {
             id: shadowObj.id,
+            isShadow: true,
             masterID: masterObj.id
         };
         toFront(masterObj);
         toFront(shadowObj);
     };
-    const safeRemove = (ids) => {
-        [ids].flat().forEach((id) => {
-            const textObj = getObj("text", id);
+    const safeRemove = (qText) => {
+        [getText(qText)].flat().forEach((textObj) => {
+
             if (textObj) {
-                removalQueue.push(id);
+                removalQueue.push(textObj);
                 textObj.remove();
             }
         });
     };
-    const unregTextShadow = (textObjs) => {
-        [textObjs].flat().forEach((objOrID) => {
-            const id = typeof objOrID === "string"
-                ? objOrID
-                : (U.GetR20Type(objOrID) && objOrID.id);
-            if (id in RE.G) {
-                const textData = RE.G[id];
-                if (textData.masterID in RE.G) {
-                    safeRemove(id);
-                    delete RE.G[textData.masterID];
-                    delete RE.G[id];
-                } else if (textData.shadowID in RE.G) {
-                    unregTextShadow(textData.shadowID);
-                }
-            }
+    const unregTextShadow = (qText) => {
+        [getTextShadow(qText)].flat().forEach((shadowObj) => {
+            const [id, {masterID}] = getTextData(shadowObj);
+            safeRemove(shadowObj);
+            delete RE.G[masterID];
+            delete RE.G[id];
         });
     };
     // #endregion
@@ -246,8 +258,8 @@ const ETC = (() => {
                     text: masterObj.get("text"),
                     left: masterObj.get("left") + leftOffset,
                     top: masterObj.get("top") + topOffset,
-                    layer: masterObj.get("layer") === CFG.INACTIVELAYER ? CFG.INACTIVELAYER : CFG.TextShadows.LAYER,
-                    color: CFG.TextShadows.COLOR,
+                    layer: masterObj.get("layer") === CFG.INACTIVELAYER ? CFG.INACTIVELAYER : CFG.ETC.DropShadows.LAYER,
+                    color: CFG.ETC.DropShadows.COLOR,
                     font_family: masterObj.get("font_family"),
                     rotation: masterObj.get("rotation"),
                     font_size: masterObj.get("font_size")
@@ -366,42 +378,50 @@ const ETC = (() => {
     // #endregion *** *** ATTRIBUTE DISPLAYS *** ***
 
     // #region *** *** CHAT DISPLAYS & MENUS *** ***
+    const displayHelp = () => {
+        U.Alert(H.Box([
+            H.Span(null, ["title", "etc"]),
+            H.Block([
+                H.P("<b>!ETC</b> is in~ten~ded to be a com~pre~hen~sive so~lu~tion to man~ag~ing Roll20 Text Ob~jects."),
+                H.H2("!ETC Chat Commands"),
+                H.Spacer(5),
+                H.Paras([
+                    [H.ButtonCommand("!etc", ["shiftLeft"]), " — View this help mes~sage."],
+                    [H.ButtonCommand("!etc setup", ["shiftLeft"]), " — Ac~ti~vate or de~ac~ti~vate any of the fea~tures in this script pack~age."],
+                    [H.ButtonCommand("!etc reset all", ["shiftLeft"]), " — <b><u>FULLY</u> re~set <u>ALL</u></b> <b>!ETC</b> script fea~tures, re~turn~ing <b>!ETC</b> to its de~fault in~stal~la~tion state."]
+                ]),
+                H.Spacer(5),
+                H.H2("!ETC Features"),
+                H.Spacer(5),
+                H.Paras("Learn more about each of <b>!ETC</b>'s fea~tures by click~ing the head~ings be~low:"),
+                H.Spacer(5),
+                H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight"], {}, {title: "Control drop shadow behavior."}),
+                H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight"], {}, {title: "Configure pruning of empty text objects."}),
+                H.H1("Attribute Linking", ["dim", "tight"]),
+                H.H1("Table & Chart Styling", ["dim", "tight"]),
+                H.H1("Timers & Calendars", ["dim", "tight"]),
+                H.H1("Miscellaneous", ["dim", "tight"]),
+                H.Spacer(5)
+            ]),
+            H.ButtonFooter("!euno", "", ["goBack"])
+        ]));
+    };
     const displayToggles = () => {
         U.Alert(H.Box([
             H.Block([
-                H.H("[ETC] Options", 1),
-                H.Paras([
-                    "Hover over the description on the left for more details about any given setting."
-                ]),
+                H.Subtitle("Options", ["etc"]),
+                H.P("Ho~ver over the de~scrip~tion on the left for more de~tails about any gi~ven set~ting."),
                 H.Span([
-                    H.Span(`Intro Message <span style="color: ${STA.TE.IsShowingIntro ? "darkgreen" : "darkred"};"><u>${STA.TE.IsShowingIntro ? "EN" : "DIS"}ABLED</u></span>`, {
-                        // background: "transparent",
-                        // color: "black",
-                        "font-size": "14px",
-                        "line-height": "18px",
-                        "font-family": "sans-serif",
-                        "font-weight": "bold",
-                        margin: "-5px 0 10px 0"
-                    }, "Whether to display the introductory help message on sandbox startup."),
-                    H.ButtonWide(STA.TE.IsShowingIntro ? "DISABLE" : "ENABLE", `!etc toggle intro ${STA.TE.IsShowingIntro ? "false" : "true"}`,  {
-                        color: STA.TE.IsShowingIntro ? "white" : "black",
-                        width: "27%",
-                        background: STA.TE.IsShowingIntro ? "red" : "lime",
-                        padding: "2px",
-                        "margin-top": "-5px",
-                        float: "right"
-                    })
-                ], {width: "97%"}),
-                H.Span([
-                    H.Span(`Object Pruning <span style="color: ${STA.TE.IsAutoPruning ? "darkgreen" : "darkred"};"><u>${STA.TE.IsAutoPruning ? "EN" : "DIS"}ABLED</u></span>`, {
+                    H.Span(`Object Pruning <span style="color: ${STA.TE.IsAutoPruning ? "darkgreen" : "darkred"};"><u>${STA.TE.IsAutoPruning ? "EN" : "DIS"}ABLED</u></span>`, ["silver"], {
                         // background: "transparent",
                         "font-size": "14px",
                         "line-height": "18px",
                         "font-family": "sans-serif",
                         "font-weight": "bold",
                         margin: "-5px 0 10px 0"
-                    }, "Whether empty text objects are automatically removed whenever they appear."),
-                    H.ButtonWide(STA.TE.IsAutoPruning ? "DISABLE" : "ENABLE", `!etc toggle autoprune ${STA.TE.IsAutoPruning ? "false" : "true"}`, {
+                    }, {title: "Whether empty text objects are automatically removed whenever they appear."}),
+                    H.ButtonWide(STA.TE.IsAutoPruning ? "DISABLE" : "ENABLE", `!etc toggle autoprune ${STA.TE.IsAutoPruning ? "false" : "true"}`, ["silver"], {
+                        "font-size": "12px",
                         color: STA.TE.IsAutoPruning ? "white" : "black",
                         width: "27%",
                         background: STA.TE.IsAutoPruning ? "red" : "lime",
@@ -409,9 +429,9 @@ const ETC = (() => {
                         "margin-top": "-5px",
                         float: "right"
                     })
-                ], {width: "97%"}),
+                ], ["silver"], {width: "97%"}),
                 H.Span([
-                    H.Span(`Auto-Shadow <span style="color: ${STA.TE.IsAutoShadowing ? "darkgreen" : "darkred"};"><u>${STA.TE.IsAutoShadowing ? "EN" : "DIS"}ABLED</u></span>`, {
+                    H.Span(`Auto-Shadow <span style="color: ${STA.TE.IsAutoShadowing ? "darkgreen" : "darkred"};"><u>${STA.TE.IsAutoShadowing ? "EN" : "DIS"}ABLED</u></span>`, ["silver"], {
                         // background: "transparent",
                         // color: "black",
                         "font-size": "14px",
@@ -419,8 +439,9 @@ const ETC = (() => {
                         "font-family": "sans-serif",
                         "font-weight": "bold",
                         margin: "-5px 0 10px 0"
-                    }, "Whether shadows should be created automatically for all new text objects."),
-                    H.ButtonWide(STA.TE.IsAutoShadowing ? "DISABLE" : "ENABLE", `!etc toggle autoshadow ${STA.TE.IsAutoShadowing ? "false" : "true"}`,  {
+                    }, {title: "Whether shadows should be created automatically for all new text objects."}),
+                    H.ButtonWide(STA.TE.IsAutoShadowing ? "DISABLE" : "ENABLE", `!etc toggle autoshadow ${STA.TE.IsAutoShadowing ? "false" : "true"}`, ["silver"],  {
+                        "font-size": "12px",
                         color: STA.TE.IsAutoShadowing ? "white" : "black",
                         width: "27%",
                         background: STA.TE.IsAutoShadowing ? "red" : "lime",
@@ -428,30 +449,30 @@ const ETC = (() => {
                         "margin-top": "-5px",
                         float: "right"
                     })
-                ], {width: "97%"})
+                ], ["silver"], {width: "97%"})
             ])
-        ]));
+        ], ["silver"]));
     };
     const displayError = (errorTag) => {
         const ERRORHTML = {
             AddShadowToShadow: H.Box([
-                H.H("[ETC] ERROR: Shadow-On-Shadow", 1, {"font-family": "sans-serif"}),
+                H.Subtitle("ERROR: Shadow-On-Shadow", ["etc"]),
                 H.Block([
-                    H.H("Cannot Add a Shadow to a Shadow Object"),
+                    H.H2("Cannot Add a Shadow to a Shadow Object"),
                     H.Paras([
-                        "Text shadows cannot have shadows themselves."
+                        "Text sha~dows can~not have sha~dows them~selves."
                     ])
                 ])
             ]),
             ManualShadowRemoval: H.Box([
-                H.H("[ETC] ERROR: Shadow Deleted", 1, {"font-family": "sans-serif"}),
+                H.Subtitle("ERROR: Shadow Deleted", ["etc"]),
                 H.Block([
-                    H.H("Restoring ..."),
+                    H.H2("Restoring ..."),
                     H.Paras([
-                        "Manually-deleted text shadows are automatically recreated (to prevent accidentally deleting a desired shadow).",
-                        "To remove a text shadow from a text object:",
-                        `${H.CodeSpan("!etc clear")} — Removes text shadows from all selected text objects <i>(you can select either the master object, the shadow object, or both)</i>`,
-                        `${H.CodeSpan("!etc clear all")} — Remove <b><u>ALL</u></b> text shadow objects <i>(this will not affect the master text objects, just remove the shadows)</i>`
+                        "Manually-deleted text sha~dows are auto~ma~tic~ally re~created (to pre~vent ac~cid~ent~ally de~let~ing a de~sired sha~dow).",
+                        "To re~move a text sha~dow from a text ob~ject:",
+                        [H.ButtonCommand("!etc clear", ["shiftLeft"]), " — Re~moves text sha~dows from all sel~ected text ob~jects <i>(you can sel~ect ei~ther the mas~ter ob~ject, the sha~dow ob~ject, or both)</i>"],
+                        [H.ButtonCommand("!etc clear all", ["shiftLeft"]), " — Re~move <b><u>ALL</u></b> text sha~dow ob~jects <i>(this will not af~fect the mas~ter text ob~jects, just re~move the sha~dows)</i>"]
                     ])
                 ])
             ])
