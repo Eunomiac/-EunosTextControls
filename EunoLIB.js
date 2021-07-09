@@ -1,49 +1,131 @@
 void MarkStart("EunoLIB");
 log("Starting!");
 /******▌████████████████████████████████████████████████████████████▐******\
-|*     ▌█░░░░ EunoLIB: Common Functions for EunosRoll20Scripts ░░░░█▐     *|
+|*     ▌█░░░░    EunoLIB: Common Functions for EunoScripts     ░░░░█▐     *|
 |*     ▌████████████████████████████████████████████████████████████▐     *|
-|*     ▌████████████████████████ v0.13-alpha ███████████████████████▐     *|
-|*     ▌███████████████████████ June 25, 2021 ██████████████████████▐     *|
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
+// #region ████████ EunoCORE: Functionality Required before Initialization ████████
 const EunoCORE = {
-    ROOTNAME: "Euno", // Namespace under global state variables
-
-    _scripts: {}, // Installed scripts will register themselves here. EunoCORE.regSCRIPT()
-    regSCRIPT: (name, script) => { EunoCORE._scripts[name] = script },
-    get SCRIPTS() { return EunoCORE._scripts },
-
-    get ROOT() { // Returns state namespace
+    // NAMESPACING: Namespace under global state variables
+    ROOTNAME: "EunoScripts",
+    // Returns root state namespace for all EunoScripts
+    get ROOT() {
         state[EunoCORE.ROOTNAME] = state[EunoCORE.ROOTNAME] || {};
         return state[EunoCORE.ROOTNAME];
     },
-    getSTATE: (scriptName) => { // Returns local script state namespace
+    // Returns script state namespace for specified EunoScript
+    getSTATE: (scriptName) => {
         EunoCORE.ROOT[scriptName] = EunoCORE.ROOT[scriptName] || {};
         return EunoCORE.ROOT[scriptName];
     },
-    UpdateNamespace: () => { /* Checks & Migration functions required for version update */ return true },
 
-    // Script initialization calls.
-    Preinitialize: (isResettingState = false) => Object.values(EunoCORE.SCRIPTS).filter((script) => "Preinitialize" in script).forEach((script) => script.Preinitialize(isResettingState)),
-    Initialize: (isRegisteringEventListeners = false, isResettingState = false) => Object.values(EunoCORE.SCRIPTS).filter((script) => "Initialize" in script).forEach((script) => script.Initialize(isRegisteringEventListeners, isResettingState)),
+    // SCRIPT REGISTRATION: Installed scripts register themselves in EunoCORE
+    _scripts: {},
+    regSCRIPT: (name, script) => { EunoCORE._scripts[name] = script },
+    get SCRIPTS() { return EunoCORE._scripts },
 
-    // ████████ [EunoCORE.C] Global References & Constants ████████
-    /**
-     * @global
-     * @name C */
-    C: {
+    // VERSION MIGRATION: Any migration processing necessary on version update
+    UpdateNamespace: () => { return true },
 
+    // SCRIPT INITIALIZATION:
+    Preinitialize: (isResettingState = false) => Object.values(EunoCORE.SCRIPTS)
+        .filter((script) => "Preinitialize" in script)
+        .forEach((script) => script.Preinitialize(isResettingState)),
+    Initialize: (isRegisteringEventListeners = true, isResettingState = false) => Object.values(EunoCORE.SCRIPTS)
+        .filter((script) => "Initialize" in script)
+        .forEach((script) => script.Initialize(isRegisteringEventListeners, isResettingState)),
+
+    // PRE-DEFINED UTILITY FUNCTIONS: EunoLIB.UTILITY functions that must be defined before initialization
+    GetType: (val) => {
+        const TYPES = [
+            "id", "hex", "hexa", "rgb", "rgba", "hsl", "hsla",
+            "int", "float",
+            "array", "list",
+            "boolean", "null", "undefined",
+            "function",
+            "date", "regexp",
+            "graphic", "token", "animation", "card",
+            "character", "text", "path", "jukeboxtrack", "handout", "page", "campaign", "player",
+            "string" // only if none of the above match
+        ];
+        const valType = Object.prototype.toString.call(val).slice(8, -1).toLowerCase().trim();
+        switch (valType) {
+            case "string": return (Object.entries({
+                hex: /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/,
+                hexa: /^#[A-Fa-f0-9]{8}$/,
+                rgb: /^rgb\((\s*\d{1,3}[,\s)]){3}$/,
+                rgba: /^rgba\((\s*\d{1,3}[,\s)]){3}(\s*[\d\.]+[,\s)])$/,
+                hsl: /^hsl\((\s*[\d\.%]+[,\s)]){3}$/,
+                hsla: /^hsla\((\s*[\d\.%]+[,\s)]){3}(\s*[\d\.]+[,\s)])$/,
+                int: /^(-|\+)?[\d,]+$/,
+                float: /^(-|\+|\d)[\d,\s]*\.[\d\s]*$/,
+                id: /^-[a-zA-Z0-9_-]{19}$/
+            }).find(([type, pattern]) => pattern.test(val.trim())) || ["string"]).shift();
+            case "number": return /\./u.test(`${val}`) ? "float" : "int";
+            // no default
+        }
+        return valType;
+    },
+    ScaleColor: (colorRef, scaleFactor = 1) => {
+        const colorVals = [];
+        const colorRefType = EunoCORE.GetType(colorRef);
+        switch (colorRefType) {
+            case "hex": case "hexa": {
+                colorRef = colorRef.replace(/[^A-Za-z0-9]/gu, "");
+                if (colorRef.length === 3) { colorRef = colorRef.split("").map((h) => `${h}${h}`).join("") }
+                colorVals.push(...colorRef.match(/.{2}/g).map((hex) => EunoCORE.HexToDec(hex)));
+                break;
+            }
+            case "rgb": case "rgba": case "hsl": case "hsla": {
+                colorVals.push(...colorRef
+                    .match(/[\d\.%]+[,\s)]/g)
+                    .map((val) => {
+                        if (/%/.test(val)) { return parseInt(val.replace(/[^\d\.]/gu, "")) / 100 }
+                        return /\./.test(val) ? parseFloat(val) : parseInt(val);
+                    }));
+                break;
+            }
+            case "string": return colorRef;
+            default: return false;
+        }
+        for (let i = 0; i < 3; i++) {
+            colorVals[i] = Math.round(colorVals[i] * scaleFactor);
+        }
+        switch (colorRefType) {
+            case "hexa": return `rgba(${colorVals.join(", ")})`;
+            case "hex": return `#${colorVals.map((val) => EunoCORE.DecToHex(val)).join("")}`;
+            default: return `${colorRefType}(${colorVals.join(", ")})`;
+        }
+    },
+    HexToDec: (hex) => hex
+        .toLowerCase()
+        .replace(/[^a-z0-9]/gu, "")
+        .split("")
+        .reverse()
+        .reduce((tot, digit, i) => tot + Math.pow(16, i) * "0123456789abcdef".search(digit), 0),
+    DecToHex: (dec) => {
+        const hex = [];
+        let quot = parseInt(dec);
+        do {
+            hex.push("0123456789abcdef".charAt(quot % 16));
+            quot = Math.floor(quot/16);
+        } while (quot > 0);
+        return hex.reverse().join("");
+    },
+
+    // #region ████████ EunoCORE.CONSTANTS: Globally-Accessible Constants ████████
+    CONSTANTS: {
         // #region ░░░░░░░[COLORS]░░░░ Color Definitions ░░░░░░
         COLORS: {
             // Black / Grey / White
             black: "#000",
-            // get grey10() { return EunoCORE.U.ScaleColor("#FFF", 0.1) },
-            // get grey25() { return EunoCORE.U.ScaleColor("#FFF", 0.25) },
-            // get grey() { return EunoCORE.U.ScaleColor("#FFF", 0.50) },
-            // get grey75() { return EunoCORE.U.ScaleColor("#FFF", 0.75) },
-            // get grey90() { return EunoCORE.U.ScaleColor("#FFF", 0.9) },
+            get grey10() { return EunoCORE.ScaleColor("#FFF", 0.1) },
+            get grey25() { return EunoCORE.ScaleColor("#FFF", 0.25) },
+            get grey() { return EunoCORE.ScaleColor("#FFF", 0.50) },
+            get grey75() { return EunoCORE.ScaleColor("#FFF", 0.75) },
+            get grey90() { return EunoCORE.ScaleColor("#FFF", 0.9) },
             white: "#FFF",
 
             // Golds
@@ -95,7 +177,11 @@ const EunoCORE = {
             h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]],
             commandGold: ["emphasis", "commandGold.png", [235, 37]],
             commandSilver: ["emphasis", "commandSilver.png", [235, 37]],
-            commandBronze: ["emphasis", "commandBronze.png", [235, 37]]
+            commandBronze: ["emphasis", "commandBronze.png", [235, 37]],
+            toggleButtonOnGold: ["buttons", "toggleOnGold.png", [273, 68]],
+            toggleButtonOffGold: ["buttons", "toggleOffGold.png", [273, 68]],
+            toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [273, 68]],
+            toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [273, 68]]
         },
         GetImgURL: (imgKey, imgFolder) => {
             if (!imgFolder && imgKey in EunoCORE.C.IMAGES) {
@@ -103,37 +189,82 @@ const EunoCORE = {
             }
             return [EunoCORE.C.IMGROOT, imgFolder.toLowerCase(), imgKey].join("/");
         },
-        GetImgSize: (imgKey) => [...EunoCORE.C.IMAGES[imgKey]].pop()
+        GetImgSize: (imgKey) => [...EunoCORE.C.IMAGES[imgKey]].pop(),
+
+        // #region ░░░░░░░[NUMBER STRINGS]░░░░ Number Words, Ordinal Suffixes, Roman Numerals ░░░░░░
+        NUMBERWORDS: {
+            ones: [
+                "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+                "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"
+            ],
+            tens: ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"],
+            thousands: [
+                "", "Thousand", "Mi-", "Bi-", "Tri-", "Quadri-", "Quinti-", "Sexti-", "Septi-", "Octi-", "Noni-",
+                "Deci-", "Undeci-", "Duodeci-", "Tredeci-", "Quattuordeci-", "Quindeci-", "Sexdeci-", "Septendeci-", "Octodeci-", "Novemdeci-",
+                "Viginti-", "Unviginti-", "Duoviginti-", "Treviginti-", "Quattuorviginti-", "Quinviginti-", "Sexviginti-", "Septenviginti-", "Octoviginti-", "Novemviginti-",
+                "Triginti-", "Untriginti-", "Duotriginti-", "Tretriginti-", "Quattuortriginti-"
+            ].map((prefix) => prefix.replace(/-$/u, "llion"))
+        },
+        ORDINALS: {
+            zero: "Zeroeth",
+            one: "First",
+            two: "Second",
+            three: "Third",
+            four: "Fourth",
+            five: "Fifth",
+            eight: "Eighth",
+            nine: "Ninth",
+            twelve: "Twelfth",
+            twenty: "Twentieth",
+            thirty: "Thirtieth",
+            forty: "Fortieth",
+            fifty: "Fiftieth",
+            sixty: "Sixtieth",
+            seventy: "Seventieth",
+            eighty: "Eightieth",
+            ninety: "Ninetieth"
+        },
+        ROMANNUMERALS: {
+            grouped: [
+                ["", "Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ"],
+                ["", "Ⅹ", "ⅩⅩ", "ⅩⅩⅩ", "ⅩⅬ", "Ⅼ", "ⅬⅩ", "ⅬⅩⅩ", "ⅬⅩⅩⅩ", "ⅩⅭ"],
+                ["", "Ⅽ", "ⅭⅭ", "ⅭⅭⅭ", "ⅭⅮ", "Ⅾ", "ⅮⅭ", "ⅮⅭⅭ", "ⅮⅭⅭⅭ", "ⅭⅯ"],
+                ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "ⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯⅯ"]
+            ],
+            ungrouped: [
+                ["", "Ⅰ", "ⅠⅠ", "ⅠⅠⅠ", "ⅠⅤ", "Ⅴ", "ⅤⅠ", "ⅤⅠⅠ", "ⅤⅠⅠⅠ", "ⅠⅩ"],
+                ["", "Ⅹ", "ⅩⅩ", "ⅩⅩⅩ", "ⅩⅬ", "Ⅼ", "ⅬⅩ", "ⅬⅩⅩ", "ⅬⅩⅩⅩ", "ⅩⅭ"],
+                ["", "Ⅽ", "ⅭⅭ", "ⅭⅭⅭ", "ⅭⅮ", "Ⅾ", "ⅮⅭ", "ⅮⅭⅭ", "ⅮⅭⅭⅭ", "ⅭⅯ"],
+                ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "ⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯⅯ"]
+            ]
+        }
+        // #endregion ░░░░[NUMBER STRINGS]░░░░
         // #endregion ░░░░[IMAGES]░░░░
-
     },
+    // #endregion ▄▄▄▄▄▄▄▄ EunoCORE.CONSTANTS ▄▄▄▄▄▄▄▄
 
-    // Shorthand getters for major script components
+    // SHORTHAND GETTERS: Shorthand getters for major script components
     get CFG() { return EunoCONFIG },
     get LIB() { return EunoLIB },
+    get C() { return EunoCORE.CONSTANTS },
     get U() { return EunoLIB.UTILITIES },
     get O() { return EunoLIB.OBJECTS },
     get H() { return EunoLIB.HTML }
 };
+// #endregion ▄▄▄▄▄▄▄▄ EunoCORE ▄▄▄▄▄▄▄▄
+
 on("ready", () => {
     if (EunoCORE.UpdateNamespace()) {
         // Preinitialize each major script component, then finalize initialization.
         //   - Delays are necessary to ensure each step completes for all scripts before moving to the next.
         setTimeout(EunoCORE.Preinitialize, 1000);
-        setTimeout(() => EunoCORE.Initialize(true), 2000);
-        return true;
+        setTimeout(EunoCORE.Initialize, 2000);
     } else {
-        return log("[Euno] ERROR: Failure to Update 'Euno' Namespace.");
+        throw "[Euno] ERROR: Failure to Update 'Euno' Namespace.";
     }
 });
-// #endregion ▄▄▄▄▄ TOP ▄▄▄▄▄
-
 
 // #region ████████ EunoLIB: Library of Script Dependencies ████████
-/**
- * EunoLIB Library Namespace.
- * @namespace
- */
 const EunoLIB = (() => {
     // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
@@ -147,15 +278,17 @@ const EunoLIB = (() => {
     // #endregion _______ Namespacing _______
 
     // #region ========== Initialization: Script Startup & Event Listeners ===========
-    const {C} = EunoCORE;
-    const scriptReadinessLog = {};
-    let CFG,
-        LIB,
-        U,
-        O,
-        H;
+    const {CFG, C} = EunoCORE;
+    let LIB, U, O, H;
+    const [scriptPreinitializedLog, scriptInitializedLog] = [{}, {}];
+
     const Preinitialize = (isResettingState = false) => {
-        try { EunoCONFIG } catch (noConfigError) { return log("[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?") }
+        // Verify EunoCONFIG.js is installed
+        try { EunoCONFIG }
+        catch {
+            throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?";
+        }
+
         // Reset script state entry, if specified
         if (isResettingState) { delete RO.OT[SCRIPTNAME] }
 
@@ -165,10 +298,10 @@ const EunoLIB = (() => {
             .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
 
         // Define local-scope shorthand references for main script components
-        ({CFG, LIB, U, O, H} = EunoCORE);
+        ({LIB, U, O, H} = EunoCORE);
 
         // List scripts to wait for check-in before confirming full initialization is complete
-        Object.assign(scriptReadinessLog, EunoCORE.SCRIPTS);
+        Object.assign(scriptInitializedLog, EunoCORE.SCRIPTS);
 
         // Preinitialize EunoLIB sub-scripts
         ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Preinitialize());
@@ -190,8 +323,6 @@ const EunoLIB = (() => {
 
         // Report readiness
         ReportReady(SCRIPTNAME, "Euno");
-
-        // setTimeout(H.DisplayETCHelp, 1500);
     };
     const ReportReady = (scriptName, prefix) => {
         const scriptRef = (scriptName || "").replace(/^!/, "");
@@ -199,11 +330,11 @@ const EunoLIB = (() => {
             prefix = `[${prefix}]`;
         }
         prefix = prefix || "";
-        if (scriptRef in scriptReadinessLog) {
+        if (scriptRef in scriptInitializedLog) {
             U.Flag(`${scriptName} Ready!`); log([prefix, scriptName, "Ready!"].join(" "));
-            scriptReadinessLog[scriptRef] = true;
+            scriptInitializedLog[scriptRef] = true;
         }
-        if (Object.values(scriptReadinessLog).every((scriptStatus) => scriptStatus === true)) {
+        if (Object.values(scriptInitializedLog).every((scriptStatus) => scriptStatus === true)) {
             PostInitialize();
         }
     };
@@ -221,33 +352,31 @@ const EunoLIB = (() => {
             let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
                 .map((x) => x.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1"))
                 .filter((x) => Boolean(x));
-            if (({
-                toggle: () => ({
-                    intro: () => toggleIntroMessage(args.includes("true"))
-                }[(call = args.shift() || "").toLowerCase()] || (() => false))()
-            }[(call = args.shift() || "").toLowerCase()] || (() => false))() === false) {
+            try {
+                ({
+                    toggle: () => ({
+                        intro: () => {
+                            STA.TE.isDisplayingHelpAtStart = args.includes("true");
+                            if (STA.TE.isDisplayingHelpAtStart) {
+                                U.Flag("Showing Help at Start.", 2);
+                            } else {
+                                U.Flag("Hiding Help at Start.", 2, ["silver"]);
+                            }
+                        }
+                    }[U.LCase(call = args.shift())])()
+                }[U.LCase(call = args.shift())])();
+            } catch {
                 H.DisplayHelp();
-            };
+            }
         }
     };
     // #endregion _______ Events _______
 
     // #endregion ░░░░[FRONT]░░░░
 
-    const toggleIntroMessage = (isActive) => {
-        STA.TE.isDisplayingHelpAtStart = isActive === true;
-        if (STA.TE.isDisplayingHelpAtStart) {
-            U.Flag("Showing Help at Start.", 2);
-        } else {
-            U.Flag("Hiding Help at Start.", 2, ["silver"]);
-        }
-    };
+    // ████████ [EunoLIB.U] Global Utility Functions ████████
     const UTILITIES = (() => {
 
-        /** ████████ [EunoLIB.U] Global Utility Functions ████████
-         * @alias UTILITIES
-         * @namespace
-         */
         // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
         // #region ========== Namespacing: Basic State References & Namespacing ===========
@@ -282,93 +411,38 @@ const EunoLIB = (() => {
         // #endregion ░░░░[FRONT]░░░░
 
         // #region ░░░░░░░[Validation]░░░░ Verification & Type Checking ░░░░░░
-
-        /**
-         * @function GetType
-         * @memberof UTILITIES
-         * @description More discerning 'typeof' replacement: Handles number types and Roll20 object types.
-         * Note: Be aware this function returns "int"/"float" for strings that can be parsed into those types,
-         * "id" for strings that could be Roll20 object ids, and "hex", "hexa", "rgb", "rgba", "hsl", "hsla"
-         * for strings that are HTML/CSS color values
-         *
-         * @param {*} val             the value to retrieve the type of
-         * @return {string}           the type of val
-         */
-        const GetType = (val) => { //
-            //
-            const valType = Object.prototype.toString.call(val).slice(8, -1).toLowerCase().trim();
-            switch (valType) {
-                case "string": {
-                    if (/^(#[A-Fa-f0-9]{3}|#[A-Fa-f0-9]{6})/u.test(val)) { return "hex" }
-                    if (/^#[A-Fa-f0-9]{8}$/u.test(val)) { return "hexa" }
-                    if (/^rgb\((\s*\d{1,3}[,\s)]){3}$/u.test(val)) { return "rgb" }
-                    if (/^rgba\((\s*\d{1,3}[,\s)]){3}(\s*[\d\.]+[,\s)])$/u.test(val)) { return "rgba" }
-                    if (/^hsl\((\s*[\d\.%]+[,\s)]){3}$/u.test(val)) { return "hsl" }
-                    if (/^hsla\((\s*[\d\.%]+[,\s)]){3}(\s*[\d\.]+[,\s)])$/u.test(val)) { return "hsla" }
-                    if (/^(-|\+)?[\d,]+$/.test(val)) { return "int" }
-                    if (/^(-|\+|\d)[\d,\s]*\.[\d\s]*$/u.test(val)) { return "float" }
-                    if (/^-[a-zA-Z0-9_-]{19}$/u.test(val)) { return "id" }
-                    break;
-                }
-                case "number": return /\./u.test(`${val}`) ? "float" : "int";
-                case "object": return O.GetR20Type(val) || "list";
-                // no default
-            }
-            return valType;
+        const GetType = (val) => {
+            const type = EunoCORE.GetType(val);
+            return type === "object"
+                ? O.GetR20Type(val) || "list"
+                : type;
         };
         // #endregion ░░░░[Validation]░░░░
 
-        // #region ░░░░░░░[Conversion]░░░░ Converting Data Types & Formats ░░░░░░
-        const HexToDec = (hex) => hex
-            .toLowerCase()
-            .replace(/[^a-z0-9]/gu, "")
-            .split("")
-            .reverse()
-            .reduce((tot, digit, i) => tot + Math.pow(16, i) * [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "a", "b", "c", "d", "e", "f"].findIndex((val) => `${val}` === digit), 0);
-        const DecToHex = (dec) => {
-            const hex = [];
-            let quot = parseInt(dec);
-            do {
-                hex.push([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, "a", "b", "c", "d", "e", "f"][quot % 16]);
-                quot = Math.floor(quot/16);
-            } while (quot > 0);
-            return hex.reverse().join("");
-        };
-            // #endregion ░░░░[Conversion]░░░░
+        // #region ░░░░░░░[Numbers]░░░░ Number Generation, Manipulation, Parsing from Strings ░░░░░░
 
-        // #region ░░░░░░░[Scaling]░░░░ Scaling & Related Manipulation of Values ░░░░░░
-        const ScaleColor = (colorRef, scaleFactor = 1) => {
-            const colorVals = [];
-            const colorRefType = GetType(colorRef);
-            switch (colorRefType) {
-                case "hex": case "hexa": {
-                    colorRef = colorRef.replace(/[^A-Za-z0-9]/gu, "");
-                    if (colorRef.length === 3) { colorRef = colorRef.split("").map((h) => `${h}${h}`).join("") }
-                    if (colorRef.length === 6) { colorRef += "FF" }
-                    colorVals.push(...colorRef.match(/.{2}/g).map((hex) => HexToDec(hex)));
-                    break;
-                }
-                case "rgb": case "rgba": case "hsl": case "hsla": {
-                    colorVals.push(...colorRef
-                        .match(/[\d\.%]+[,\s)]/g)
-                        .map((val) => {
-                            if (/%/.test(val)) { return parseInt(val.replace(/[^\d\.]/gu, "")) / 100 }
-                            return /\./.test(val) ? parseFloat(val) : parseInt(val);
-                        }));
-                    break;
-                }
-                case "string": return colorRef;
-                default: return false;
-            }
-            for (let i = 0; i < 3; i++) {
-                colorVals[i] = Math.round(colorVals[i] * scaleFactor);
-            }
-            switch (colorRefType) {
-                case "hex": case "hexa": return `#${colorVals.map((val) => DecToHex(val)).join("")}`;
-                default: return `${GetType(colorRef)}(${colorVals.join(", ")})`;
-            }
+        // #region ========== Parsing: "Safe" Parsing of Numbers ===========
+        const Float = (qNum) => parseFloat(qNum) || 0;
+        const Int = (qNum) => parseInt(Math.round(Float(qNum)));
+        // #endregion _______ Parsing _______
+
+        // #region ========== Constraining: Rounding, Binding, Cycling ===========
+        const RoundNum = (qNum, numDecDigits = 0) => {
+            if (Float(qNum) === Int(qNum)) { return Int(qNum) }
+            return Math.round(Float(qNum) * 10 ** Int(numDecDigits)) / 10 ** Int(numDecDigits);
         };
-            // #endregion ░░░░[Scaling]░░░░
+        const BindNum = (qNum, minVal, maxVal) => Math.max(Math.min(Float(qNum), Float(maxVal)), Float(minVal));
+        const CycleNum = (qNum, minVal, maxVal) => {
+            qNum = Float(qNum); minVal = Float(minVal); maxVal = Float(maxVal);
+            while (qNum > maxVal)
+            {qNum -= maxVal - minVal}
+            while (qNum < minVal)
+            {qNum += maxVal - minVal}
+            return qNum;
+        };
+        // #endregion _______ Constraining _______
+
+        // #endregion ░░░░[Numbers]░░░░
 
         // #region ░░░░░░░[Strings]░░░░ String Manipulation, JSON, Type Conversion ░░░░░░
 
@@ -384,15 +458,16 @@ const EunoLIB = (() => {
             .split(/ /gu)
             .map((subStr) => `${UCase(subStr.charAt(0))}${(/[^a-z]/u.test(subStr) ? LCase(subStr) : subStr).slice(1)}`)
             .join(" ");
-            // #endregion _______ Case Conversion _______
+        // #endregion _______ Case Conversion _______
 
-        // #region ========== Type Conversion: To Numbers, Objects ===========
-        const ParseStrings = (val) => [val].flat().map((str) => { // Converts strings into appropriate data type
+        // #region ========== Type Conversion: To Numbers, Objects, JSON ===========
+        const ParseString = (val) => { // Converts strings into appropriate data type
+            if (GetType(val) === "array") { return val.map((v) => ParseString(v)) }
             switch(GetType(val)) {
-                case "int": return parseInt(val);
-                case "float": return parseFloat(val);
+                case "int": return Int(val);
+                case "float": return Float(val);
                 default: {
-                    switch(`${val}`.toLowerCase()) {
+                    switch(LCase(val)) {
                         case "true": return true;
                         case "false": return false;
                         case "null": return null;
@@ -401,7 +476,7 @@ const EunoLIB = (() => {
                     }
                 }
             }
-        });
+        };
         const ParseParams = (val, delim = ",", propDelim = ":") => Object.fromEntries(val // Converts comma-delimited <key>:<val> pairs to object.
             .split(delim)
             .map((kvPair) => kvPair.split(propDelim)));
@@ -412,10 +487,90 @@ const EunoLIB = (() => {
         // #endregion _______ Type Conversion _______
 
         // #region ========== Numbers to Strings: Convert Numbers to Words, Signed Numbers, Ordinals, Roman Numerals ===========
-        const NumToWords = (num) => {};
-        const NumToOrdinal = (num) => {};
-        const NumToRoman = (num) => {};
-        const NumToSignedNum = (num) => {num = ParseStrings(num); return `${num >= 0 ? "+" : "-"}${Math.abs(num)}`};
+        const NumToWords = (num) => {
+            num = `${Float(num)}`;
+            const parseThreeDigits = (trio) => {
+                const digits = `${trio}`.split("").map((digit) => Int(digit));
+                let result = "";
+                if (digits.length === 3) {
+                    const hundreds = digits.shift();
+                    result += hundreds > 0 ? `${C.NUMBERWORDS.ones[hundreds]} hundred` : "";
+                    if (digits[0] + digits[1] > 0) {
+                        result += " and ";
+                    } else {
+                        return result;
+                    }
+                }
+                if (Int(digits.join("")) <= C.NUMBERWORDS.ones.length) {
+                    result += C.NUMBERWORDS.ones[Int(digits.join(""))];
+                } else {
+                    result += C.NUMBERWORDS.tens[Int(digits.shift())] + (Int(digits[0]) > 0 ? `-${C.NUMBERWORDS.ones[Int(digits[0])]}` : "");
+                }
+                return result;
+            };
+            const numWords = [];
+            if (num.charAt(0) === "-") {
+                numWords.push("negative");
+            }
+            const [integers, decimals] = num.replace(/[,|\s|-]/gu, "").split(".");
+            const intArray = integers.split("")
+                .reverse()
+                .join("")
+                .match(/.{1,3}/g)
+                .map((v) => v.split("").reverse().join(""));
+            const intStrings = [];
+            while (intArray.length) {
+                intStrings.push(`${parseThreeDigits(intArray.pop())} ${C.NUMBERWORDS.thousands[intArray.length]}`);
+            }
+            numWords.push(intStrings.join(", ").trim());
+            if (GetType(decimals) === "int") {
+                numWords.push("point");
+                for (const digit of decimals.split("")) {
+                    numWords.push(C.NUMBERWORDS.ones[Int(digit)]);
+                }
+            }
+            return numWords.join(" ");
+        };
+        const NumToOrdinal = (num, isReturningWords = false) => {
+            if (isReturningWords) {
+                const [numText, suffix] = LCase(NumToWords(num)).match(/.*?[-|\s]?(\w*?)$/);
+                return numText.replace(new RegExp(`${suffix}$`), C.ORDINALS[suffix] || `${suffix}th`);
+            }
+            const tNum = Int(num) - 100 * Math.floor(Int(num) / 100);
+            if (/\.|1[1-3]$/.test(`${num}`)) {
+                return `${num}th`;
+            }
+            return `${num}${["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][Int(`${num}`.charAt(`${num}`.length - 1))]}`;
+        };
+        const NumToRoman = (num, isUsingGroupedChars = true) => {
+            num = Int(num);
+            if (num > 9999) { throw `[Euno] Error: Can't Romanize '${num}' (> 9999)` }
+            if (num <= 0) { throw `[Euno] Error: Can't Romanize '${num}' (<= 0)` }
+            const romanRef = C.ROMANNUMERALS[isUsingGroupedChars ? "grouped" : "ungrouped"];
+            const romanNum = `${num}`
+                .split("")
+                .reverse()
+                .map((digit, i) => romanRef[i][Int(digit)])
+                .reverse()
+                .join("");
+            return isUsingGroupedChars
+                ? romanNum.replace(/ⅩⅠ/gu, "Ⅺ").replace(/ⅩⅡ/gu, "Ⅻ")
+                : romanNum;
+        };
+        const NumToSignedNum = (qNum, delim = "") => `${Float(qNum) < 0 ? "-" : "+"}${delim}${Math.abs(Float(qNum))}`;
+        const NumToPaddedNum = (qNum, numDecDigits) => {
+            const [leftDigits, rightDigits] = `${Float(qNum)}`.split(/\./);
+            if (GetType(rightDigits) === "int") {
+                if (rightDigits.length > numDecDigits) {
+                    return `${RoundNum(qNum, numDecDigits)}`;
+                } else if (rightDigits.length < numDecDigits) {
+                    return `${leftDigits}.${rightDigits}${"0".repeat(numDecDigits - rightDigits.length)}`;
+                } else {
+                    return `${Float(qNum)}`;
+                }
+            }
+            return `${leftDigits}.${"0".repeat(numDecDigits)}`;
+        };
         // #endregion _______ Numbers to Strings _______
 
         // #endregion ░░░░[Strings]░░░░
@@ -450,24 +605,18 @@ const EunoLIB = (() => {
         // #endregion ░░░░[Chat]░░░░
 
         // #region ░░░░░░░[Arrays & Objects]░░░░ Array & Object Processing ░░░░░░
-        const Arrayify = (vals, cleanFunc = (val) => Boolean(val)) => [vals].flat().filter(cleanFunc);
-        const Unarrayify = (qArray) => {
-            qArray = Arrayify(qArray);
-            switch (qArray.length) {
-                case 0: return false;
-                case 1: return qArray.pop();
-                default: return qArray;
-            }
-        };
-        const KVPMap = (obj, keyFunc = (x) => x, valFunc) => {
-            /* An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
-            *      If only one function is provided, it's assumed to be mapping the values and will receive (v, k) args. */
-            [valFunc, keyFunc] = Arrayify([valFunc, keyFunc], (x) => typeof x === "function" || typeof x === "boolean");
+        // Arrayify: Ensures value returns as an array containing only truthy objects.
+        //     Useful when iterating over a map to functions that return falsy values on failure
+        const Arrayify = (x) => [x].flat().filter((xx) => Boolean(xx));
+        /* An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
+        *      If only one function is provided, it's assumed to be mapping the values and will receive (v, k) args. */
+        const KVPMap = (obj, keyFunc, valFunc) => {
+            [valFunc, keyFunc] = [valFunc, keyFunc].filter((x) => typeof x === "function" || typeof x === "boolean");
             keyFunc = keyFunc || ((k) => k);
             valFunc = valFunc || ((v) => v);
             return Object.fromEntries(Object.entries(obj).map(([key, val]) => [keyFunc(key, val), valFunc(val, key)]));
         };
-            // #endregion ░░░░[Arrays & Objects]░░░░
+        // #endregion ░░░░[Arrays & Objects]░░░░
 
         return {
             // [FRONT: Initialization]
@@ -477,30 +626,33 @@ const EunoLIB = (() => {
             GetType,
 
             // [Conversion]
-            HexToDec, DecToHex,
+            HexToDec: EunoCORE.HexToDec, DecToHex: EunoCORE.DecToHex,
 
             // [Scaling]
-            ScaleColor,
+            ScaleColor: EunoCORE.ScaleColor,
+
+            // [Numbers: Parsing]
+            Float, Int,
+
+            // [Numbers: Constraining]
+            RoundNum, BindNum, CycleNum,
 
             // [Strings: Case Conversion]
             UCase, LCase, SCase, TCase,
             // [Strings: Type Conversion]
-            ParseStrings, ParseParams, JS, JC,
+            ParseString, ParseParams, JS, JC,
             // [Strings: Numbers to Strings]
-            NumToWords, NumToOrdinal, NumToRoman, NumToSignedNum,
+            NumToWords, NumToOrdinal, NumToRoman, NumToSignedNum, NumToPaddedNum,
 
             // [Chat]
             Alert, Direct, Show, Flag,
 
             // [Arrays & Objects]
-            Arrayify, Unarrayify, KVPMap
+            Arrayify, KVPMap
         };
     })();
 
-    /** ████████ [EunoLIB.O] Roll20 Object Manipulation ████████
-     * @global
-     * @namespace O
-     */
+    // ████████ [EunoLIB.O] Roll20 Object Manipulation ████████
     const OBJECTS = (() => {
         // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
@@ -536,7 +688,6 @@ const EunoLIB = (() => {
         // #endregion ░░░░[FRONT]░░░░
 
         // #region ░░░░░░░[Getters]░░░░ Retrieving Sandbox Objects ░░░░░░
-
         const GetR20Type = (val) => {
             if (val && typeof val === "object" && "id" in val && "get" in val) {
                 const type = val.get("_type");
@@ -556,111 +707,106 @@ const EunoLIB = (() => {
             }
             return false;
         };
-        const GetObj = (qObj, type, registry = {}) => {
-            qObj = U.Arrayify(qObj); // Wait this won't work --- what if an array only ends up with one value? Will have to use GetObjs functions so user knows return type
+        /* NOTE: All object and data getters can accept either a single reference OR an array of references.
+                If an array is supplied, an array will be returned (empty if no matches)
+                Otherwise, a single return value will be given, or false if nothing found */
+        const GetObj = (qObj, type, registry = {}, isReturningArray = false) => {
+            const qObjs = U.Arrayify(qObj);
             const objs = [];
-            switch (type) {
-                case "card": case "token": case "animation": {
-                    objs.push(...U.Arrayify(GetObj(qObj, "graphic", registry))
-                        .filter((obj) => GetR20Type(obj) === type));
-                    break;
-                }
-                case "pc": case "npc": {
-                    objs.push(...U.Arrayify(GetChar(qObj, type, registry)));
-                    break;
-                }
-                case "character": {
-                    if (qObj.every((qO) => GetR20Type(qO) === "id")) {
-                        objs.push(...qObj.map((id) => getObj("character", id)));
-                    } else {
-                        objs.push(...qObj.map((qO) => GetChar(qO, type, registry)));
+            if (U.GetType(qObj) === "array") {
+                isReturningArray = true;
+                objs.push(...U.Arrayify(qObjs.map((qO) => GetObj(qO, type, registry))));
+            } else {
+                switch (type) {
+                    case "card": case "token": case "animation": {
+                        objs.push(...U.Arrayify(GetObj(qObjs, "graphic", registry, true))
+                            .filter((obj) => GetR20Type(obj) === type));
+                        break;
                     }
-                    break;
-                }
-                case "graphic": case "text": case "path": /* ... */ {
-                    objs.push(...U.Arrayify(qObj.map((qObjElem) => {
-                        switch (qObjElem) {
-                            case "all": return findObjs({_type: type});
-                            case "registered": return U.Arrayify(GetObj("all", type)).filter((obj) => obj.id in registry);
-                            case "unregistered": return U.Arrayify(GetObj("all", type)).filter((obj) => !(obj.id in registry));
-                            default: {
-                                switch (U.GetType(qObjElem)) {
-                                    case "id": return getObj(type, qObjElem) || false;
-                                    case "array": return U.Arrayify(qObjElem).map((qObjSubElem) => GetObj(qObjSubElem, type, registry));
-                                    default: return GetR20Type(qObjElem) === type ? qObjElem : false;
+                    case "pc": case "npc": {
+                        objs.push(...U.Arrayify(GetChar(qObjs, type, registry, true)));
+                        break;
+                    }
+                    case "character": {
+                        if (qObjs.every((qO) => GetR20Type(qO) === "id")) {
+                            objs.push(...qObjs.map((id) => getObj("character", id)));
+                        } else {
+                            objs.push(...qObjs.map((qO) => GetChar(qO, type, registry, true)));
+                        }
+                        break;
+                    }
+                    case "graphic": case "text": case "path": /* ... */ {
+                        objs.push(...U.Arrayify(qObjs.map((qObjElem) => {
+                            switch (qObjElem) {
+                                case "all": return findObjs({_type: type});
+                                case "registered": return U.Arrayify(GetObj("all", type, registry, true)).filter((obj) => obj.id in registry);
+                                case "unregistered": return U.Arrayify(GetObj("all", type, registry, true)).filter((obj) => !(obj.id in registry));
+                                default: {
+                                    switch (U.GetType(qObjElem)) {
+                                        case "id": return getObj(type, qObjElem) || false;
+                                        case "array": return U.Arrayify(qObjElem).map((qObjSubElem) => GetObj(qObjSubElem, type, registry, true));
+                                        default: return GetR20Type(qObjElem) === type ? qObjElem : false;
+                                    }
                                 }
                             }
-                        }
-                    })));
-                    break;
+                        })));
+                        break;
+                    }
+                    // no default
                 }
-                // no default
             }
-            return U.Unarrayify(objs);
+            if (isReturningArray) {
+                return U.Arrayify(objs);
+            }
+            return objs.length > 0 ? objs.shift() : false;
         };
-        const GetChar = (qChar, type = "all", registry = {}) => {
-            const charIDs = []; // ... get ids for char objs
-            return GetObj(charIDs, "character");
+        const GetChar = (qChar, registry = {}, isReturningArray = false) => {
+            const qChars = U.Arrayify(qChar);
+            const charObjs = [];
+            if (U.GetType(qChar) === "array") {
+                isReturningArray = true;
+                charObjs.push(...U.Arrayify(qChars.map((qC) => GetChar(qC, registry))));
+            } else {
+                const charIDs = []; // ... get ids for char objs
+                charObjs.push(...GetObj(charIDs, "character", registry));
+            }
+            if (isReturningArray) {
+                return U.Arrayify(charObjs);
+            }
+            return charObjs.length > 0 ? charObjs.shift() : false;
         };
-        const GetSelObjs = (msg, type) => { // Returns an array of selected objects.
-            switch (type) {
-                case "all": {
-
-                    break;
-                }
-                case "token": case "card": case "animation": {
-
-                    break;
-                }
-                case "pc": case "npc": case "character": {
-
-                    break;
-                }
-                case "player": {
-
-                    break;
-                }
-                default: {
-
-                    break;
-                }
+        const GetSelObj = (msg, type, isReturningArray = false) => {
+            if (U.GetType(msg) === "array") {
+                return GetSelObj(msg.shift(), type, true);
             }
-            return U.Arrayify(msg.selected, (objData) => objData._type === type);
-            if (msg.selected && msg.selected.length) {
-                return msg.selected.filter((objData) => objData._type === type).map((objData) => getObj(type, objData._id));
+            const objs = [];
+            if (U.GetType(msg) === "list" && msg.selected && msg.selected.length) {
+                switch (type) {
+                    case "all": case "any": objs.push(...msg.selected.map((objData) => getObj(objData._type, objData._id))); break;
+                    case "token": case "card": case "animation": objs.push(...GetSelObj(msg, "graphic", true).filter((graphicObj) => graphicObj.get("_subtype") === type)); break;
+                    case "pc": case "npc": case "character": objs.push(...GetSelObj(msg, "token", true).map((tokenObj) => GetChar(tokenObj))); break;
+                    case "player": /* GetPlayer function; */ break;
+                    default: objs.push(...msg.selected.filter((objData) => objData._type === type).map((objData) => getObj(type, objData._id))); break;
+                }
+                if (isReturningArray) {
+                    return U.Arrayify(objs);
+                }
+                return objs.length > 0 ? objs.shift() : false;
             }
-            return [];
+            return isReturningArray ? [] : false;
         };
         // #endregion ░░░░[Getters]░░░░
-
-        const GetTextObj = (qText, registry = {}) => {
-            switch (qText) {
-                case "all": return findObjs({_type: "text"}); /* !!! NEED A GET-CURRENT-PAGE FUNCTION IN OBJECTS !!! */
-                case "registered": return Object.keys(registry).map(([id]) => getObj("text", id)).filter((textObj) => Boolean(textObj));
-                case "unregistered": return GetTextObj("all").filter((textObj) => !(textObj.id in registry));
-                default: {
-                    switch (U.GetType(qText)) {
-                        case "id": return getObj("text", qText) || false;
-                        case "text": return qText;
-                        case "array": return qText.map((qTextElem) => GetTextObj(qTextElem)).filter((textObj) => Boolean(textObj));
-                        default: return false;
-                    }
-                }
-            }
-        };
 
         return {
             Preinitialize, Initialize,
 
-            GetSelObjs
+            GetR20Type,
+            GetObj, GetChar, GetSelObj
         };
 
     })();
 
-    /** ████████ [EunoLIB.H] HTML/CSS Parsing & Styling for Chat & Handouts ████████
-     * @global
-     * @namespace H
-     */
+    // ████████ [EunoLIB.H] HTML/CSS Parsing & Styling for Chat & Handouts ████████
     const HTML = (() => {
         // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
@@ -712,7 +858,7 @@ const EunoLIB = (() => {
                     height: auto;
                     margin: 0;
                     padding: 0;
-                    color: ${C.COLORS.palegold};
+                    color: inherit;
                     font-size: 0;
                     border: none;
                     outline: none;
@@ -744,7 +890,7 @@ const EunoLIB = (() => {
                     font-family: 'Fira Code', Input, monospace;
                     font-size: 8px;
                     font-weight: bold;
-                    background-color: #DDD;
+                    background-color: ${C.COLORS.grey75};
                 }
                 img {display: block}
                 a {
@@ -776,6 +922,7 @@ const EunoLIB = (() => {
                     text-align: center;
                     background-image: url('${C.GetImgURL("h1Gold")}');
                     background-size: ${C.GetImgSize("h1Gold").map((dim) => `${dim}px`).join(" ")};
+                    background-repeat: no-repeat;
                 }
                 h2 { /* background: bg-color bg-image position/bg-size bg-repeat bg-origin bg-clip bg-attachment initial|inherit, */
                     display: block;
@@ -788,6 +935,7 @@ const EunoLIB = (() => {
                     color: ${C.COLORS.black};
                     text-indent: 10px;
                     background-image: url('${C.GetImgURL("h2Gold")}');
+                    background-repeat: no-repeat;
                 }
                 h3 {
                     display: block;
@@ -798,6 +946,7 @@ const EunoLIB = (() => {
                     color: ${C.COLORS.gold};
                     text-indent: 4px;
                     background-image: url('${C.GetImgURL("h3BGBlack")}');
+                    background-repeat: no-repeat;
                     text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0),
                 }
             `,
@@ -808,18 +957,22 @@ const EunoLIB = (() => {
                     min-width: ${cssVars.boxPosition.width}px;
                     min-height: 39px;
                     margin: ${cssVars.boxPosition.shifts.top}px ${cssVars.boxPosition.shifts.right}px ${cssVars.boxPosition.shifts.bottom}px ${cssVars.boxPosition.shifts.left}px;
+                    color: ${C.COLORS.palegold};
                     text-align: center;
                     position: relative;
                     background-image: url('${C.GetImgURL("bgChatGold")}');
                     background-size: 100%;
                     box-shadow: inset 0 0 5px ${C.COLORS.black}, inset 0 0 5px ${C.COLORS.black}, inset 0 0 5px ${C.COLORS.black};
                 }
+                .box.silver {color: ${C.COLORS.white};}
                 .block {
                     min-width: ${cssVars.boxPosition.width - 24}px;
                     margin: 2px 0 0 0;
                     padding: 0 6px;
                     text-align: left;
+                    color: inherit;
                 }
+                .block.silver {color: ${C.COLORS.white};}
                 .block.titleButtons {
                     width: 40px;
                     min-width: 40px;
@@ -855,8 +1008,9 @@ const EunoLIB = (() => {
                 }
                 .subtitle {
                     width: 100%;
-                    margin: 0 0 0 0;
-                    color: ${C.COLORS.black}
+                    margin: 0 0 -30px 0;
+                    padding: 17px 0 0 0;
+                    color: ${C.COLORS.black};
                     font-family: Impact; sans-serif;
                     line-height: 36px;
                     font-size: 24px;
@@ -938,10 +1092,6 @@ const EunoLIB = (() => {
                 .footer.hideIntro {background-image: url('${C.GetImgURL("footerHideIntroGold")}')}
                 .footer.goBack {background-image: url('${C.GetImgURL("footerGoBackGold")}')}
                 .footer.goBack.silver {background-image: url('${C.GetImgURL("footerGoBackSilver")}')}
-                h1.button {
-                    text-align: left;
-                    text-indent: 10px;
-                }
                 span.buttonLabel {
                     display: inline-block;
                     min-width: 50px;
@@ -982,6 +1132,46 @@ const EunoLIB = (() => {
                 span.buttonRound.download {background-image: url('${C.GetImgURL("buttonDownload")}')}
                 span.buttonRound.chat {background-image: url('${C.GetImgURL("buttonChat")}')}
                 span.buttonRound.bug {background-image: url('${C.GetImgURL("buttonBug")}')}
+                div.block.toggleButton {
+                    height: ${C.GetImgSize("toggleButtonOnGold")[1]}px;
+                    margin: 5px 0 5px -6px;
+                    padding: 0 2px;
+                    background-repeat: no-repeat;
+                    background-size: ${C.GetImgSize("toggleButtonOnGold").map((dim) => `${dim}px`).join(" ")};
+                }
+                div.block.toggleButton.toggleOn {background-image: url('${C.GetImgURL("toggleButtonOnGold")}')}
+                div.block.toggleButton.toggleOff {background-image: url('${C.GetImgURL("toggleButtonOffGold")}')}
+                div.block.toggleButton.toggleOn.silver {background-image: url('${C.GetImgURL("toggleButtonOnSilver")}')}
+                div.block.toggleButton.toggleOff.silver {background-image: url('${C.GetImgURL("toggleButtonOffSilver")}')}
+                div.toggleButtonTitle {
+                    display: inline-block;
+                    width: 185px;
+                    font-family: Impact, sans-serif;
+                    font-weight: normal;
+                    font-size: 14px;
+                    color: ${C.COLORS.black};
+                    text-transform: uppercase;
+                    vertical-align: top;
+                }
+                div.toggleButtonBody {
+                    display: inline-block;
+                    height: 40px;
+                    width: 160px;
+                    font-family: 'Tahoma', sans-serif;
+                    font-size: ${cssVars.bodyFontSize}px;
+                    color: ${C.COLORS.black};
+                    line-height: 14px;
+                    font-weight: bold;
+                }
+                div.toggleButtonRight {
+                    display: inline-block;
+                    height: 30px;
+                    width: 100px;
+                    margin-left: 10px;
+                    vertical-align: top;
+                }
+                .alignLeft {text-align: left}
+
             `
             /* #endregion Class Styles */
         ].join("")
@@ -1105,7 +1295,12 @@ const EunoLIB = (() => {
             ButtonH3: (command, content, classes = [], styles = {}, attributes = {}) => H.H1(H.A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes),
             ButtonFooter: (command, content, classes = [], styles = {}, attributes = {}) => H.Footer(H.A(content || "&nbsp;", ["button"], {}, {href: command}), classes, styles, attributes),
             Command: (command, classes = [], styles = {}, attributes = {}) => H.Span(command, ["commandHighlight", ...classes], styles, attributes),
-            ButtonCommand: (command, classes = [], styles = {}, attributes = {}) => H.Command(H.A(command, ["button"], {}, {href: command}), ["shiftLeft", ...classes], styles, attributes)
+            ButtonCommand: (command, classes = [], styles = {}, attributes = {}) => H.Command(H.A(command, ["button"], {}, {href: command}), ["shiftLeft", ...classes], styles, attributes),
+            ButtonToggle: ([title, body], command, classes = [], styles = {}, attributes = {}) => H.Div([
+                H.Div(title, ["toggleButtonTitle"]),
+                H.Div(body, ["toggleButtonBody"]),
+                H.Div(H.A(null, ["button"], {}, {href: command}), ["toggleButtonRight"], {}, attributes)
+            ], ["block", "toggleButton", ...classes], styles)
         };
         // #endregion ░░░░[CUSTOM ELEMENTS]░░░░
 
@@ -1151,21 +1346,7 @@ const EunoLIB = (() => {
            █  Source: https://www.btb.termiumplus.gc.ca/tcdnstyl-chap&info0=2.17
            █
            ████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████ */
-        /**
-        * Displays top-level help message for script collection to GM.
-        * @param {Object} [options] - Options affecting display of help message: isAutoDisplaying (boolean)
-        */
-        /**
-         *
-         *
-         * @param {*} [options={}]
-         */
-        /**
-         *
-         *
-         * @param {Object} [options] - Options affecting display of help message: isAutoDisplaying (boolean)* @param {Object} myObj description
-         * @param {boolean} options.a description
-         */
+
         const DisplayHelp = (options = {}) => {
             U.Alert(H.Box([
                 H.Span(null, ["title", "main"]),
@@ -1186,9 +1367,9 @@ const EunoLIB = (() => {
                     H.Spacer(5),
                     H.H2("Available Scripts"),
                     H.Paras("Click the but~tons be~low to learn more about each of <b><u>Euno~miac's Roll20 Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
-                    H.ButtonH1("!etc", [H.Span("!ETC", ["buttonLabel"], {}), H.Span(" - Euno's Text Controls", ["buttonDesc"])], ["tight"], {}, {title: "Eunomiac's Text Controls: A comprehensive solution to managing Roll20 text objects."}),
-                    H.ButtonH1("!egc", [H.Span("!EGC", ["buttonLabel"], {}), H.Span(" - Euno's Grab Controls", ["buttonDesc"])], ["tight", "bronze"], {}, {title: "Eunomiac's Grab Controls: Create buttons and switches in the sandbox for your players to interact with."}),
-                    H.ButtonH1("!ehc", [H.Span("!EHC", ["buttonLabel"], {}), H.Span(" - Euno's HTML Controls", ["buttonDesc"])], ["tight", "bronze"], {}, {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}),
+                    H.ButtonH1("!etc", [H.Span("!ETC", ["buttonLabel"], {}), H.Span(" - Euno's Text Controls", ["buttonDesc"])], ["tight", "alignLeft"], {"text-indent": "10px"}, {title: "Eunomiac's Text Controls: A comprehensive solution to managing Roll20 text objects."}),
+                    H.ButtonH1("!egc", [H.Span("!EGC", ["buttonLabel"], {}), H.Span(" - Euno's Grab Controls", ["buttonDesc"])], ["tight", "bronze", "alignLeft"], {"text-indent": "10px"}, {title: "Eunomiac's Grab Controls: Create buttons and switches in the sandbox for your players to interact with."}),
+                    H.ButtonH1("!ehc", [H.Span("!EHC", ["buttonLabel"], {}), H.Span(" - Euno's HTML Controls", ["buttonDesc"])], ["tight", "bronze", "alignLeft"], {"text-indent": "10px"}, {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}),
                     H.Spacer(5),
                     H.H2("Configuration"),
                     H.P("Con~fig~u~ra~tion op~tions for every script in <b><u>Euno~miac's Roll20 Scripts</u></b> col~lec~tion is con~tained in 'EunoCONFIG.js', which you'll find in the API Scripts sec~tion of your game page. Fur~ther in~struc~tions on how to con~fig~ure the scripts to your lik~ing are lo~cated there."),

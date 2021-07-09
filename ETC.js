@@ -14,8 +14,8 @@ const ETC = (() => {
     const SCRIPTNAME = "ETC";
     const DEFAULTSTATE = {/* initial values for state storage, if any */
         REGISTRY: {},
-        IsAutoShadowing: false,
-        IsAutoPruning: false
+        isAutoShadowing: false,
+        isAutoPruning: false
     };
 
     const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
@@ -63,21 +63,21 @@ const ETC = (() => {
                 .filter((x) => Boolean(x));
             try {
                 ({
-                    shadow: () => makeTextShadow(O.GetSelObjs(msg, "text")),
+                    shadow: () => makeTextShadow(O.GetSelObj([msg], "text")),
                     toggle: () => ({
                         autoshadow: () => toggleAutoShadow(args.includes("true")),
                         autoprune: () => toggleAutoPrune(args.includes("true"))
                     }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
                     clear: () => {
                         if (args.includes("all")) {
-                            getTextShadow("registered").forEach(((shadow) => unregTextShadow(shadow)));
+                            getTextShadow(["registered"]).forEach(((shadow) => unregTextShadow(shadow)));
                             U.Flag("Shadows Removed & Unregistered.", 2);
                         } else {
-                            unregTextShadow(O.GetSelObjs(msg, "text").map((obj) => obj.id));
+                            unregTextShadow(O.GetSelObj([msg], "text").map((obj) => obj.id));
                         }
                     },
                     fix: () => { if (args.includes("all")) { fixTextShadows() } },
-                    prune: () => { pruneText(args.includes("all") ? "all" : O.GetSelObjs(msg, "text")) },
+                    prune: () => { pruneText(args.includes("all") ? ["all"] : O.GetSelObj([msg], "text")) },
                     setup: () => { displayToggles() },
                     help: () => {
                         ({
@@ -95,7 +95,7 @@ const ETC = (() => {
                         stateref: () => U.Show(STA.TE),
                         data: () => { U.Show((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) }
                     }[(call = args.shift() || "").toLowerCase()] || (() => false))()
-                }[(call = args.shift() || "").toLowerCase()] || (() => false))();
+                }[(call = args.shift()).toLowerCase()])();
             } catch (err) {
                 displayHelp();
             }
@@ -114,8 +114,8 @@ const ETC = (() => {
     };
     const handleTextAdd = (textObj) => {
         setTimeout(() => { // The delay is necessary to ensure the new object fully updates.
-            if (!(STA.TE.IsAutoPruning && pruneText(textObj))) {
-                if (STA.TE.IsAutoShadowing && !isShadowObj(textObj)) {
+            if (!(STA.TE.isAutoPruning && pruneText(textObj))) {
+                if (STA.TE.isAutoShadowing && !isShadowObj(textObj)) {
                     makeTextShadow(textObj);
                 }
             }
@@ -139,30 +139,33 @@ const ETC = (() => {
 
     // #region *** *** UTILITY *** ***
 
-    const getTextData = (qText) => {
-        const textObjs = [getText(qText)].flat();
-        switch (textObjs.length) {
-            case 0: return false;
-            case 1: return textObjs[0].id in RE.G ? RE.G[textObjs[0].id] : false;
-            default: return textObjs.map((textObj) => getTextData(textObj));
+    const getTextData = (qText, isReturningArray = false) => {
+        const textDatas = [];
+        if (U.GetType(qText) === "array") {
+            isReturningArray = true;
+            textDatas.push(...U.Arrayify(qText.map((qO) => getTextData(qO, true))));
+        } else {
+            textDatas.push(...U.Arrayify(O.GetObj([qText], "text", RE.G)).map((textObj) => textObj.id in RE.G ? RE.G[textObj.id] : false));
         }
+        if (isReturningArray) {
+            return U.Arrayify(textDatas);
+        }
+        return textDatas.length > 0 ? textDatas.shift() : false;
     };
-    const isShadowObj = (qTextObj) => U.GetR20Type(qTextObj) === "text" && /etcshadowobj/u.test(qTextObj.get("controlledby"));
-    const getTextShadow = (qShadow) => {
-        switch (qShadow) {
-            case "all": return getText("all").filter((textObj) => isShadowObj(textObj));
-            case "unregistered": return getText("unregistered").filter((textObj) => isShadowObj(textObj));
-            default: {
-                const textDatas = [getTextData(qShadow)].flat();
-                switch (textDatas.length) {
-                    case 0: return false;
-                    case 1: return (textDatas[0].isShadow && getText(textDatas[0].id))
-                                || (textDatas[0].hasShadow && getText(textDatas[0].shadowID))
-                                || false;
-                    default: return textDatas.map((textData) => getTextShadow(textData.id));
-                }
-            }
+    const isShadowObj = (qTextObj) => O.GetR20Type(qTextObj) === "text" && /etcshadowobj/u.test(qTextObj.get("controlledby"));
+    const hasShadowObj = (qTextObj) => O.GetR20Type(qTextObj) === "text" && qTextObj.id in RE.G && RE.G[qTextObj.id].hasShadow && getObj("text", RE.G[qTextObj.id].shadowID);
+    const getTextShadow = (qShadow, isReturningArray = false) => {
+        const textShadows = [];
+        if (U.GetType(qShadow) === "array") {
+            isReturningArray = true;
+            textShadows.push(...U.Arrayify(qShadow.map((qO) => getTextShadow(qO, true))));
+        } else {
+            textShadows.push(..._.uniq(U.Arrayify(O.GetObj([qShadow], "text", RE.G)).filter((textObj) => isShadowObj(textObj) || hasShadowObj(textObj)).map((textObj) => hasShadowObj(textObj) ? getTextShadow(RE.G[textObj.id].shadowID) : textObj)));
         }
+        if (isReturningArray) {
+            return U.Arrayify(textShadows);
+        }
+        return textShadows.length > 0 ? textShadows.shift() : false;
     };
     const getOffsets = (fontFamily, fontSize) => ({
         ...CFG.ETC.DropShadows.OFFSETS.generic,
@@ -177,7 +180,7 @@ const ETC = (() => {
     const makeTextShadow = (masterObjs) => {
         [masterObjs].flat().forEach((masterObj) => {
             let isSkipping = false;
-            if (!masterObj) {
+            if (!masterObj || masterObj.get("text") === "") {
                 isSkipping = true;
             } else if (masterObj.id in RE.G) {
                 if (RE.G[masterObj.id].shadowID) {
@@ -188,7 +191,7 @@ const ETC = (() => {
                 }
             }
             if (!isSkipping) {
-                if (U.GetR20Type(masterObj) === "text") {
+                if (O.GetR20Type(masterObj) === "text") {
                     const [leftOffset, topOffset] = getOffsets(masterObj.get("font_family"), masterObj.get("font_size"));
                     const shadowOffsets = CFG.ETC.DropShadows.OFFSETS[masterObj.get("font_family") in CFG.ETC.DropShadows.OFFSETS ? masterObj.get("font_family") : "generic"];
                     const shadowObj = createObj("text", {
@@ -209,7 +212,7 @@ const ETC = (() => {
         });
     };
     const toggleAutoShadow = (isActive) => {
-        STA.TE.IsAutoShadowing = isActive === true;
+        STA.TE.isAutoShadowing = isActive === true;
         displayToggles();
     };
     // #endregion
@@ -230,17 +233,14 @@ const ETC = (() => {
         toFront(shadowObj);
     };
     const safeRemove = (qText) => {
-        [getText(qText)].flat().forEach((textObj) => {
-
-            if (textObj) {
-                removalQueue.push(textObj);
-                textObj.remove();
-            }
+        U.Arrayify(O.GetObj(qText, "text", RE.G, true)).forEach((textObj) => {
+            removalQueue.push(textObj);
+            textObj.remove();
         });
     };
     const unregTextShadow = (qText) => {
-        [getTextShadow(qText)].flat().forEach((shadowObj) => {
-            const [id, {masterID}] = getTextData(shadowObj);
+        U.Arrayify(getTextShadow(qText)).forEach((shadowObj) => {
+            const {id, masterID} = getTextData(shadowObj);
             safeRemove(shadowObj);
             delete RE.G[masterID];
             delete RE.G[id];
@@ -251,7 +251,7 @@ const ETC = (() => {
     // #region      Text Shadows: Synchronizing Master/Shadow Objects
     const syncShadow = (masterObj, shadowObj) => {
         // Where the magic happens (?) --- synchronizing text shadows to their master objects, whenever they're changed or created.
-        if (U.GetR20Type(masterObj) && U.GetR20Type(shadowObj)) {
+        if (O.GetR20Type(masterObj) && O.GetR20Type(shadowObj)) {
             const [leftOffset, topOffset] = getOffsets(masterObj.get("font_family"), masterObj.get("font_size"));
             if (![leftOffset, topOffset].includes(undefined)) {
                 shadowObj.set({
@@ -281,19 +281,19 @@ const ETC = (() => {
         //    If a MasterObj doesn't exist, unreg the shadow.
         for (const [id, objData] of Object.entries(RE.G)) {
             const textObj = getObj("text", id);
-            if (textObj && STA.TE.IsAutoPruning && textObj.get("text") === "") {
+            if (textObj && STA.TE.isAutoPruning && textObj.get("text") === "") {
                 unregTextShadow(id);
             }
             if ("masterID" in objData) { // This is a Shadow Object.
                 const masterObj = getObj("text", objData.masterID);
                 if (!(masterObj && masterObj.id in RE.G)) { // This is an orphan: Kill it.
                     unregTextShadow(id);
-                } else if (masterObj && STA.TE.IsAutoPruning && masterObj.get("text") === "") {
+                } else if (masterObj && STA.TE.isAutoPruning && masterObj.get("text") === "") {
                     unregTextShadow(masterObj.id);
                     masterObj.remove();
                 }
             } else if ("shadowID" in objData) { // This is a Master Object.
-                if (textObj && STA.TE.IsAutoPruning && textObj.get("text") === "") {
+                if (textObj && STA.TE.isAutoPruning && textObj.get("text") === "") {
                     unregTextShadow(id);
                 }
                 const shadowObj = getObj("text", objData.shadowID);
@@ -321,18 +321,14 @@ const ETC = (() => {
 
     // #region *** *** FEATURE: EMPTY TEXT PRUNING *** ***
     const toggleAutoPrune = (isActive) => {
-        STA.TE.IsAutoPruning = isActive === true;
+        STA.TE.isAutoPruning = isActive === true;
         displayToggles();
     };
-    const pruneText = (textRef) => {
-        if (textRef === "all") {
-            textRef = findObjs({_type: "text"});
-        } else {
-            textRef = [textRef].flat();
+    const pruneText = (qText) => O.GetObj(qText, "text", RE.G, true).forEach((textObj) => {
+        if (!textObj.get("text")) {
+            safeRemove(textObj);
         }
-        U.Show(textRef, "Text Refs");
-        textRef.forEach((textObj) => { if (!textObj.get("text")) { textObj.remove() } });
-    };
+    });
     // #endregion *** *** EMPTY TEXT PRUNING *** ***
 
     // #region *** *** FEATURE: ATTRIBUTE DISPLAYS *** ***
@@ -363,11 +359,11 @@ const ETC = (() => {
                 const charAttrNames = charAttrs.map((attrObj) => attrObj.get("name"));
             }; */
     /* const linkTextToAttr = (textObj, charRef, attrRef, options = {}) => {
-                if (!U.GetR20Type(textObj)) { return false }
+                if (!O.GetR20Type(textObj)) { return false }
                 const charObj = U.GetChar(charRef);
-                if (!U.GetR20Type(charObj)) { return false }
+                if (!O.GetR20Type(charObj)) { return false }
                 const attrObj = U.GetAttr(charObj, attrRef);
-                if (!U.GetR20Type(attrObj)) { return false }
+                if (!O.GetR20Type(attrObj)) { return false }
 
 
                 return true;
@@ -408,74 +404,59 @@ const ETC = (() => {
     };
     const displayToggles = () => {
         U.Alert(H.Box([
+            H.Subtitle("Options", ["etc"]),
             H.Block([
-                H.Subtitle("Options", ["etc"]),
-                H.P("Ho~ver over the de~scrip~tion on the left for more de~tails about any gi~ven set~ting."),
-                H.Span([
-                    H.Span(`Object Pruning <span style="color: ${STA.TE.IsAutoPruning ? "darkgreen" : "darkred"};"><u>${STA.TE.IsAutoPruning ? "EN" : "DIS"}ABLED</u></span>`, ["silver"], {
-                        // background: "transparent",
-                        "font-size": "14px",
-                        "line-height": "18px",
-                        "font-family": "sans-serif",
-                        "font-weight": "bold",
-                        margin: "-5px 0 10px 0"
-                    }, {title: "Whether empty text objects are automatically removed whenever they appear."}),
-                    H.ButtonWide(STA.TE.IsAutoPruning ? "DISABLE" : "ENABLE", `!etc toggle autoprune ${STA.TE.IsAutoPruning ? "false" : "true"}`, ["silver"], {
-                        "font-size": "12px",
-                        color: STA.TE.IsAutoPruning ? "white" : "black",
-                        width: "27%",
-                        background: STA.TE.IsAutoPruning ? "red" : "lime",
-                        padding: "2px",
-                        "margin-top": "-5px",
-                        float: "right"
-                    })
-                ], ["silver"], {width: "97%"}),
-                H.Span([
-                    H.Span(`Auto-Shadow <span style="color: ${STA.TE.IsAutoShadowing ? "darkgreen" : "darkred"};"><u>${STA.TE.IsAutoShadowing ? "EN" : "DIS"}ABLED</u></span>`, ["silver"], {
-                        // background: "transparent",
-                        // color: "black",
-                        "font-size": "14px",
-                        "line-height": "18px",
-                        "font-family": "sans-serif",
-                        "font-weight": "bold",
-                        margin: "-5px 0 10px 0"
-                    }, {title: "Whether shadows should be created automatically for all new text objects."}),
-                    H.ButtonWide(STA.TE.IsAutoShadowing ? "DISABLE" : "ENABLE", `!etc toggle autoshadow ${STA.TE.IsAutoShadowing ? "false" : "true"}`, ["silver"],  {
-                        "font-size": "12px",
-                        color: STA.TE.IsAutoShadowing ? "white" : "black",
-                        width: "27%",
-                        background: STA.TE.IsAutoShadowing ? "red" : "lime",
-                        padding: "2px",
-                        "margin-top": "-5px",
-                        float: "right"
-                    })
-                ], ["silver"], {width: "97%"})
-            ])
+                H.Spacer(15),
+                H.ButtonToggle(
+                    [
+                        "Auto-Shadow",
+                        "Whe~ther sha~dows are auto~ma~ti~cally ap~plied to new text ob~jects upon cre~a~tion."
+                    ],
+                    `!etc toggle autoshadow ${STA.TE.isAutoShadowing ? "false" : "true"}`,
+                    [`toggle${STA.TE.isAutoShadowing ? "On" : "Off"}`, "silver"],
+                    {},
+                    {title: `Click to ${STA.TE.isAutoShadowing ? "DEACTIVATE" : "ACTIVATE"} automatic text shadows for all text objects.`}
+                ),
+                H.ButtonToggle(
+                    [
+                        "Auto-Prune",
+                        "Whe~ther empty (in~vi~sible) text ob~jects are auto~ma~ti~cally re~moved from the sand~box."
+                    ],
+                    `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"}`,
+                    [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "silver"],
+                    {},
+                    {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`}
+                )
+            ], ["silver"]),
+            H.ButtonFooter("!etc", "", ["goBack", "silver"])
         ], ["silver"]));
     };
     const displayError = (errorTag) => {
         const ERRORHTML = {
             AddShadowToShadow: H.Box([
-                H.Subtitle("ERROR: Shadow-On-Shadow", ["etc"]),
+                H.Subtitle("ERROR", ["etc"]),
                 H.Block([
-                    H.H2("Cannot Add a Shadow to a Shadow Object"),
+                    H.H1("Shadow-on-Shadow", ["silver"]),
                     H.Paras([
                         "Text sha~dows can~not have sha~dows them~selves."
                     ])
-                ])
-            ]),
+                ], ["silver"]),
+                H.Footer(null, ["silver"])
+            ], ["silver"]),
             ManualShadowRemoval: H.Box([
-                H.Subtitle("ERROR: Shadow Deleted", ["etc"]),
+                H.Subtitle("ERROR", ["etc"]),
                 H.Block([
-                    H.H2("Restoring ..."),
+                    H.H1("Shadow Deleted Manually", ["silver"]),
+                    H.P("Manually-deleted text sha~dows are auto~ma~tic~ally re~created (to pre~vent ac~cid~ent~ally de~let~ing a de~sired sha~dow)."),
+                    H.H2("Restoring ...", ["silver"]),
                     H.Paras([
-                        "Manually-deleted text sha~dows are auto~ma~tic~ally re~created (to pre~vent ac~cid~ent~ally de~let~ing a de~sired sha~dow).",
                         "To re~move a text sha~dow from a text ob~ject:",
-                        [H.ButtonCommand("!etc clear", ["shiftLeft"]), " — Re~moves text sha~dows from all sel~ected text ob~jects <i>(you can sel~ect ei~ther the mas~ter ob~ject, the sha~dow ob~ject, or both)</i>"],
-                        [H.ButtonCommand("!etc clear all", ["shiftLeft"]), " — Re~move <b><u>ALL</u></b> text sha~dow ob~jects <i>(this will not af~fect the mas~ter text ob~jects, just re~move the sha~dows)</i>"]
+                        [H.ButtonCommand("!etc clear", ["shiftLeft", "silver"]), " — Re~moves text sha~dows from all sel~ected text ob~jects <i>(you can sel~ect ei~ther the mas~ter ob~ject, the sha~dow ob~ject, or both)</i>"],
+                        [H.ButtonCommand("!etc clear all", ["shiftLeft", "silver"]), " — Re~move <b><u>ALL</u></b> text sha~dow ob~jects <i>(this will not af~fect the mas~ter text ob~jects, just re~move the sha~dows)</i>"]
                     ])
-                ])
-            ])
+                ], ["silver"]),
+                H.Footer(null, ["silver"])
+            ], ["silver"])
         };
         if (errorTag in ERRORHTML) {
             U.Alert(ERRORHTML[errorTag]);
