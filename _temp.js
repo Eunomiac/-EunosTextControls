@@ -39,52 +39,104 @@ const TCase = (val) => SCase(val) // Converts to title case
     .split(/ /gu)
     .map((subStr) => `${UCase(subStr.charAt(0))}${(/[^a-z]/u.test(subStr) ? LCase(subStr) : subStr).slice(1)}`)
     .join(" ");
+const Ext = (qStr, qRegExp) => {
+    const isGrouping = /[)(]/.test(qRegExp.toString());
+    const matches = qStr.match(new RegExp(qRegExp)) || [];
+    if (isGrouping) {
+        return matches.slice(1);
+    }
+    return matches.pop();
+};
+const NumToString = (num) => {
+    // Can take string representations of numbers, either in standard or scientific/engineering notation.
+    // Returns a string representation of the number in standard notation, (almost) regardless of size.
+    if (Float(num) === 0) { return "0" }
+    num = LCase(num).replace(/[^\d.e+-]/g, "");
+    const base = Ext(num, /^-?[\d.]+/);
+    const exp = Int(Ext(num, /e([+-]?\d+)$/).pop());
+    const baseInts = Ext(base, /^-?(\d+)/).pop().replace(/^0+/, "");
+    const baseDecs = LCase(Ext(base, /\.(\d+)/).pop()).replace(/0+$/, "");
 
+    const numFinalInts = Math.max(0, baseInts.length + exp);
+    const numFinalDecs = Math.max(0, baseDecs.length - exp);
+
+    const finalInts = [baseInts.slice(0, numFinalInts), baseDecs.slice(0, Math.max(0, exp))].join("") || "0";
+    const finalDecs = [
+        (baseInts.length - numFinalInts) <= 0 ? "" : baseInts.slice(baseInts.length - numFinalInts - 1),
+        baseDecs.slice(baseDecs.length - numFinalDecs)
+    ].join("");
+
+    return [
+        num.charAt(0) === "-" ? "-" : "",
+        finalInts,
+        "0".repeat(Math.max(0, numFinalInts - finalInts.length)),
+        finalDecs.length ? "." : "",
+        "0".repeat(Math.max(0, numFinalDecs - finalDecs.length)),
+        finalDecs
+    ].join("");
+};
+const N = {
+    [302.02]: true
+};
 const C = {
     NUMBERWORDS: {
-        ones: [
-            "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
-            "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"
+        /* ones: [
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+            "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"
         ],
-        tens: ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"],
+        tens: ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"],
         thousands: [
-            "", "Thousand", "Mi-", "Bi-", "Tri-", "Quadri-", "Quinti-", "Sexti-", "Septi-", "Octi-", "Noni-",
-            "Deci-", "Undeci-", "Duodeci-", "Tredeci-", "Quattuordeci-", "Quindeci-", "Sexdeci-", "Septendeci-", "Octodeci-", "Novemdeci-",
-            "Viginti-", "Unviginti-", "Duoviginti-", "Treviginti-", "Quattuorviginti-", "Quinviginti-", "Sexviginti-", "Septenviginti-", "Octoviginti-", "Novemviginti-",
-            "Triginti-", "Untriginti-", "Duotriginti-", "Tretriginti-", "Quattuortriginti-"
-        ].map((prefix) => prefix.replace(/-$/u, "llion"))
+            "", "thousand", "mi-", "bi-", "tri-", "quadri-", "quinti-", "sexti-", "septi-", "octi-", "noni-",
+            "deci-", "undeci-", "duodeci-", "tredeci-", "quattuordeci-", "quindeci-", "sexdeci-", "septendeci-", "octodeci-", "novemdeci-",
+            "viginti-", "unviginti-", "duoviginti-", "treviginti-", "quattuorviginti-", "quinviginti-", "sexviginti-", "septenviginti-", "octoviginti-", "novemviginti-",
+            "triginti-", "untriginti-", "duotriginti-", "tretriginti-", "quattuortriginti-"
+        ].map((prefix) => prefix.replace(/-$/u, "llion")) */
+        ones: [
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+            "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"
+        ],
+        tens: ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"],
+        tiers: ["", "thousand", "m-", "b-", "tr-", "quadr-", "quint-", "sext-", "sept-", "oct-", "non-"]
+            .map((prefix) => prefix.replace(/-$/, "illion")),
+        bigPrefixes: ["", "un", "duo", "tre", "quattuor", "quin", "sex", "octo", "novem"],
+        bigSuffixes: ["", "dec-", "vigint-", "trigint-", "quadragint-", "quinquagint-", "sexagint-", "septuagint-", "octogint-", "nonagint-", "cent-"]
+            .map((prefix) => prefix.replace(/-$/, "illion"))
     },
     ORDINALS: {
-        zero: "Zeroeth",
-        one: "First",
-        two: "Second",
-        three: "Third",
-        four: "Fourth",
-        five: "Fifth",
-        eight: "Eighth",
-        nine: "Ninth",
-        twelve: "Twelfth",
-        twenty: "Twentieth",
-        thirty: "Thirtieth",
-        forty: "Fortieth",
-        fifty: "Fiftieth",
-        sixty: "Sixtieth",
-        seventy: "Seventieth",
-        eighty: "Eightieth",
-        ninety: "Ninetieth"
+        zero: "zeroeth",
+        one: "first",
+        two: "second",
+        three: "third",
+        four: "fourth",
+        five: "fifth",
+        eight: "eighth",
+        nine: "ninth",
+        twelve: "twelfth",
+        twenty: "twentieth",
+        thirty: "thirtieth",
+        forty: "fortieth",
+        fifty: "fiftieth",
+        sixty: "sixtieth",
+        seventy: "seventieth",
+        eighty: "eightieth",
+        ninety: "ninetieth"
     },
     ROMANNUMERALS: {
         grouped: [
             ["", "Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ"],
             ["", "Ⅹ", "ⅩⅩ", "ⅩⅩⅩ", "ⅩⅬ", "Ⅼ", "ⅬⅩ", "ⅬⅩⅩ", "ⅬⅩⅩⅩ", "ⅩⅭ"],
             ["", "Ⅽ", "ⅭⅭ", "ⅭⅭⅭ", "ⅭⅮ", "Ⅾ", "ⅮⅭ", "ⅮⅭⅭ", "ⅮⅭⅭⅭ", "ⅭⅯ"],
-            ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "ⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯⅯ"]
+            ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "Ⅿↁ", "ↁ", "ↁⅯ", "ↁⅯⅯ", "ↁⅯⅯⅯ", "ↁↂ"],
+            ["", "ↂ", "ↂↂ", "ↂↂↂ", "ↂↇ", "ↇ", "ↇↂ", "ↇↂↂ", "ↇↂↂↂ", "ↇↈ"],
+            ["", "ↈ", "ↈↈ", "ↈↈↈ"]
         ],
         ungrouped: [
             ["", "Ⅰ", "ⅠⅠ", "ⅠⅠⅠ", "ⅠⅤ", "Ⅴ", "ⅤⅠ", "ⅤⅠⅠ", "ⅤⅠⅠⅠ", "ⅠⅩ"],
             ["", "Ⅹ", "ⅩⅩ", "ⅩⅩⅩ", "ⅩⅬ", "Ⅼ", "ⅬⅩ", "ⅬⅩⅩ", "ⅬⅩⅩⅩ", "ⅩⅭ"],
             ["", "Ⅽ", "ⅭⅭ", "ⅭⅭⅭ", "ⅭⅮ", "Ⅾ", "ⅮⅭ", "ⅮⅭⅭ", "ⅮⅭⅭⅭ", "ⅭⅯ"],
-            ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "ⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯⅯ"]
+            ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "Ⅿↁ", "ↁ", "ↁⅯ", "ↁⅯⅯ", "ↁⅯⅯⅯ", "ↁↂ"],
+            ["", "ↂ", "ↂↂ", "ↂↂↂ", "ↂↇ", "ↇ", "ↇↂ", "ↇↂↂ", "ↇↂↂↂ", "ↇↈ"],
+            ["", "ↈ", "ↈↈ", "ↈↈↈ"]
         ]
     }
 };
@@ -94,7 +146,7 @@ const Int = (qNum) => parseInt(Math.round(Float(qNum)));
 
 const NumToRoman = (num, isUsingGroupedChars = true) => {
     num = Int(num);
-    if (num > 9999) { throw `[Euno] Error: Can't Romanize '${num}' (> 9999)` }
+    if (num > 399999) { throw `[Euno] Error: Can't Romanize '${num}' (>= 400,000)` }
     if (num <= 0) { throw `[Euno] Error: Can't Romanize '${num}' (<= 0)` }
     const romanRef = C.ROMANNUMERALS[isUsingGroupedChars ? "grouped" : "ungrouped"];
     const romanNum = `${num}`
@@ -107,18 +159,22 @@ const NumToRoman = (num, isUsingGroupedChars = true) => {
         ? romanNum.replace(/ⅩⅠ/gu, "Ⅺ").replace(/ⅩⅡ/gu, "Ⅻ")
         : romanNum;
 };
+
 const NumToWords = (num) => {
-    num = `${Float(num)}`;
-    const parseThreeDigits = (trio) => {
+    num = NumToString(num);
+    const getTier = (trioNum) => {
+        if (trioNum < C.NUMBERWORDS.tiers.length) { return C.NUMBERWORDS.tiers[trioNum] }
+        return `${C.NUMBERWORDS.bigPrefixes[trioNum % 10 - 1]}${C.NUMBERWORDS.bigSuffixes[Math.floor(trioNum/10)]}`;
+    };
+    const parseThreeDigits = (trio, tierNum) => { // three hundred and eight-two
+        if (Int(trio) === 0) { return "" }
         const digits = `${trio}`.split("").map((digit) => Int(digit));
         let result = "";
         if (digits.length === 3) {
             const hundreds = digits.shift();
             result += hundreds > 0 ? `${C.NUMBERWORDS.ones[hundreds]} hundred` : "";
-            if (digits[0] + digits[1] > 0) {
+            if (hundreds && (digits[0] || digits[1])) {
                 result += " and ";
-            } else {
-                return result;
             }
         }
         if (Int(digits.join("")) <= C.NUMBERWORDS.ones.length) {
@@ -140,10 +196,16 @@ const NumToWords = (num) => {
         .map((v) => v.split("").reverse().join(""));
     const intStrings = [];
     while (intArray.length) {
-        intStrings.push(`${parseThreeDigits(intArray.pop())} ${C.NUMBERWORDS.thousands[intArray.length]}`);
+        const theseWords = parseThreeDigits(intArray.pop());
+        if (theseWords) {
+            intStrings.push(`${theseWords} ${getTier(intArray.length)}`);
+        }
     }
     numWords.push(intStrings.join(", ").trim());
     if (GetType(decimals) === "int") {
+        if (integers === "0") {
+            numWords.push("zero");
+        }
         numWords.push("point");
         for (const digit of decimals.split("")) {
             numWords.push(C.NUMBERWORDS.ones[Int(digit)]);
@@ -163,7 +225,12 @@ const  NumToOrdinal = (num, isReturningWords = false) => {
     return `${num}${["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][Int(`${num}`.charAt(`${num}`.length - 1))]}`;
 };
 
-console.log([
-    13, 2432, 12, 142, 11, 459, 10, 999.00012, 99999
-].map((num) => [num, NumToOrdinal(num).toLowerCase()].join(": ")));
+const testCases = [
+    [13231, 2432, 12, 84332, 331911, 459, 10, 224123],
+    ["400", "-343.51", "2.42726247118967E+30", "6.34785629656473754E+102", "3.03143376857184E-62"],
+    ["-63478562965647375434785624596564737543478562965647375434785629656473754347856296564737543478562965647354.4532E+2", "-63478562965647375434785624596564737543478562965647375434785629656473754347856296564737543478562965647354.4532"],
+    [0, ...[3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 45, 63, 75, 93, 105, 123, 135].map((exp) => `1E+${exp}`)]
+];
+
+console.log(testCases[0].map((num) => [num.toString(), NumToRoman(num, true)].join(": ")));
 

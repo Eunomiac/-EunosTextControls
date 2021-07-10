@@ -23,19 +23,54 @@ const EunoCORE = {
 
     // SCRIPT REGISTRATION: Installed scripts register themselves in EunoCORE
     _scripts: {},
+    _preInitLog: {},
+    _initLog: {},
     regSCRIPT: (name, script) => { EunoCORE._scripts[name] = script },
     get SCRIPTS() { return EunoCORE._scripts },
+    get scriptsToPreinitialize() { return _.pick(EunoCORE._scripts, (script) => "Preinitialize" in script) },
+    get scriptsToInitialize() { return _.pick(EunoCORE._scripts, (script) => "Initialize" in script) },
+    get scriptsToPostInitialize() { return _.pick(EunoCORE._scripts, (script) => "PostInitialize" in script) },
 
     // VERSION MIGRATION: Any migration processing necessary on version update
     UpdateNamespace: () => { return true },
 
     // SCRIPT INITIALIZATION:
-    Preinitialize: (isResettingState = false) => Object.values(EunoCORE.SCRIPTS)
-        .filter((script) => "Preinitialize" in script)
-        .forEach((script) => script.Preinitialize(isResettingState)),
-    Initialize: (isRegisteringEventListeners = true, isResettingState = false) => Object.values(EunoCORE.SCRIPTS)
-        .filter((script) => "Initialize" in script)
-        .forEach((script) => script.Initialize(isRegisteringEventListeners, isResettingState)),
+    PreinitializeAll: () => {
+        // Verify EunoCONFIG.js is installed
+        try { EunoCONFIG } catch { throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?" }
+
+        // List scripts to pre/initialize
+        Object.assign(EunoCORE._preInitLog, EunoCORE.scriptsToPreinitialize);
+        Object.assign(EunoCORE._initLog, EunoCORE.scriptsToInitialize);
+
+        // Preinitialize scripts
+        Object.values(EunoCORE.scriptsToPreinitialize).forEach((script) => script.Preinitialize());
+    },
+    ConfirmPreinitialization: (scriptName) => {
+        EunoCORE._preInitLog[scriptName] = true;
+        if (Object.values(EunoCORE._preInitLog).every((scriptStatus) => scriptStatus === true)) {
+            // Report readiness of EunoCONFIG (verified in Preinitialize)
+            EunoLIB.UTILITIES.Flag("EunoCONFIG Ready");
+            log("[Euno] EunoCONFIG Ready");
+            EunoCORE.InitializeAll();
+        }
+    },
+
+    InitializeAll: () => Object.values(EunoCORE.scriptsToInitialize).forEach((script) => script.Initialize(true)),
+    ConfirmInitialization: (scriptName, {name, hLevel = 1, classes = []} = {}) => {
+        EunoCORE._initLog[scriptName] = true;
+        EunoLIB.UTILITIES.Flag(`${name || scriptName} Ready`, hLevel, classes);
+        log(`[Euno] ${name || scriptName} Ready`);
+        if (Object.values(EunoCORE._initLog).every((scriptStatus) => scriptStatus === true)) {
+            EunoCORE.PostInitializeAll();
+        }
+    },
+
+    PostInitializeAll: () => {
+        EunoLIB.UTILITIES.Flag("EunoScripts Initialized!");
+        log("[Euno] EunoScripts Initialized!");
+        Object.values(EunoCORE.scriptsToPostInitialize).forEach((script) => script.PostInitialize());
+    },
 
     // PRE-DEFINED UTILITY FUNCTIONS: EunoLIB.UTILITY functions that must be defined before initialization
     GetType: (val) => {
@@ -128,9 +163,13 @@ const EunoCORE = {
             get grey90() { return EunoCORE.ScaleColor("#FFF", 0.9) },
             white: "#FFF",
 
-            // Golds
+            // Gold
             gold: "#FFD700",
-            palegold: "#FFE775"
+            palegold: "#FFE775",
+
+            // Bronze
+            bronze: "#CD7F32",
+            palebronze: "#E6BF99"
         },
         // #endregion ░░░░[COLORS]░░░░
 
@@ -190,56 +229,66 @@ const EunoCORE = {
             return [EunoCORE.C.IMGROOT, imgFolder.toLowerCase(), imgKey].join("/");
         },
         GetImgSize: (imgKey) => [...EunoCORE.C.IMAGES[imgKey]].pop(),
+        // #endregion ░░░░[IMAGES]░░░░
+
+        // #region ░░░░░░░[ROLL20 OBJECTS]░░░░ Object Types ░░░░░░
+        ROLL20TYPES: {
+            all: ["path", "text", "graphic", "page", "campaign", "player", "macro", "rollabletable", "tableitem", "character", "attribute", "ability", "handout", "deck", "card", "hand", "jukeboxtrack", "custfx"],
+            canCreate: ["graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro"]
+        },
+        // #endregion ░░░░[ROLL20 OBJECTS]░░░░
 
         // #region ░░░░░░░[NUMBER STRINGS]░░░░ Number Words, Ordinal Suffixes, Roman Numerals ░░░░░░
         NUMBERWORDS: {
             ones: [
-                "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
-                "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"
+                "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+                "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"
             ],
-            tens: ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"],
-            thousands: [
-                "", "Thousand", "Mi-", "Bi-", "Tri-", "Quadri-", "Quinti-", "Sexti-", "Septi-", "Octi-", "Noni-",
-                "Deci-", "Undeci-", "Duodeci-", "Tredeci-", "Quattuordeci-", "Quindeci-", "Sexdeci-", "Septendeci-", "Octodeci-", "Novemdeci-",
-                "Viginti-", "Unviginti-", "Duoviginti-", "Treviginti-", "Quattuorviginti-", "Quinviginti-", "Sexviginti-", "Septenviginti-", "Octoviginti-", "Novemviginti-",
-                "Triginti-", "Untriginti-", "Duotriginti-", "Tretriginti-", "Quattuortriginti-"
-            ].map((prefix) => prefix.replace(/-$/u, "llion"))
+            tens: ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"],
+            tiers: ["", "thousand", "m-", "b-", "tr-", "quadr-", "quint-", "sext-", "sept-", "oct-", "non-"]
+                .map((prefix) => prefix.replace(/-$/, "illion")),
+            bigPrefixes: ["", "un", "duo", "tre", "quattuor", "quin", "sex", "octo", "novem"],
+            bigSuffixes: ["", "dec-", "vigint-", "trigint-", "quadragint-", "quinquagint-", "sexagint-", "septuagint-", "octogint-", "nonagint-", "cent-"]
+                .map((prefix) => prefix.replace(/-$/, "illion"))
         },
         ORDINALS: {
-            zero: "Zeroeth",
-            one: "First",
-            two: "Second",
-            three: "Third",
-            four: "Fourth",
-            five: "Fifth",
-            eight: "Eighth",
-            nine: "Ninth",
-            twelve: "Twelfth",
-            twenty: "Twentieth",
-            thirty: "Thirtieth",
-            forty: "Fortieth",
-            fifty: "Fiftieth",
-            sixty: "Sixtieth",
-            seventy: "Seventieth",
-            eighty: "Eightieth",
-            ninety: "Ninetieth"
+            zero: "zeroeth",
+            one: "first",
+            two: "second",
+            three: "third",
+            four: "fourth",
+            five: "fifth",
+            eight: "eighth",
+            nine: "ninth",
+            twelve: "twelfth",
+            twenty: "twentieth",
+            thirty: "thirtieth",
+            forty: "fortieth",
+            fifty: "fiftieth",
+            sixty: "sixtieth",
+            seventy: "seventieth",
+            eighty: "eightieth",
+            ninety: "ninetieth"
         },
         ROMANNUMERALS: {
             grouped: [
                 ["", "Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ", "Ⅸ"],
                 ["", "Ⅹ", "ⅩⅩ", "ⅩⅩⅩ", "ⅩⅬ", "Ⅼ", "ⅬⅩ", "ⅬⅩⅩ", "ⅬⅩⅩⅩ", "ⅩⅭ"],
                 ["", "Ⅽ", "ⅭⅭ", "ⅭⅭⅭ", "ⅭⅮ", "Ⅾ", "ⅮⅭ", "ⅮⅭⅭ", "ⅮⅭⅭⅭ", "ⅭⅯ"],
-                ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "ⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯⅯ"]
+                ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "Ⅿↁ", "ↁ", "ↁⅯ", "ↁⅯⅯ", "ↁⅯⅯⅯ", "ↁↂ"],
+                ["", "ↂ", "ↂↂ", "ↂↂↂ", "ↂↇ", "ↇ", "ↇↂ", "ↇↂↂ", "ↇↂↂↂ", "ↇↈ"],
+                ["", "ↈ", "ↈↈ", "ↈↈↈ"]
             ],
             ungrouped: [
                 ["", "Ⅰ", "ⅠⅠ", "ⅠⅠⅠ", "ⅠⅤ", "Ⅴ", "ⅤⅠ", "ⅤⅠⅠ", "ⅤⅠⅠⅠ", "ⅠⅩ"],
                 ["", "Ⅹ", "ⅩⅩ", "ⅩⅩⅩ", "ⅩⅬ", "Ⅼ", "ⅬⅩ", "ⅬⅩⅩ", "ⅬⅩⅩⅩ", "ⅩⅭ"],
                 ["", "Ⅽ", "ⅭⅭ", "ⅭⅭⅭ", "ⅭⅮ", "Ⅾ", "ⅮⅭ", "ⅮⅭⅭ", "ⅮⅭⅭⅭ", "ⅭⅯ"],
-                ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "ⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯ", "ⅯⅯⅯⅯⅯⅯⅯⅯⅯ"]
+                ["", "Ⅿ", "ⅯⅯ", "ⅯⅯⅯ", "Ⅿↁ", "ↁ", "ↁⅯ", "ↁⅯⅯ", "ↁⅯⅯⅯ", "ↁↂ"],
+                ["", "ↂ", "ↂↂ", "ↂↂↂ", "ↂↇ", "ↇ", "ↇↂ", "ↇↂↂ", "ↇↂↂↂ", "ↇↈ"],
+                ["", "ↈ", "ↈↈ", "ↈↈↈ"]
             ]
         }
         // #endregion ░░░░[NUMBER STRINGS]░░░░
-        // #endregion ░░░░[IMAGES]░░░░
     },
     // #endregion ▄▄▄▄▄▄▄▄ EunoCORE.CONSTANTS ▄▄▄▄▄▄▄▄
 
@@ -255,10 +304,8 @@ const EunoCORE = {
 
 on("ready", () => {
     if (EunoCORE.UpdateNamespace()) {
-        // Preinitialize each major script component, then finalize initialization.
-        //   - Delays are necessary to ensure each step completes for all scripts before moving to the next.
-        setTimeout(EunoCORE.Preinitialize, 1000);
-        setTimeout(EunoCORE.Initialize, 2000);
+        // Begin initialization of scripts.
+        EunoCORE.PreinitializeAll();
     } else {
         throw "[Euno] ERROR: Failure to Update 'Euno' Namespace.";
     }
@@ -280,15 +327,8 @@ const EunoLIB = (() => {
     // #region ========== Initialization: Script Startup & Event Listeners ===========
     const {CFG, C} = EunoCORE;
     let LIB, U, O, H;
-    const [scriptPreinitializedLog, scriptInitializedLog] = [{}, {}];
 
     const Preinitialize = (isResettingState = false) => {
-        // Verify EunoCONFIG.js is installed
-        try { EunoCONFIG }
-        catch {
-            throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?";
-        }
-
         // Reset script state entry, if specified
         if (isResettingState) { delete RO.OT[SCRIPTNAME] }
 
@@ -300,15 +340,10 @@ const EunoLIB = (() => {
         // Define local-scope shorthand references for main script components
         ({LIB, U, O, H} = EunoCORE);
 
-        // List scripts to wait for check-in before confirming full initialization is complete
-        Object.assign(scriptInitializedLog, EunoCORE.SCRIPTS);
-
-        // Preinitialize EunoLIB sub-scripts
-        ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Preinitialize());
+        // Confirm Preinitialization
+        LIB.ConfirmPreinitialization(SCRIPTNAME);
     };
     const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-        // Report readiness of EunoCONFIG (verified in Preinitialize)
-        U.Flag("EunoCONFIG Ready!");
 
         // Reset script state entry, if specified
         if (isResettingState) { Preinitialize(true) }
@@ -318,29 +353,10 @@ const EunoLIB = (() => {
             on("chat:message", handleMessage);
         }
 
-        // Initialize EunoLIB sub-scripts
-        ["UTILITIES", "OBJECTS", "HTML"].forEach((subScriptName) => EunoLIB[subScriptName].Initialize(isRegisteringEventListeners));
-
-        // Report readiness
-        ReportReady(SCRIPTNAME, "Euno");
-    };
-    const ReportReady = (scriptName, prefix) => {
-        const scriptRef = (scriptName || "").replace(/^!/, "");
-        if (typeof prefix === "string") {
-            prefix = `[${prefix}]`;
-        }
-        prefix = prefix || "";
-        if (scriptRef in scriptInitializedLog) {
-            U.Flag(`${scriptName} Ready!`); log([prefix, scriptName, "Ready!"].join(" "));
-            scriptInitializedLog[scriptRef] = true;
-        }
-        if (Object.values(scriptInitializedLog).every((scriptStatus) => scriptStatus === true)) {
-            PostInitialize();
-        }
+        // Confirm Initialization
+        LIB.ConfirmInitialization(SCRIPTNAME);
     };
     const PostInitialize = () => {
-        U.Flag("EunoScripts Ready!"); log("[Euno] EunoScripts Ready!");
-
         // Display Help message, if so configured
         if (STA.TE.isDisplayingHelpAtStart) {H.DisplayHelp({isAutoDisplaying: true})}
     };
@@ -348,15 +364,13 @@ const EunoLIB = (() => {
 
     // #region ========== Events: Event Handlers ===========
     const handleMessage = (msg) => {
-        if (msg.content.startsWith("!euno") && playerIsGM(msg.playerid)) {
-            let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s@[^\s]*|\s"[^"]*"|\s[^\s]*/gu) || [])
-                .map((x) => x.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1"))
-                .filter((x) => Boolean(x));
-            try {
-                ({
+        if (U.CheckMessage(msg, ["!euno", "!edev"])) {
+            let {call, args, selected} = U.ParseMessage(msg, "all");
+            if (call === "!euno") {
+                try { ({
                     toggle: () => ({
                         intro: () => {
-                            STA.TE.isDisplayingHelpAtStart = args.includes("true");
+                            STA.TE.isDisplayingHelpAtStart = args.includes(true);
                             if (STA.TE.isDisplayingHelpAtStart) {
                                 U.Flag("Showing Help at Start.", 2);
                             } else {
@@ -365,8 +379,17 @@ const EunoLIB = (() => {
                         }
                     }[U.LCase(call = args.shift())])()
                 }[U.LCase(call = args.shift())])();
-            } catch {
-                H.DisplayHelp();
+                } catch { H.DisplayHelp() }
+            } else if (call === "!edev") {
+                try { ({
+                    get: () => ({
+                        state: () => U.Show(state),
+                        root: () => U.Show(EunoCORE.ROOT),
+                        stateref: () => U.Show(STA.TE),
+                        data: () => U.Show(selected)
+                    }[U.LCase(call = args.shift())])()
+                }[U.LCase(call = args.shift())])();
+                } catch { H.Flag(`[EDev] Bad Call: '${call}'`, 2) }
             }
         }
     };
@@ -394,6 +417,9 @@ const EunoLIB = (() => {
             Object.entries(DEFAULTSTATE)
                 .filter(([key]) => !(key in STA.TE))
                 .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+            // Confirm Preinitialization
+            LIB.ConfirmPreinitialization(SCRIPTNAME);
         };
         const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
             // Reset script state entry, if specified
@@ -402,9 +428,9 @@ const EunoLIB = (() => {
             // Register event handlers, if specified
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
 
-            // Report readiness
-            Flag(`EunoLIB.${SCRIPTNAME} Ready!`, 2, ["silver"]);
-            log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
+            // Confirm Initialization
+            LIB.ConfirmInitialization(SCRIPTNAME, {name: `EunoLIB.${SCRIPTNAME}`, hLevel: 2, classes: ["silver"]});
+
         };
             // #endregion _______ Initialization _______
 
@@ -486,19 +512,57 @@ const EunoLIB = (() => {
         const JC = (val) => H.Pre(JS(val)); // Stringification for data objects and other code for display in R20 chat.
         // #endregion _______ Type Conversion _______
 
+        // #region ========== Formatting: Lists, Pluralization, Possessives ===========
+        const Pluralize = (qty, singular, plural) => {
+            plural = plural || `${singular}s`.replace(/ss$/, "ses").replace(/ys$/, "ies");
+            if (Float(qty) === 1) {return `${qty} ${singular}`}
+            return `${qty} ${plural}`;
+        };
+        // #endregion _______ Formatting _______
         // #region ========== Numbers to Strings: Convert Numbers to Words, Signed Numbers, Ordinals, Roman Numerals ===========
+        const NumToString = (num) => {
+            // Can take string representations of numbers, either in standard or scientific/engineering notation.
+            // Returns a string representation of the number in standard notation.
+            if (Float(num) === 0) { return "0" }
+            num = LCase(num).replace(/[^\d.e+-]/g, "");
+            const base = Ext(num, /^-?[\d.]+/);
+            const exp = Int(Ext(num, /e([+-]?\d+)$/).pop());
+            const baseInts = Ext(base, /^-?(\d+)/).pop().replace(/^0+/, "");
+            const baseDecs = LCase(Ext(base, /\.(\d+)/).pop()).replace(/0+$/, "");
+
+            const numFinalInts = Math.max(0, baseInts.length + exp);
+            const numFinalDecs = Math.max(0, baseDecs.length - exp);
+
+            const finalInts = [baseInts.slice(0, numFinalInts), baseDecs.slice(0, Math.max(0, exp))].join("") || "0";
+            const finalDecs = [
+                (baseInts.length - numFinalInts) <= 0 ? "" : baseInts.slice(baseInts.length - numFinalInts - 1),
+                baseDecs.slice(baseDecs.length - numFinalDecs)
+            ].join("");
+
+            return [
+                num.charAt(0) === "-" ? "-" : "",
+                finalInts,
+                "0".repeat(Math.max(0, numFinalInts - finalInts.length)),
+                finalDecs.length ? "." : "",
+                "0".repeat(Math.max(0, numFinalDecs - finalDecs.length)),
+                finalDecs
+            ].join("");
+        };
         const NumToWords = (num) => {
-            num = `${Float(num)}`;
-            const parseThreeDigits = (trio) => {
+            num = NumToString(num);
+            const getTier = (trioNum) => {
+                if (trioNum < C.NUMBERWORDS.tiers.length) { return C.NUMBERWORDS.tiers[trioNum] }
+                return `${C.NUMBERWORDS.bigPrefixes[trioNum % 10 - 1]}${C.NUMBERWORDS.bigSuffixes[Math.floor(trioNum/10)]}`;
+            };
+            const parseThreeDigits = (trio, tierNum) => { // three hundred and eight-two
+                if (Int(trio) === 0) { return "" }
                 const digits = `${trio}`.split("").map((digit) => Int(digit));
                 let result = "";
                 if (digits.length === 3) {
                     const hundreds = digits.shift();
                     result += hundreds > 0 ? `${C.NUMBERWORDS.ones[hundreds]} hundred` : "";
-                    if (digits[0] + digits[1] > 0) {
+                    if (hundreds && (digits[0] || digits[1])) {
                         result += " and ";
-                    } else {
-                        return result;
                     }
                 }
                 if (Int(digits.join("")) <= C.NUMBERWORDS.ones.length) {
@@ -520,10 +584,16 @@ const EunoLIB = (() => {
                 .map((v) => v.split("").reverse().join(""));
             const intStrings = [];
             while (intArray.length) {
-                intStrings.push(`${parseThreeDigits(intArray.pop())} ${C.NUMBERWORDS.thousands[intArray.length]}`);
+                const theseWords = parseThreeDigits(intArray.pop());
+                if (theseWords) {
+                    intStrings.push(`${theseWords} ${getTier(intArray.length)}`);
+                }
             }
             numWords.push(intStrings.join(", ").trim());
             if (GetType(decimals) === "int") {
+                if (integers === "0") {
+                    numWords.push("zero");
+                }
                 numWords.push("point");
                 for (const digit of decimals.split("")) {
                     numWords.push(C.NUMBERWORDS.ones[Int(digit)]);
@@ -543,11 +613,11 @@ const EunoLIB = (() => {
             return `${num}${["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][Int(`${num}`.charAt(`${num}`.length - 1))]}`;
         };
         const NumToRoman = (num, isUsingGroupedChars = true) => {
-            num = Int(num);
-            if (num > 9999) { throw `[Euno] Error: Can't Romanize '${num}' (> 9999)` }
-            if (num <= 0) { throw `[Euno] Error: Can't Romanize '${num}' (<= 0)` }
+            if (U.GetType(num) === "float") { throw `[Euno] Error: Can't Romanize Floats (${num})` }
+            if (num > 399999) { throw `[Euno] Error: Can't Romanize >= 400,000 (${num})` }
+            if (num <= 0) { throw `[Euno] Error: Can't Romanize <= 0 (${num})` }
             const romanRef = C.ROMANNUMERALS[isUsingGroupedChars ? "grouped" : "ungrouped"];
-            const romanNum = `${num}`
+            const romanNum = NumToString(num)
                 .split("")
                 .reverse()
                 .map((digit, i) => romanRef[i][Int(digit)])
@@ -573,10 +643,41 @@ const EunoLIB = (() => {
         };
         // #endregion _______ Numbers to Strings _______
 
+        // #region ========== RegExp: Regular Expressions ===========
+        const Ext = (qStr, qRegExp) => {
+            const isGrouping = /[)(]/.test(qRegExp.toString());
+            const matches = qStr.match(new RegExp(qRegExp)) || [];
+            if (isGrouping) {
+                return matches.slice(1);
+            }
+            return matches.pop();
+        };
+        // #endregion _______ RegExp _______
+
         // #endregion ░░░░[Strings]░░░░
 
-        // #region ░░░░░░░[Chat]░░░░ Basic Chat Messages ░░░░░░
+        // #region ░░░░░░░[Chat]░░░░ Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
+        const CheckMessage = (msg, calls, options = {isGM: true}) => U.GetType(msg) === "list"
+                                                                        && msg.type === "api"
+                                                                        && U.Arrayify(calls).some((call) => msg.content.startsWith(call))
+                                                                        && (!options.isGM || playerIsGM(msg.playerid));
+        const ParseMessage = (msg, types = []) => {
+            const msgData = {
+                msg,
+                call: undefined,
+                args: undefined,
+                isAPI: msg.type === "api",
+                isGM: playerIsGM(msg.playerid),
+                playerID: msg.playerid,
+                playerDisplayName: msg.who,
+                content: msg.content,
+                selected: Object.fromEntries(U.Arrayify(types).map((type) => [type, O.GetSelObj([msg], type)]))
+            };
+            [msgData.call, ...msgData.args] = U.ParseString(U.Arrayify(msg.content.match(/!\S*|\s@"[^"]*"|\s"[^"]*"|\s[^\s]*/gu))
+                .map((arg) => arg.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1")));
+            return msgData;
+        };
         const Alert = (content, title, headerLevel = 1, classes = [], options = {noarchive: true}) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
             if (content !== false && (content || title)) {
                 if (title) {
@@ -641,10 +742,15 @@ const EunoLIB = (() => {
             UCase, LCase, SCase, TCase,
             // [Strings: Type Conversion]
             ParseString, ParseParams, JS, JC,
+            // [Strings: Formatting]
+            Pluralize,
             // [Strings: Numbers to Strings]
             NumToWords, NumToOrdinal, NumToRoman, NumToSignedNum, NumToPaddedNum,
+            // [Strings: RegExp]
+            Ext,
 
             // [Chat]
+            CheckMessage, ParseMessage,
             Alert, Direct, Show, Flag,
 
             // [Arrays & Objects]
@@ -671,6 +777,9 @@ const EunoLIB = (() => {
             Object.entries(DEFAULTSTATE)
                 .filter(([key]) => !(key in STA.TE))
                 .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+            // Confirm Preinitialization
+            LIB.ConfirmPreinitialization(SCRIPTNAME);
         };
         const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
             // Reset script state entry, if specified
@@ -679,9 +788,8 @@ const EunoLIB = (() => {
             // Register event handlers, if specified
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
 
-            // Report readiness
-            U.Flag(`EunoLIB.${SCRIPTNAME} Ready!`, 2, ["silver"]);
-            log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
+            // Confirm Initialization
+            LIB.ConfirmInitialization(SCRIPTNAME, {name: `EunoLIB.${SCRIPTNAME}`, hLevel: 2, classes: ["silver"]});
         };
         // #endregion _______ Initialization _______
 
@@ -696,7 +804,7 @@ const EunoLIB = (() => {
                         return "token";
                     }
                     if (val.get("_subtype") === "card") {
-                        return "card";
+                        return "playedcard";
                     }
                     if (/\.webm/u.test(val.get("imgsrc"))) {
                         return "animation";
@@ -711,14 +819,15 @@ const EunoLIB = (() => {
                 If an array is supplied, an array will be returned (empty if no matches)
                 Otherwise, a single return value will be given, or false if nothing found */
         const GetObj = (qObj, type, registry = {}, isReturningArray = false) => {
+            // U.Show({qObj, type, isReturningArray});
             const qObjs = U.Arrayify(qObj);
             const objs = [];
             if (U.GetType(qObj) === "array") {
                 isReturningArray = true;
-                objs.push(...U.Arrayify(qObjs.map((qO) => GetObj(qO, type, registry))));
+                objs.push(...U.Arrayify(qObjs.map((qO) => GetObj(qO, type, registry, true)).flat()));
             } else {
                 switch (type) {
-                    case "card": case "token": case "animation": {
+                    case "playedcard": case "token": case "animation": {
                         objs.push(...U.Arrayify(GetObj(qObjs, "graphic", registry, true))
                             .filter((obj) => GetR20Type(obj) === type));
                         break;
@@ -735,7 +844,9 @@ const EunoLIB = (() => {
                         }
                         break;
                     }
-                    case "graphic": case "text": case "path": /* ... */ {
+                    case "path": case "text": case "graphic": case "page": case "campaign": case "player":
+                    case "macro": case "rollabletable": case "tableitem": case "attribute": case "ability":
+                    case "handout": case "deck": case "card": case "hand": case "jukeboxtrack": case "custfx": {
                         objs.push(...U.Arrayify(qObjs.map((qObjElem) => {
                             switch (qObjElem) {
                                 case "all": return findObjs({_type: type});
@@ -749,15 +860,17 @@ const EunoLIB = (() => {
                                     }
                                 }
                             }
-                        })));
+                        }).flat()));
                         break;
                     }
                     // no default
                 }
             }
             if (isReturningArray) {
+                // U.Show(objs, "Returning ARRAY");
                 return U.Arrayify(objs);
             }
+            // U.Show({obj: objs.length > 0 ? objs.shift() : false}, "Returning OBJ");
             return objs.length > 0 ? objs.shift() : false;
         };
         const GetChar = (qChar, registry = {}, isReturningArray = false) => {
@@ -825,6 +938,9 @@ const EunoLIB = (() => {
             Object.entries(DEFAULTSTATE)
                 .filter(([key]) => !(key in STA.TE))
                 .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+
+            // Confirm Preinitialization
+            LIB.ConfirmPreinitialization(SCRIPTNAME);
         };
         const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
             // Reset script state entry, if specified
@@ -833,9 +949,8 @@ const EunoLIB = (() => {
             // Register event handlers, if specified
             if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
 
-            // Report readiness
-            U.Flag(`EunoLIB.${SCRIPTNAME} Ready!`, 2, ["silver"]);
-            log(`[EunoLIB] ${SCRIPTNAME} Ready!`);
+            // Confirm Initialization
+            LIB.ConfirmInitialization(SCRIPTNAME, {name: `EunoLIB.${SCRIPTNAME}`, hLevel: 2, classes: ["silver"]});
         };
         // #endregion _______ Initialization _______
 
@@ -949,6 +1064,9 @@ const EunoLIB = (() => {
                     background-repeat: no-repeat;
                     text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0),
                 }
+                ol {
+                    font-size: ${cssVars.bodyFontSize}px;
+                }
             `,
             /* #endregion Base Styles */
             /* #region Class Styles */
@@ -964,7 +1082,14 @@ const EunoLIB = (() => {
                     background-size: 100%;
                     box-shadow: inset 0 0 5px ${C.COLORS.black}, inset 0 0 5px ${C.COLORS.black}, inset 0 0 5px ${C.COLORS.black};
                 }
-                .box.silver {color: ${C.COLORS.white};}
+                .box.silver {
+                    color: ${C.COLORS.white};
+                    background-image: url('${C.GetImgURL("bgChatSilver")}');
+                }
+                .box.bronze {
+                    color: ${C.COLORS.palebronze};
+                    background-image: url('${C.GetImgURL("bgChatBronze")}');
+                }
                 .block {
                     min-width: ${cssVars.boxPosition.width - 24}px;
                     margin: 2px 0 0 0;
@@ -1029,7 +1154,7 @@ const EunoLIB = (() => {
                 .flag {
                     margin: 0;
                     text-align: left;
-                    text-indent: 40px;
+                    text-indent: 30px;
                 }
                 h1.flag {
                     height: 31px;
@@ -1061,7 +1186,7 @@ const EunoLIB = (() => {
                 h2.flag.silver {background-image: url('${C.GetImgURL("h2FlagSilver")}')}
                 .commandHighlight {
                     margin: 0 3px;
-                    padding: 0 8px 0 6px;
+                    padding: 3px 8px 0 6px;
                     color: ${C.COLORS.black};
                     font-family: monospace;
                     font-weight: bolder;
@@ -1275,7 +1400,8 @@ const EunoLIB = (() => {
             Pre: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "pre", classes, styles, attributes),
             H1: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h1", classes, styles, attributes),
             H2: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h2", classes, styles, attributes),
-            H3: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h3", classes, styles, attributes)
+            H3: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h3", classes, styles, attributes),
+            OL: (content, classes = [], styles = {}, attributes = {}) => Tag(U.Arrayify(content).map((item) => Tag(item, "li")), "ol", classes, styles, attributes)
         };
         // #endregion _______ Elements _______
 
@@ -1399,7 +1525,9 @@ const EunoLIB = (() => {
     })();
 
     return {
-        Preinitialize, Initialize, ReportReady,
+        Preinitialize, Initialize,
+        ConfirmPreinitialization: EunoCORE.ConfirmPreinitialization,
+        ConfirmInitialization: EunoCORE.ConfirmInitialization,
 
         UTILITIES,
         OBJECTS,
@@ -1409,4 +1537,7 @@ const EunoLIB = (() => {
 // #endregion ▄▄▄▄▄ EunoLIB ▄▄▄▄▄
 
 EunoCORE.regSCRIPT("EunoLIB", EunoLIB);
+EunoCORE.regSCRIPT("UTILITIES", EunoLIB.UTILITIES);
+EunoCORE.regSCRIPT("OBJECTS", EunoLIB.OBJECTS);
+EunoCORE.regSCRIPT("HTML", EunoLIB.HTML);
 void MarkStop("EunoLIB");

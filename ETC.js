@@ -24,20 +24,27 @@ const ETC = (() => {
 
     // #region ========== Initialization: Script Startup & Event Listeners ===========
 
-    // Define shorthand references to major script components.
-    const {C} = EunoCORE; let CFG, LIB, U, O, H; // these have to be declared now, but must wait for intialization to be assigned
-    const Preinitialize = (isResettingState = false) => {
+    // Define shorthand references to major script components. ↴⇘⇊↷↲⇂⇲◢◿
+    const {C} = EunoCORE;
+    let CFG, LIB, U, O, H, Flag; // these have to be declared now, but must wait for intialization to be assigned  \\
+    const InitState = (isResettingState = false) => {
         // Reset script state entry, if specified
-        if (isResettingState) { delete EunoCORE.ROOT[SCRIPTNAME] }
+        if (isResettingState) { delete EunoCORE.ROOT[SCRIPTNAME] }                                                               //
 
-        // Initialize script state entry with default values where needed
+        // Initialize script state entry with default values where needed                                                      //
         Object.entries(DEFAULTSTATE)
-            .filter(([key]) => !(key in STA.TE))
+            .filter(([key]) => !(key in STA.TE))                                                                             //
             .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
     };
+    const Preinitialize = () => {                                                                  //
+        InitState();
+
+        // Confirm Initialization
+        EunoCORE.ConfirmPreinitialization(SCRIPTNAME);
+    };                                                                                                                     //
     const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-        // Assign shorthand script references to their (now preinitialized) scripts
-        ({CFG, LIB, U, O, H} = EunoCORE);
+        ({CFG, LIB, U, O, H} = EunoCORE); // Assign shorthand script references                                    ◀======
+        Flag = (message) => U.Flag(message, 2, ["etc", "silver"]);
 
         // Reset script state entry, if specified
         if (isResettingState) { Preinitialize(true) }
@@ -50,56 +57,43 @@ const ETC = (() => {
             on("destroy:text", handleTextDestroy);
         }
 
-        // Report readiness
-        LIB.ReportReady(`!${SCRIPTNAME}`, "Euno");
+        // Report readiness to EunoLIB loader
+        LIB.ConfirmInitialization(SCRIPTNAME);
     };
     // #endregion _______ Initialization _______
 
     // #region ========== Events: Event Handlers ===========
     const handleMessage = (msg) => {
-        if (msg.content.startsWith("!etc") && playerIsGM(msg.playerid)) {
-            let [call, ...args] = (msg.content.match(/!\S*|\s@"[^"]*"|\s"[^"]*"|\s[^\s]*/gu) || [])
-                .map((x) => x.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1"))
-                .filter((x) => Boolean(x));
-            try {
-                ({
-                    shadow: () => makeTextShadow(O.GetSelObj([msg], "text")),
-                    toggle: () => ({
-                        autoshadow: () => toggleAutoShadow(args.includes("true")),
-                        autoprune: () => toggleAutoPrune(args.includes("true"))
-                    }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
+        if (U.CheckMessage(msg, "!etc")) {
+            let {call, args, selected} = U.ParseMessage(msg, ["text"]);
+            try { ({
+                setup: displayToggles,
+                toggle: () => ({
+                    autoshadow: () => toggleFeature("autoShadow", args.includes(true), {goBack: args.includes("feature") ? "feature" : "toggles"}),
+                    autoprune: () => toggleFeature("autoPrune", args.includes(true), {goBack: args.includes("feature") ? "feature" : "toggles"})
+                }[U.LCase(call = args.shift())])(),
+                shadow: () => ({
+                    add: () =>  makeTextShadow(selected.text),
                     clear: () => {
-                        if (args.includes("all")) {
-                            getTextShadow(["registered"]).forEach(((shadow) => unregTextShadow(shadow)));
-                            U.Flag("Shadows Removed & Unregistered.", 2);
-                        } else {
-                            unregTextShadow(O.GetSelObj([msg], "text").map((obj) => obj.id));
-                        }
+                        unregTextShadow(args.includes("all") ? ["all"] : selected.text);
+                        Flag(`${args.includes("all") ? "" : "Selected "}Shadows Cleared.`);
                     },
-                    fix: () => { if (args.includes("all")) { fixTextShadows() } },
-                    prune: () => { pruneText(args.includes("all") ? ["all"] : O.GetSelObj([msg], "text")) },
-                    setup: () => { displayToggles() },
-                    help: () => {
-                        ({
-                            shadow: () => toggleAutoShadow(args.includes("true")),
-                            prune: () => toggleAutoPrune(args.includes("true"))
-                        }[(call = args.shift() || "").toLowerCase()] || (() => false))();
-                    },
-                    purge: () => ({
-                        state: () => Preinitialize(true),
-                        reg: () => STA.TE.REGISTRY = {}
-                    }[(call = args.shift() || "").toLowerCase()] || (() => false))(),
-                    test: () => ({
-                        state: () => U.Show(state),
-                        root: () => U.Show(EunoCORE.ROOT),
-                        stateref: () => U.Show(STA.TE),
-                        data: () => { U.Show((msg.selected || [null]).map((sel) => sel && "_type" in sel && getObj(sel._type, sel._id))) }
-                    }[(call = args.shift() || "").toLowerCase()] || (() => false))()
-                }[(call = args.shift()).toLowerCase()])();
-            } catch (err) {
-                displayHelp();
-            }
-        }
+                    hide: () => {},
+                    show: () => {},
+                    fix: fixTextShadows
+                }[U.LCase(call = args.shift())])(),
+                prune: () => { pruneText(args.includes("all") ? ["all"] : selected.text) },
+                help: () => ({
+                    shadow: () => displayHelp("dropShadows"),
+                    prune: () => displayHelp("textPruning")
+                }[U.LCase(call = args.shift())])(),
+                reset: () => ({
+                    all: () => InitState(true),
+                    reg: () => STA.TE.REGISTRY = {}
+                }[U.LCase(call = args.shift())])()
+            }[U.LCase(call = args.shift())])();
+            } catch { displayHelp("etc") }
+        };
     };
     const handleTextChange = (textObj) => {
         if (textObj.id in RE.G) {
@@ -114,7 +108,7 @@ const ETC = (() => {
     };
     const handleTextAdd = (textObj) => {
         setTimeout(() => { // The delay is necessary to ensure the new object fully updates.
-            if (!(STA.TE.isAutoPruning && pruneText(textObj))) {
+            if (!(STA.TE.isAutoPruning && pruneText(textObj, true))) {
                 if (STA.TE.isAutoShadowing && !isShadowObj(textObj)) {
                     makeTextShadow(textObj);
                 }
@@ -123,15 +117,14 @@ const ETC = (() => {
     };
     const handleTextDestroy = (textObj) => {
         if (textObj.id in RE.G) {
-            const textData = RE.G[textObj.id];
             if (isShadowObj(textObj)) {
-                const masterObj = getObj("text", textData.masterID);
+                const masterObj = getObj("text", RE.G[textObj.id].masterID);
                 if (masterObj && !removalQueue.includes(textObj.id)) {
                     displayError("ManualShadowRemoval");
                     makeTextShadow(masterObj);
                 }
-            } else if (textData.shadowID) {
-                safeRemove(textData.shadowID);
+            } else if (RE.G[textObj.id].hasShadow) {
+                unregTextShadow(RE.G[textObj.id].shadowID);
             }
         }
     };
@@ -145,15 +138,19 @@ const ETC = (() => {
             isReturningArray = true;
             textDatas.push(...U.Arrayify(qText.map((qO) => getTextData(qO, true))));
         } else {
-            textDatas.push(...U.Arrayify(O.GetObj([qText], "text", RE.G)).map((textObj) => textObj.id in RE.G ? RE.G[textObj.id] : false));
+            textDatas.push(...O.GetObj([qText], "text", RE.G).map((textObj) => textObj.id in RE.G ? RE.G[textObj.id] : false));
         }
         if (isReturningArray) {
             return U.Arrayify(textDatas);
         }
         return textDatas.length > 0 ? textDatas.shift() : false;
     };
-    const isShadowObj = (qTextObj) => O.GetR20Type(qTextObj) === "text" && /etcshadowobj/u.test(qTextObj.get("controlledby"));
-    const hasShadowObj = (qTextObj) => O.GetR20Type(qTextObj) === "text" && qTextObj.id in RE.G && RE.G[qTextObj.id].hasShadow && getObj("text", RE.G[qTextObj.id].shadowID);
+    const isShadowObj = (qTextObj) => O.GetR20Type(qTextObj) === "text"
+                                          && /etcshadowobj/u.test(qTextObj.get("controlledby"));
+    const isRegShadow = (qText) => (getTextData(qText) || {}).isShadow;
+    const hasShadowObj = (qText) => O.GetR20Type(qText) === "text"
+                                           && (getTextData(qText) || {}).hasShadow
+                                           && Boolean(O.GetObj((getTextData(qText) || {}).shadowID, "text"));
     const getTextShadow = (qShadow, isReturningArray = false) => {
         const textShadows = [];
         if (U.GetType(qShadow) === "array") {
@@ -163,7 +160,7 @@ const ETC = (() => {
             textShadows.push(..._.uniq(U.Arrayify(O.GetObj([qShadow], "text", RE.G)).filter((textObj) => isShadowObj(textObj) || hasShadowObj(textObj)).map((textObj) => hasShadowObj(textObj) ? getTextShadow(RE.G[textObj.id].shadowID) : textObj)));
         }
         if (isReturningArray) {
-            return U.Arrayify(textShadows);
+            return U.Arrayify(textShadows).flat(3);
         }
         return textShadows.length > 0 ? textShadows.shift() : false;
     };
@@ -211,9 +208,26 @@ const ETC = (() => {
             }
         });
     };
-    const toggleAutoShadow = (isActive) => {
-        STA.TE.isAutoShadowing = isActive === true;
-        displayToggles();
+    const toggleFeature = (feature, isActive, options = {}) => {
+        isActive = isActive === true;
+        ({
+            autoShadow: () => {
+                STA.TE.isAutoShadowing = isActive;
+                if (options.goBack === "feature") {
+                    displayHelp("dropShadows");
+                } else {
+                    displayToggles();
+                }
+            },
+            autoPrune: () => {
+                STA.TE.isAutoPruning = isActive;
+                if (options.goBack === "feature") {
+                    displayHelp("textPruning");
+                } else {
+                    displayToggles();
+                }
+            }
+        }[feature] || (() => false))();
     };
     // #endregion
 
@@ -234,15 +248,19 @@ const ETC = (() => {
     };
     const safeRemove = (qText) => {
         U.Arrayify(O.GetObj(qText, "text", RE.G, true)).forEach((textObj) => {
-            removalQueue.push(textObj);
+            removalQueue.push(textObj.id);
             textObj.remove();
         });
     };
-    const unregTextShadow = (qText) => {
-        U.Arrayify(getTextShadow(qText)).forEach((shadowObj) => {
+    const unregTextShadow = (qText, isMuting = false) => {
+        getTextShadow(U.Arrayify(qText)).forEach((shadowObj) => {
             const {id, masterID} = getTextData(shadowObj);
             safeRemove(shadowObj);
-            delete RE.G[masterID];
+            if (isMuting) {
+                RE.G[masterID].isShadowMuted = true;
+            } else {
+                delete RE.G[masterID];
+            }
             delete RE.G[id];
         });
     };
@@ -313,22 +331,25 @@ const ETC = (() => {
             syncShadow(masterObj, shadowObj);
         }
 
-        U.Flag("Shadows Synchronized.");
+        Flag("Shadows Synchronized.");
     };
     // #endregion
 
     // #endregion *** *** TEXT SHADOWS *** ***
 
     // #region *** *** FEATURE: EMPTY TEXT PRUNING *** ***
-    const toggleAutoPrune = (isActive) => {
-        STA.TE.isAutoPruning = isActive === true;
-        displayToggles();
-    };
-    const pruneText = (qText) => O.GetObj(qText, "text", RE.G, true).forEach((textObj) => {
-        if (!textObj.get("text")) {
-            safeRemove(textObj);
+    const pruneText = (qText, isAutomatic = false) => {
+        let removalCount = 0;
+        O.GetObj(U.Arrayify(qText), "text", RE.G).forEach((textObj) => {
+            if (!textObj.get("text")) {
+                removalCount++;
+                safeRemove(textObj);
+            }
+        });
+        if (!isAutomatic) {
+            Flag(`${U.Pluralize(removalCount, "Empty Text Object")} Removed.`);
         }
-    });
+    };
     // #endregion *** *** EMPTY TEXT PRUNING *** ***
 
     // #region *** *** FEATURE: ATTRIBUTE DISPLAYS *** ***
@@ -374,33 +395,97 @@ const ETC = (() => {
     // #endregion *** *** ATTRIBUTE DISPLAYS *** ***
 
     // #region *** *** CHAT DISPLAYS & MENUS *** ***
-    const displayHelp = () => {
-        U.Alert(H.Box([
-            H.Span(null, ["title", "etc"]),
-            H.Block([
-                H.P("<b>!ETC</b> is in~ten~ded to be a com~pre~hen~sive so~lu~tion to man~ag~ing Roll20 Text Ob~jects."),
-                H.H2("!ETC Chat Commands"),
-                H.Spacer(5),
-                H.Paras([
-                    [H.ButtonCommand("!etc", ["shiftLeft"]), " — View this help mes~sage."],
-                    [H.ButtonCommand("!etc setup", ["shiftLeft"]), " — Ac~ti~vate or de~ac~ti~vate any of the fea~tures in this script pack~age."],
-                    [H.ButtonCommand("!etc reset all", ["shiftLeft"]), " — <b><u>FULLY</u> re~set <u>ALL</u></b> <b>!ETC</b> script fea~tures, re~turn~ing <b>!ETC</b> to its de~fault in~stal~la~tion state."]
+    const displayHelp = (helpKey) => {
+        U.Alert({
+            etc: H.Box([
+                H.Span(null, ["title", "etc"]),
+                H.Block([
+                    H.P("<b>!ETC</b> is in~ten~ded to be a com~pre~hen~sive so~lu~tion to man~ag~ing Roll20 Text Ob~jects."),
+                    H.H2("!ETC Chat Commands"),
+                    H.Spacer(5),
+                    H.Paras([
+                        [H.ButtonCommand("!etc", ["shiftLeft"]), " — View this help mes~sage."],
+                        [H.ButtonCommand("!etc setup", ["shiftLeft"]), " — Ac~ti~vate or de~ac~ti~vate any of the fea~tures in this script pack~age."],
+                        [H.ButtonCommand("!etc reset all", ["shiftLeft"]), " — <b><u>FULLY</u> re~set <u>ALL</u></b> <b>!ETC</b> script fea~tures, re~turn~ing <b>!ETC</b> to its de~fault in~stal~la~tion state."]
+                    ]),
+                    H.Spacer(5),
+                    H.H2("!ETC Features"),
+                    H.Spacer(5),
+                    H.Paras("Learn more about each of <b>!ETC</b>'s fea~tures by click~ing the head~ings be~low:"),
+                    H.Spacer(5),
+                    H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight"], {}, {title: "Control drop shadow behavior."}),
+                    H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight"], {}, {title: "Configure pruning of empty text objects."}),
+                    H.H1("Attribute Linking", ["dim", "tight"]),
+                    H.H1("Table & Chart Styling", ["dim", "tight"]),
+                    H.H1("Timers & Calendars", ["dim", "tight"]),
+                    H.H1("Miscellaneous", ["dim", "tight"]),
+                    H.Spacer(5)
                 ]),
-                H.Spacer(5),
-                H.H2("!ETC Features"),
-                H.Spacer(5),
-                H.Paras("Learn more about each of <b>!ETC</b>'s fea~tures by click~ing the head~ings be~low:"),
-                H.Spacer(5),
-                H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight"], {}, {title: "Control drop shadow behavior."}),
-                H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight"], {}, {title: "Configure pruning of empty text objects."}),
-                H.H1("Attribute Linking", ["dim", "tight"]),
-                H.H1("Table & Chart Styling", ["dim", "tight"]),
-                H.H1("Timers & Calendars", ["dim", "tight"]),
-                H.H1("Miscellaneous", ["dim", "tight"]),
-                H.Spacer(5)
+                H.ButtonFooter("!euno", "", ["goBack"])
             ]),
-            H.ButtonFooter("!euno", "", ["goBack"])
-        ]));
+            dropShadows: H.Box([
+                H.Subtitle("Drop Shadows", ["etc"]),
+                H.Spacer(5),
+                H.Block([
+                    H.P("Add drop sha~dows to text ob~jects, ei~ther auto~ma~ti~cally (when~ever one is cre~ated) or man~u~ally via chat com~mand."),
+                    H.Paras([
+                        [H.Command("Adding/Removing", ["shiftLeft", "silver"]), " — Add/remove sha~dows from sel~ec~ted text ob~jects with a com~mand, or tog~gle on auto~ma~tic sha~dow~ing to have <b>!ETC</b> ap~ply sha~dows to all new text ob~jects."],
+                        [H.Command("Shadow Objects", ["shiftLeft", "silver"]), ` — Text sha~dows are cre~ated on the <b>${CFG.ETC.DropShadows.LAYER}</b> la~yer. Sha~dows will move when their mas~ter ob~ject moves; they will up~date their con~tent, size, font, etc. to match their mas~ter ob~ject; and they will re~move them~selves if their mas~ter ob~ject is ever re~moved.`],
+                        [H.Command("Configure Offsets", ["shiftLeft", "silver"]), " — If the pos~i~tion~ing of sha~dows for any font/size com~bin~a~tion isn't to your lik~ing, you can con~fi~gure new off~sets by chat com~mand (see be~low)."]
+                    ]),
+                    H.H2("Chat Commands", ["silver"]),
+                    H.Spacer(5),
+                    H.Paras([
+                        [H.ButtonCommand("!etc shadow add", ["shiftLeft", "silver"]), " — <u>ADD</u> sha~dows to all sel~ec~ted text ob~jects."],
+                        [H.ButtonCommand("!etc shadow clear", ["shiftLeft", "silver"]), " — <u>RE~MOVE</u> sha~dows from all sel~ec~ted text ob~jects."],
+                        [H.ButtonCommand("!etc shadow clear all", ["shiftLeft", "silver"]), " — <u>RE~MOVE</u> sha~dows from <b><u>ALL</u></b> text ob~jects."],
+                        [H.ButtonCommand("!etc shadow hide", ["shiftLeft", "silver"]), " — <u>HIDE</u> all text sha~dows (by temp~o~ra~r~ily re~mov~ing them)."],
+                        [H.ButtonCommand("!etc shadow show", ["shiftLeft", "silver"]), " — <u>SHOW</u> all hid~den text sha~dows."],
+                        [H.ButtonCommand("!etc shadow fix", ["shiftLeft", "silver"]), " — Ver~i~fy and cor~rect pre~sence and pos~i~tions of text sha~dows."]
+                    ]),
+                    H.Spacer(5),
+                    H.H2("Automation", ["silver"]),
+                    H.Spacer(5),
+                    H.ButtonToggle(
+                        [
+                            "Auto-Shadow",
+                            "Whe~ther sha~dows are auto~ma~ti~cally ap~plied to new text ob~jects upon cre~a~tion."
+                        ],
+                        `!etc toggle autoshadow ${STA.TE.isAutoShadowing ? "false" : "true"} feature`,
+                        [`toggle${STA.TE.isAutoShadowing ? "On" : "Off"}`, "silver"],
+                        {},
+                        {title: `Click to ${STA.TE.isAutoShadowing ? "DEACTIVATE" : "ACTIVATE"} automatic text shadows for all text objects.`}
+                    ),
+                    H.Spacer(5)
+                ], ["silver"]),
+                H.ButtonFooter("!etc", "", ["silver", "goBack"])
+            ], ["silver"]),
+            textPruning: H.Box([
+                H.Subtitle("Empty Text Pruning", ["etc"]),
+                H.Block([
+                    H.P("Ever notice that, when you click off of a text object, Roll20 goes and creates another text object wherever you clicked? If you then click elsewhere without typing anything, that empty and invisible text object remains (potentially interfering with box-selecting objects, among other vexations). Empty Text Pruning addresses this issue by removing empty text objects, either automatically or by chat command."),
+                    H.H2("Chat Commands", ["silver"]),
+                    H.Spacer(5),
+                    H.Paras([
+                        [H.ButtonCommand("!etc prune all", ["shiftLeft", "silver"]), " — <u>REMOVE</u> all empty (invisible) text objects from the sandbox."]
+                    ]),
+                    H.H2("Automation", ["silver"]),
+                    H.Spacer(5),
+                    H.ButtonToggle(
+                        [
+                            "Auto-Prune",
+                            "Whe~ther empty (in~vi~sible) text ob~jects are auto~ma~ti~cally re~moved from the sand~box."
+                        ],
+                        `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"} feature`,
+                        [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "silver"],
+                        {},
+                        {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`}
+                    ),
+                    H.Spacer(5)
+                ], ["silver"]),
+                H.ButtonFooter("!etc", "", ["goBack", "silver"])
+            ], ["silver"])
+        }[helpKey]);
     };
     const displayToggles = () => {
         U.Alert(H.Box([
@@ -451,8 +536,8 @@ const ETC = (() => {
                     H.H2("Restoring ...", ["silver"]),
                     H.Paras([
                         "To re~move a text sha~dow from a text ob~ject:",
-                        [H.ButtonCommand("!etc clear", ["shiftLeft", "silver"]), " — Re~moves text sha~dows from all sel~ected text ob~jects <i>(you can sel~ect ei~ther the mas~ter ob~ject, the sha~dow ob~ject, or both)</i>"],
-                        [H.ButtonCommand("!etc clear all", ["shiftLeft", "silver"]), " — Re~move <b><u>ALL</u></b> text sha~dow ob~jects <i>(this will not af~fect the mas~ter text ob~jects, just re~move the sha~dows)</i>"]
+                        [H.ButtonCommand("!etc shadow clear", ["shiftLeft", "silver"]), " — Re~moves text sha~dows from all sel~ected text ob~jects <i>(you can sel~ect ei~ther the mas~ter ob~ject, the sha~dow ob~ject, or both)</i>"],
+                        [H.ButtonCommand("!etc shadow clear all", ["shiftLeft", "silver"]), " — Re~move <b><u>ALL</u></b> text sha~dow ob~jects <i>(this will not af~fect the mas~ter text ob~jects, just re~move the sha~dows)</i>"]
                     ])
                 ], ["silver"]),
                 H.Footer(null, ["silver"])
