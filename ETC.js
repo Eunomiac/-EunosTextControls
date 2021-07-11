@@ -8,61 +8,49 @@ void MarkStart("ETC");
 \******▌████████████████████████████████████████████████████████████▐******/
 
 const ETC = (() => {
-    // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
+    // #region █████[ FRONT ]█████ Boilerplate Namespacing & Initialization
+    // #region ░░░░░░░[Namespacing]░░░░ Basic References & Namespacing ░░░░░░
 
-    // #region ========== Namespacing: Basic State References & Namespacing ===========
     const SCRIPTNAME = "ETC";
-    const DEFAULTSTATE = {/* initial values for state storage, if any */
-        REGISTRY: {},
-        isAutoShadowing: false,
-        isAutoPruning: false
-    };
-
-    const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
+    const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
     const RE = {get G() { return STA.TE.REGISTRY }};
-    // #endregion _______ Namespacing _______
 
-    // #region ========== Initialization: Script Startup & Event Listeners ===========
+    // #endregion ░░░░[Namespacing]░░░░
+    // #region ░░░░░░░[Initialization]░░░░ Script Startup & Event Listeners ░░░░░░
 
-    // Define shorthand references to major script components. ↴⇘⇊↷↲⇂⇲◢◿
-    const {C} = EunoCORE;
-    let CFG, LIB, U, O, H, Flag; // these have to be declared now, but must wait for intialization to be assigned  \\
-    const InitState = (isResettingState = false) => {
-        // Reset script state entry, if specified
-        if (isResettingState) { delete EunoCORE.ROOT[SCRIPTNAME] }                                                               //
+    // Define shorthand references to major script components.
+    const {CFG, C} = EunoCORE;
+    let LIB, U, O, H, Flag; // these have to be declared now, but must wait for intialization to be assigned  \\
+    const Preinitialize = () => {
+        // Initialize local state storage
+        EunoCORE.InitState(SCRIPTNAME, {
+            REGISTRY: {},
+            isAutoShadowing: false,
+            isAutoPruning: false
+        });
 
-        // Initialize script state entry with default values where needed                                                      //
-        Object.entries(DEFAULTSTATE)
-            .filter(([key]) => !(key in STA.TE))                                                                             //
-            .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
-    };
-    const Preinitialize = () => {                                                                  //
-        InitState();
-
-        // Confirm Initialization
-        EunoCORE.ConfirmPreinitialization(SCRIPTNAME);
+        // Report preinitialization complete to EunoCORE loader
+        EunoCORE.ConfirmReady(SCRIPTNAME);
     };                                                                                                                     //
-    const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-        ({CFG, LIB, U, O, H} = EunoCORE); // Assign shorthand script references                                    ◀======
+    const Initialize = () => {
+        // Assign shorthand script references
+        ({LIB, U, O, H} = EunoCORE); //                                    ◀======
+
+        // Assign mappings of library functions for script-specific behavior
         Flag = (message) => U.Flag(message, 2, ["etc", "silver"]);
 
-        // Reset script state entry, if specified
-        if (isResettingState) { Preinitialize(true) }
+        // Register event handlers
+        on("chat:message", handleMessage);
+        on("change:text", handleTextChange);
+        on("add:text", handleTextAdd);
+        on("destroy:text", handleTextDestroy);
 
-        // Register event handlers, if specified
-        if (isRegisteringEventListeners) {
-            on("chat:message", handleMessage);
-            on("change:text", handleTextChange);
-            on("add:text", handleTextAdd);
-            on("destroy:text", handleTextDestroy);
-        }
-
-        // Report readiness to EunoLIB loader
-        LIB.ConfirmInitialization(SCRIPTNAME);
+        // Report initialization complete to EunoCORE loader
+        EunoCORE.ConfirmReady(SCRIPTNAME, `${SCRIPTNAME} Ready`, 1);
     };
-    // #endregion _______ Initialization _______
 
-    // #region ========== Events: Event Handlers ===========
+    // #endregion ░░░░[Initialization]░░░░
+    // #region ░░░░░░░[Event Handlers]░░░░ chat:message, change:text, add:text, destroy:text ░░░░░░
     const handleMessage = (msg) => {
         if (U.CheckMessage(msg, "!etc")) {
             let {call, args, selected} = U.ParseMessage(msg, ["text"]);
@@ -85,16 +73,18 @@ const ETC = (() => {
                 prune: () => { pruneText(args.includes("all") ? ["all"] : selected.text) },
                 help: () => ({
                     shadow: () => displayHelp("dropShadows"),
-                    prune: () => displayHelp("textPruning")
+                    prune: () => displayHelp("textPruning"),
+                    offsets: () => U.Show(getOffsets("Montserrat", 100))
                 }[U.LCase(call = args.shift())])(),
                 reset: () => ({
-                    all: () => InitState(true),
+                    all: () => EunoCORE.InitState(true),
                     reg: () => STA.TE.REGISTRY = {}
                 }[U.LCase(call = args.shift())])()
             }[U.LCase(call = args.shift())])();
             } catch { displayHelp("etc") }
         };
     };
+
     const handleTextChange = (textObj) => {
         if (textObj.id in RE.G) {
             const [masterObj, shadowObj] = [
@@ -106,6 +96,7 @@ const ETC = (() => {
             }
         }
     };
+
     const handleTextAdd = (textObj) => {
         setTimeout(() => { // The delay is necessary to ensure the new object fully updates.
             if (!(STA.TE.isAutoPruning && pruneText(textObj, true))) {
@@ -115,6 +106,7 @@ const ETC = (() => {
             }
         }, 500);
     };
+
     const handleTextDestroy = (textObj) => {
         if (textObj.id in RE.G) {
             if (isShadowObj(textObj)) {
@@ -128,7 +120,8 @@ const ETC = (() => {
             }
         }
     };
-    // #endregion _______ Events _______
+    // #endregion ░░░░[Event Handlers]░░░░
+    // #endregion ▄▄▄▄FRONT▄▄▄▄
 
     // #region *** *** UTILITY *** ***
 
@@ -403,10 +396,10 @@ const ETC = (() => {
                     H.P("<b>!ETC</b> is in~ten~ded to be a com~pre~hen~sive so~lu~tion to man~ag~ing Roll20 Text Ob~jects."),
                     H.H2("!ETC Chat Commands"),
                     H.Spacer(5),
-                    H.Paras([
-                        [H.ButtonCommand("!etc", ["shiftLeft"]), " — View this help mes~sage."],
-                        [H.ButtonCommand("!etc setup", ["shiftLeft"]), " — Ac~ti~vate or de~ac~ti~vate any of the fea~tures in this script pack~age."],
-                        [H.ButtonCommand("!etc reset all", ["shiftLeft"]), " — <b><u>FULLY</u> re~set <u>ALL</u></b> <b>!ETC</b> script fea~tures, re~turn~ing <b>!ETC</b> to its de~fault in~stal~la~tion state."]
+                    H.Paras([ // ↪
+                        [H.ButtonCommand("!etc", ["shiftLeft"]), " ↪ View this help mes~sage."],
+                        [H.ButtonCommand("!etc setup", ["shiftLeft"]), " ↪ Ac~ti~vate or de~ac~ti~vate any of the fea~tures in this script pack~age."],
+                        [H.ButtonCommand("!etc reset all", ["shiftLeft"]), " ↪ <b><u>FULLY</u> re~set <u>ALL</u></b> <b>!ETC</b> script fea~tures, re~turn~ing <b>!ETC</b> to its de~fault in~stal~la~tion state."]
                     ]),
                     H.Spacer(5),
                     H.H2("!ETC Features"),
@@ -429,19 +422,19 @@ const ETC = (() => {
                 H.Block([
                     H.P("Add drop sha~dows to text ob~jects, ei~ther auto~ma~ti~cally (when~ever one is cre~ated) or man~u~ally via chat com~mand."),
                     H.Paras([
-                        [H.Command("Adding/Removing", ["shiftLeft", "silver"]), " — Add/remove sha~dows from sel~ec~ted text ob~jects with a com~mand, or tog~gle on auto~ma~tic sha~dow~ing to have <b>!ETC</b> ap~ply sha~dows to all new text ob~jects."],
-                        [H.Command("Shadow Objects", ["shiftLeft", "silver"]), ` — Text sha~dows are cre~ated on the <b>${CFG.ETC.DropShadows.LAYER}</b> la~yer. Sha~dows will move when their mas~ter ob~ject moves; they will up~date their con~tent, size, font, etc. to match their mas~ter ob~ject; and they will re~move them~selves if their mas~ter ob~ject is ever re~moved.`],
-                        [H.Command("Configure Offsets", ["shiftLeft", "silver"]), " — If the pos~i~tion~ing of sha~dows for any font/size com~bin~a~tion isn't to your lik~ing, you can con~fi~gure new off~sets by chat com~mand (see be~low)."]
+                        [H.Command("Adding/Removing", ["shiftLeft", "silver"]), " ↪ Add/remove sha~dows from sel~ec~ted text ob~jects with a com~mand, or tog~gle on auto~ma~tic sha~dow~ing to have <b>!ETC</b> ap~ply sha~dows to all new text ob~jects."],
+                        [H.Command("Shadow Objects", ["shiftLeft", "silver"]), ` ↪ Text sha~dows are cre~ated on the <b>${CFG.ETC.DropShadows.LAYER}</b> la~yer. Sha~dows will move when their mas~ter ob~ject moves; they will up~date their con~tent, size, font, etc. to match their mas~ter ob~ject; and they will re~move them~selves if their mas~ter ob~ject is ever re~moved.`],
+                        [H.Command("Configure Offsets", ["shiftLeft", "silver"]), " ↪ If the pos~i~tion~ing of sha~dows for any font/size com~bin~a~tion isn't to your lik~ing, you can con~fi~gure new off~sets by chat com~mand (see be~low)."]
                     ]),
                     H.H2("Chat Commands", ["silver"]),
                     H.Spacer(5),
                     H.Paras([
-                        [H.ButtonCommand("!etc shadow add", ["shiftLeft", "silver"]), " — <u>ADD</u> sha~dows to all sel~ec~ted text ob~jects."],
-                        [H.ButtonCommand("!etc shadow clear", ["shiftLeft", "silver"]), " — <u>RE~MOVE</u> sha~dows from all sel~ec~ted text ob~jects."],
-                        [H.ButtonCommand("!etc shadow clear all", ["shiftLeft", "silver"]), " — <u>RE~MOVE</u> sha~dows from <b><u>ALL</u></b> text ob~jects."],
-                        [H.ButtonCommand("!etc shadow hide", ["shiftLeft", "silver"]), " — <u>HIDE</u> all text sha~dows (by temp~o~ra~r~ily re~mov~ing them)."],
-                        [H.ButtonCommand("!etc shadow show", ["shiftLeft", "silver"]), " — <u>SHOW</u> all hid~den text sha~dows."],
-                        [H.ButtonCommand("!etc shadow fix", ["shiftLeft", "silver"]), " — Ver~i~fy and cor~rect pre~sence and pos~i~tions of text sha~dows."]
+                        [H.ButtonCommand("!etc shadow add", ["shiftLeft", "silver"]), " ↪ <u>ADD</u> sha~dows to all sel~ec~ted text ob~jects."],
+                        [H.ButtonCommand("!etc shadow clear", ["shiftLeft", "silver"]), " ↪ <u>RE~MOVE</u> sha~dows from all sel~ec~ted text ob~jects."],
+                        [H.ButtonCommand("!etc shadow clear all", ["shiftLeft", "silver"]), " ↪ <u>RE~MOVE</u> sha~dows from <b><u>ALL</u></b> text ob~jects."],
+                        [H.ButtonCommand("!etc shadow hide", ["shiftLeft", "silver"]), " ↪ <u>HIDE</u> all text sha~dows."],
+                        [H.ButtonCommand("!etc shadow show", ["shiftLeft", "silver"]), " ↪ <u>SHOW</u> all hid~den text sha~dows."],
+                        [H.ButtonCommand("!etc shadow fix", ["shiftLeft", "silver"]), " ↪ Ver~i~fy and cor~rect pre~sence and pos~i~tions of text sha~dows."]
                     ]),
                     H.Spacer(5),
                     H.H2("Automation", ["silver"]),
@@ -467,7 +460,7 @@ const ETC = (() => {
                     H.H2("Chat Commands", ["silver"]),
                     H.Spacer(5),
                     H.Paras([
-                        [H.ButtonCommand("!etc prune all", ["shiftLeft", "silver"]), " — <u>REMOVE</u> all empty (invisible) text objects from the sandbox."]
+                        [H.ButtonCommand("!etc prune all", ["shiftLeft", "silver"]), " ↪ <u>REMOVE</u> all empty (invisible) text objects from the sandbox."]
                     ]),
                     H.H2("Automation", ["silver"]),
                     H.Spacer(5),
@@ -536,8 +529,8 @@ const ETC = (() => {
                     H.H2("Restoring ...", ["silver"]),
                     H.Paras([
                         "To re~move a text sha~dow from a text ob~ject:",
-                        [H.ButtonCommand("!etc shadow clear", ["shiftLeft", "silver"]), " — Re~moves text sha~dows from all sel~ected text ob~jects <i>(you can sel~ect ei~ther the mas~ter ob~ject, the sha~dow ob~ject, or both)</i>"],
-                        [H.ButtonCommand("!etc shadow clear all", ["shiftLeft", "silver"]), " — Re~move <b><u>ALL</u></b> text sha~dow ob~jects <i>(this will not af~fect the mas~ter text ob~jects, just re~move the sha~dows)</i>"]
+                        [H.ButtonCommand("!etc shadow clear", ["shiftLeft", "silver"]), " ↪ Re~moves text sha~dows from all sel~ected text ob~jects <i>(you can sel~ect ei~ther the mas~ter ob~ject, the sha~dow ob~ject, or both)</i>"],
+                        [H.ButtonCommand("!etc shadow clear all", ["shiftLeft", "silver"]), " ↪ Re~move <b><u>ALL</u></b> text sha~dow ob~jects <i>(this will not af~fect the mas~ter text ob~jects, just re~move the sha~dows)</i>"]
                     ])
                 ], ["silver"]),
                 H.Footer(null, ["silver"])
