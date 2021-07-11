@@ -1209,13 +1209,13 @@ const EunoLIB = (/** @lends EunoLIB */ () => {
                     background-image: url('${C.GetImgURL("h1FlagGold")}');
                 }
                 h1.dim {background-image: url('${C.GetImgURL("h1GoldDim")}')}
-                h1.dim.tight {background-image: url('${C.GetImgURL("h1GoldDimTight")}')}
+                h1.dim.tight {background-image: url('${C.GetImgURL("h1GoldTightDim")}')}
                 h1.silver {background-image: url('${C.GetImgURL("h1Silver")}')}
                 h1.silver.dim {background-image: url('${C.GetImgURL("h1SilverDim")}')}
-                h1.silver.dim.tight {background-image: url('${C.GetImgURL("h1SilverDimTight")}')}
+                h1.silver.dim.tight {background-image: url('${C.GetImgURL("h1SilverTightDim")}')}
                 h1.bronze {background-image: url('${C.GetImgURL("h1Bronze")}')}
                 h1.bronze.dim {background-image: url('${C.GetImgURL("h1BronzeDim")}')}
-                h1.bronze.dim.tight {background-image: url('${C.GetImgURL("h1BronzeDimTight")}')}
+                h1.bronze.dim.tight {background-image: url('${C.GetImgURL("h1BronzeTightDim")}')}
                 h1.flag.silver {background-image: url('${C.GetImgURL("h1FlagSilver")}')}
                 h1.flag.bronze {background-image: url('${C.GetImgURL("h1FlagBronze")}')}
                 h1.tight {
@@ -1229,13 +1229,13 @@ const EunoLIB = (/** @lends EunoLIB */ () => {
                     background-image: url('${C.GetImgURL("h2FlagGold")}');
                 }
                 h2.dim {background-image: url('${C.GetImgURL("h2GoldDim")}')}
-                h2.dim.tight {background-image: url('${C.GetImgURL("h2GoldDimTight")}')}
+                h2.dim.tight {background-image: url('${C.GetImgURL("h2GoldTightDim")}')}
                 h2.silver {background-image: url('${C.GetImgURL("h2Silver")}')}
                 h2.silver.dim {background-image: url('${C.GetImgURL("h2SilverDim")}')}
-                h2.silver.dim.tight {background-image: url('${C.GetImgURL("h2SilverDimTight")}')}
+                h2.silver.dim.tight {background-image: url('${C.GetImgURL("h2SilverTightDim")}')}
                 h2.bronze {background-image: url('${C.GetImgURL("h2Bronze")}')}
                 h2.bronze.dim {background-image: url('${C.GetImgURL("h2BronzeDim")}')}
-                h2.bronze.dim.tight {background-image: url('${C.GetImgURL("h2BronzeDimTight")}')}
+                h2.bronze.dim.tight {background-image: url('${C.GetImgURL("h2BronzeTightDim")}')}
                 h2.flag.silver {background-image: url('${C.GetImgURL("h2FlagSilver")}')}
                 h2.flag.bronze {background-image: url('${C.GetImgURL("h2FlagBronze")}')}
                 .commandHighlight {
