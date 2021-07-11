@@ -6,7 +6,8 @@ log("Starting!");
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
-// #region ████████ EunoCORE: Functionality Required before Initialization ████████
+/** #region ████████ EunoCORE: Functionality Required before Initialization ████████
+ * @namespace */
 const EunoCORE = {
     // NAMESPACING: Namespace under global state variables
     ROOTNAME: "EunoScripts",
@@ -16,15 +17,28 @@ const EunoCORE = {
         return state[EunoCORE.ROOTNAME];
     },
     // Returns script state namespace for specified EunoScript
-    getSTATE: (scriptName) => {
+    GetLocalSTATE: (scriptName) => {
         EunoCORE.ROOT[scriptName] = EunoCORE.ROOT[scriptName] || {};
         return EunoCORE.ROOT[scriptName];
+    },
+    // Clears local state storage for specified EunoScript (prompting reinitialization with defaults)
+    DeleteLocalSTATE: (scriptName) => delete EunoCORE.ROOT[scriptName],
+    // Initializes local state storage for specified EunoScript with default values, if any
+    InitState: (scriptName, DEFAULTSTATE = {}, isResettingState = false) => {
+        if (scriptName in EunoCORE.SCRIPTS) {
+            // Reset script state entry, if specified
+            if (isResettingState) { delete EunoCORE.ROOT[scriptName] }
+
+            // Initialize script state entry with default values where needed
+            EunoCORE.ROOT[scriptName] = EunoCORE.ROOT[scriptName] || {};                                                     //
+            Object.entries(DEFAULTSTATE)
+                .filter(([key]) => !(key in EunoCORE.ROOT[scriptName]))                                                                             //
+                .forEach(([key, defaultVal]) => { EunoCORE.ROOT[scriptName][key] = defaultVal });
+        }
     },
 
     // SCRIPT REGISTRATION: Installed scripts register themselves in EunoCORE
     _scripts: {},
-    _preInitLog: {},
-    _initLog: {},
     regSCRIPT: (name, script) => { EunoCORE._scripts[name] = script },
     get SCRIPTS() { return EunoCORE._scripts },
     get scriptsToPreinitialize() { return _.pick(EunoCORE._scripts, (script) => "Preinitialize" in script) },
@@ -35,43 +49,52 @@ const EunoCORE = {
     UpdateNamespace: () => { return true },
 
     // SCRIPT INITIALIZATION:
-    PreinitializeAll: () => {
-        // Verify EunoCONFIG.js is installed
-        try { EunoCONFIG } catch { throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?" }
+    _initSteps: ["Preinitialize", "Initialize", "PostInitialize"],
+    InitStep: false,
+    initializationLog: {},
+    INITIALIZE: () => {
+        if (EunoCORE._initSteps.length) {
+            EunoCORE.InitStep = EunoCORE._initSteps.shift();
+            const scripts = EunoCORE[`scriptsTo${EunoCORE.InitStep}`];
 
-        // List scripts to pre/initialize
-        Object.assign(EunoCORE._preInitLog, EunoCORE.scriptsToPreinitialize);
-        Object.assign(EunoCORE._initLog, EunoCORE.scriptsToInitialize);
+            // Before Processing Each Script:
+            switch (EunoCORE.InitStep) {
+                case "Preinitialize": {
+                    // Verify EunoCONFIG.js is installed
+                    try { EunoCONFIG } catch { throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?" }
+                    break;
+                }
+                case "Initialize": {
+                    // EunoCORE.U.Show(scripts);
+                    // EunoCORE.U.Flag("EunoCONFIG Ready"); log("[Euno] EunoCONFIG Ready");
+                    break;
+                }
+                // no default
+            }
 
-        // Preinitialize scripts
-        Object.values(EunoCORE.scriptsToPreinitialize).forEach((script) => script.Preinitialize());
+            if (Object.values(scripts).length) {
+                // Log scripts to initialization log, for later confirmation of step completion
+                EunoCORE.initializationLog = {...scripts};
+                // Process each script through next initialization step
+                Object.values(scripts).forEach((script, i) => {
+                    script[EunoCORE.InitStep]();
+                });
+            }
+            return false;
+        } else {
+            EunoCORE.U.Flag("Initialization Complete!", 1);
+        }
+        // Initialization Complete!
+        return true;
     },
-    ConfirmPreinitialization: (scriptName) => {
-        EunoCORE._preInitLog[scriptName] = true;
-        if (Object.values(EunoCORE._preInitLog).every((scriptStatus) => scriptStatus === true)) {
-            // Report readiness of EunoCONFIG (verified in Preinitialize)
-            EunoLIB.UTILITIES.Flag("EunoCONFIG Ready");
-            log("[Euno] EunoCONFIG Ready");
-            EunoCORE.InitializeAll();
+    ConfirmReady: (scriptName) => {
+        // Scripts confirm init steps completed via this function.
+        EunoCORE.initializationLog[scriptName] = true;
+        if (Object.values(EunoCORE.initializationLog).every((scriptStatus) => scriptStatus === true)) {
+            // If all scripts have confirmed step completion, move to next step.
+            EunoCORE.INITIALIZE();
         }
     },
-
-    InitializeAll: () => Object.values(EunoCORE.scriptsToInitialize).forEach((script) => script.Initialize(true)),
-    ConfirmInitialization: (scriptName, {name, hLevel = 1, classes = []} = {}) => {
-        EunoCORE._initLog[scriptName] = true;
-        EunoLIB.UTILITIES.Flag(`${name || scriptName} Ready`, hLevel, classes);
-        log(`[Euno] ${name || scriptName} Ready`);
-        if (Object.values(EunoCORE._initLog).every((scriptStatus) => scriptStatus === true)) {
-            EunoCORE.PostInitializeAll();
-        }
-    },
-
-    PostInitializeAll: () => {
-        EunoLIB.UTILITIES.Flag("EunoScripts Initialized!");
-        log("[Euno] EunoScripts Initialized!");
-        Object.values(EunoCORE.scriptsToPostInitialize).forEach((script) => script.PostInitialize());
-    },
-
     // PRE-DEFINED UTILITY FUNCTIONS: EunoLIB.UTILITY functions that must be defined before initialization
     GetType: (val) => {
         const TYPES = [
@@ -167,6 +190,10 @@ const EunoCORE = {
             gold: "#FFD700",
             palegold: "#FFE775",
 
+            // Silver
+            silver: "silver",
+            palesilver: "#FFFFFF",
+
             // Bronze
             bronze: "#CD7F32",
             palebronze: "#E6BF99"
@@ -174,61 +201,82 @@ const EunoCORE = {
         // #endregion ░░░░[COLORS]░░░░
 
         // #region ░░░░░░░[IMAGES]░░░░ Image Source URLs ░░░░░░
-        IMGROOT: "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images",
-        IMAGES: {
-            titleMain: ["bookends", "titleMain.png", [283, 208] ],
-            titleMainButtons: ["bookends", "titleMainButtons.png", [283, 208] ],
-            titleETC: ["bookends", "titleETC.png", [283, 142] ],
-            subtitleGold: ["bookends", "subtitleGold.png", [283, 60] ],
-            subtitleSilver: ["bookends", "subtitleSilver.png", [283, 60] ],
-            subtitleBronze: ["bookends", "subtitleBronze.png", [283, 60] ],
-            subtitleSilverETC: ["bookends", "subtitleSilverETC.png", [283, 60] ],
-            subtitleBronzeETC: ["bookends", "subtitleBronzeETC.png", [283, 60] ],
-            bgChatGold: ["backgrounds", "chatBGGold.jpg", [283, 563] ],
-            bgChatSilver: ["backgrounds", "chatBGSilver.jpg", [283, 563] ],
-            bgChatBronze: ["backgrounds", "chatBGBronze.jpg", [283, 563] ],
-            footerGold: ["bookends", "footerGold.png", [283, 37] ],
-            footerSilver: ["bookends", "footerSilver.png", [283, 37] ],
-            footerBronze: ["bookends", "footerBronze.png", [283, 37] ],
-            footerGoBackGold: ["bookends", "footerGoBackGold.png", [283, 37] ],
-            footerGoBackSilver: ["bookends", "footerGoBackSilver.png", [283, 37] ],
-            footerGoBackBronze: ["bookends", "footerGoBackBronze.png", [283, 37] ],
-            footerHideIntroGold: ["bookends", "footerHideIntroGold.png", [283, 37] ],
-            buttonDownload: ["buttons", "buttonDownload.png", [50, 50] ],
-            buttonChat: ["buttons", "buttonChat.png", [50, 50] ],
-            buttonBug: ["buttons", "buttonBug.png", [50, 50] ],
-            h1Gold: ["emphasis", "h1Gold.png", [283, 40]],
-            h1Silver: ["emphasis", "h1Silver.png", [283, 40]],
-            h1Bronze: ["emphasis", "h1Bronze.png", [283, 40]],
-            h1GoldDim: ["emphasis", "h1GoldDim.png", [283, 40]],
-            h1SilverDim: ["emphasis", "h1SilverDim.png", [283, 40]],
-            h1BronzeDim: ["emphasis", "h1BronzeDim.png", [283, 40]],
-            h1FlagGold: ["emphasis", "h1FlagGold.png", [283, 40]],
-            h1FlagSilver: ["emphasis", "h1FlagSilver.png", [283, 40]],
-            h2Gold: ["emphasis", "h2Gold.png", [283, 37]],
-            h2Silver: ["emphasis", "h2Silver.png", [283, 37]],
-            h2Bronze: ["emphasis", "h2Bronze.png", [283, 37]],
-            h2GoldDim: ["emphasis", "h2GoldDim.png", [283, 37]],
-            h2SilverDim: ["emphasis", "h2SilverDim.png", [283, 37]],
-            h2BronzeDim: ["emphasis", "h2BronzeDim.png", [283, 37]],
-            h2FlagGold: ["emphasis", "h2FlagGold.png", [283, 37]],
-            h2FlagSilver: ["emphasis", "h2FlagSilver.png", [283, 37]],
-            h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]],
-            commandGold: ["emphasis", "commandGold.png", [235, 37]],
-            commandSilver: ["emphasis", "commandSilver.png", [235, 37]],
-            commandBronze: ["emphasis", "commandBronze.png", [235, 37]],
-            toggleButtonOnGold: ["buttons", "toggleOnGold.png", [273, 68]],
-            toggleButtonOffGold: ["buttons", "toggleOffGold.png", [273, 68]],
-            toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [273, 68]],
-            toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [273, 68]]
-        },
-        GetImgURL: (imgKey, imgFolder) => {
+        IMAGES: (() => {
+            const IMGROOT = "https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
+            return _.mapObject({
+                titleMain: ["bookends", "headerMain.png", [283, 208] ],
+                titleMainButtons: ["bookends", "headerMainButtons.png", [283, 208] ],
+                titleETC: ["bookends", "headerETC.png", [283, 142] ],
+                subtitleGold: ["bookends", "subtitleGold.png", [283, 60] ],
+                subtitleSilver: ["bookends", "subtitleSilver.png", [283, 60] ],
+                subtitleBronze: ["bookends", "subtitleBronze.png", [283, 60] ],
+                subtitleSilverETC: ["bookends", "subtitleSilverETC.png", [283, 60] ],
+                subtitleBronzeETC: ["bookends", "subtitleBronzeETC.png", [283, 60] ],
+                bgChatGold: ["backgrounds", "bgChatGold.jpg", [283, 563] ],
+                bgChatSilver: ["backgrounds", "bgChatSilver.jpg", [283, 563] ],
+                bgChatBronze: ["backgrounds", "bgChatBronze.jpg", [283, 563] ],
+                footerGold: ["bookends", "footerGold.png", [283, 37] ],
+                footerSilver: ["bookends", "footerSilver.png", [283, 37] ],
+                footerBronze: ["bookends", "footerBronze.png", [283, 37] ],
+                footerGoBackGold: ["bookends", "footerGoBackGold.png", [283, 37] ],
+                footerGoBackSilver: ["bookends", "footerGoBackSilver.png", [283, 37] ],
+                footerGoBackBronze: ["bookends", "footerGoBackBronze.png", [283, 37] ],
+                footerHideIntroGold: ["bookends", "footerHideIntroGold.png", [283, 37] ],
+                buttonDownload: ["buttons", "buttonDownload.png", [50, 50] ],
+                buttonChat: ["buttons", "buttonChat.png", [50, 50] ],
+                buttonBug: ["buttons", "buttonBug.png", [50, 50] ],
+                h1Gold: ["emphasis", "h1Gold.png", [283, 40]],
+                h1Silver: ["emphasis", "h1Silver.png", [283, 40]],
+                h1Bronze: ["emphasis", "h1Bronze.png", [283, 40]],
+                h1GoldDim: ["emphasis", "h1GoldDim.png", [283, 40]],
+                h1SilverDim: ["emphasis", "h1SilverDim.png", [283, 40]],
+                h1BronzeDim: ["emphasis", "h1BronzeDim.png", [283, 40]],
+                h1GoldTight: ["emphasis", "h1GoldTight.png", [283, 28]],
+                h1SilverTight: ["emphasis", "h1SilverTight.png", [283, 28]],
+                h1BronzeTight: ["emphasis", "h1BronzeTight.png", [283, 28]],
+                h1GoldTightDim: ["emphasis", "h1GoldTightDim.png", [283, 28]],
+                h1SilverTightDim: ["emphasis", "h1SilverTightDim.png", [283, 28]],
+                h1BronzeTightDim: ["emphasis", "h1BronzeTightDim.png", [283, 28]],
+                h1FlagGold: ["emphasis", "h1FlagGold.png", [283, 28]],
+                h1FlagSilver: ["emphasis", "h1FlagSilver.png", [283, 28]],
+                h1FlagBronze: ["emphasis", "h1FlagBronze.png", [283, 28]],
+                h2Gold: ["emphasis", "h2Gold.png", [283, 37]],
+                h2Silver: ["emphasis", "h2Silver.png", [283, 37]],
+                h2Bronze: ["emphasis", "h2Bronze.png", [283, 37]],
+                h2GoldDim: ["emphasis", "h2GoldDim.png", [283, 37]],
+                h2SilverDim: ["emphasis", "h2SilverDim.png", [283, 37]],
+                h2BronzeDim: ["emphasis", "h2BronzeDim.png", [283, 37]],
+                h2GoldTight: ["emphasis", "h2GoldTight.png", [283, 24]],
+                h2SilverTight: ["emphasis", "h2SilverTight.png", [283, 24]],
+                h2BronzeTight: ["emphasis", "h2BronzeTight.png", [283, 24]],
+                h2GoldTightDim: ["emphasis", "h2GoldTightDim.png", [283, 24]],
+                h2SilverTightDim: ["emphasis", "h2SilverTightDim.png", [283, 24]],
+                h2BronzeTightDim: ["emphasis", "h2BronzeTightDim.png", [283, 24]],
+                h2FlagGold: ["emphasis", "h2FlagGold.png", [283, 28]],
+                h2FlagSilver: ["emphasis", "h2FlagSilver.png", [283, 28]],
+                h2FlagBronze: ["emphasis", "h2FlagBronze.png", [283, 28]],
+                h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]],
+                commandGold: ["emphasis", "commandGold.png", [235, 37]],
+                commandSilver: ["emphasis", "commandSilver.png", [235, 37]],
+                commandBronze: ["emphasis", "commandBronze.png", [235, 37]],
+                toggleButtonOnGold: ["buttons", "toggleOnGold.png", [273, 68]],
+                toggleButtonOffGold: ["buttons", "toggleOffGold.png", [273, 68]],
+                toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [273, 68]],
+                toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [273, 68]]
+            }, ([folder, name, [width, height]]) => ({
+                img: [IMGROOT, folder, name].join("/"),
+                height, width
+            }));
+        })(),
+        GetImgURL: (imgKey) => EunoCORE.C.IMAGES[imgKey].img,
+        GetImgSize: (imgKey) => [EunoCORE.C.IMAGES[imgKey].width, EunoCORE.C.IMAGES[imgKey].height],
+        /* GetImgUrl: (imgKey, imgFolder) => {
             if (!imgFolder && imgKey in EunoCORE.C.IMAGES) {
                 [imgFolder, imgKey] = EunoCORE.C.IMAGES[imgKey];
             }
             return [EunoCORE.C.IMGROOT, imgFolder.toLowerCase(), imgKey].join("/");
-        },
-        GetImgSize: (imgKey) => [...EunoCORE.C.IMAGES[imgKey]].pop(),
+        }, */
+        /* GetImgSize: (imgKey) => [...EunoCORE.C.IMAGES[imgKey]].pop(), */
         // #endregion ░░░░[IMAGES]░░░░
 
         // #region ░░░░░░░[ROLL20 OBJECTS]░░░░ Object Types ░░░░░░
@@ -305,61 +353,60 @@ const EunoCORE = {
 on("ready", () => {
     if (EunoCORE.UpdateNamespace()) {
         // Begin initialization of scripts.
-        EunoCORE.PreinitializeAll();
+        EunoCORE.INITIALIZE();
     } else {
         throw "[Euno] ERROR: Failure to Update 'Euno' Namespace.";
     }
 });
 
-// #region ████████ EunoLIB: Library of Script Dependencies ████████
-const EunoLIB = (() => {
+/** #region ████████ EunoLIB: Library of Script Dependencies ████████
+ * @namespace */
+const EunoLIB = (/** @lends EunoLIB */ () => {
     // #region ░░░░░░░[FRONT]░░░░ Boilerplate Namespacing & Initialization ░░░░░░
 
-    // #region ========== Namespacing: Basic State References & Namespacing ===========
+    // #region ░░░░░░░[Namespacing]░░░░ Basic References & Namespacing ░░░░░░
+
     const SCRIPTNAME = "EunoLIB";
-    const DEFAULTSTATE = {/* initial values for state storage, if any */
-        isDisplayingHelpAtStart: true
-    };
-    const RO = {get OT() { return EunoCORE.ROOT }};
-    const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
-    // #endregion _______ Namespacing _______
+    const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
+    const RE = {get G() { return STA.TE.REGISTRY }};
 
-    // #region ========== Initialization: Script Startup & Event Listeners ===========
+    // #endregion ░░░░[Namespacing]░░░░
+    // #region ░░░░░░░[Initialization]░░░░ Script Startup & Event Listeners ░░░░░░
+
+    // Define shorthand references to major script components.
     const {CFG, C} = EunoCORE;
-    let LIB, U, O, H;
+    let LIB, U, O, H; // these have to be declared now, but must wait for intialization to be assigned  \\
+    const Preinitialize = () => {
+        // Initialize local state storage
+        EunoCORE.InitState(SCRIPTNAME, {
+            isDisplayingHelpAtStart: true
+        });
 
-    const Preinitialize = (isResettingState = false) => {
-        // Reset script state entry, if specified
-        if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+        // Report preinitialization complete to EunoCORE loader
+        EunoCORE.ConfirmReady(SCRIPTNAME);
+    };                                                                                                                     //
+    const Initialize = () => {
+        // Assign shorthand script references
+        ({LIB, U, O, H} = EunoCORE); //                                    ◀======
 
-        // Initialize script state entry with default values where needed
-        Object.entries(DEFAULTSTATE)
-            .filter(([key]) => !(key in STA.TE))
-            .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+        // Register event handlers
+        on("chat:message", handleMessage);
 
-        // Define local-scope shorthand references for main script components
-        ({LIB, U, O, H} = EunoCORE);
+        // Alert readiness confirmation
+        U.Flag(`${SCRIPTNAME} Ready`, 1); log(`[Euno] ${SCRIPTNAME} Initialized`);
 
-        // Confirm Preinitialization
-        LIB.ConfirmPreinitialization(SCRIPTNAME);
-    };
-    const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-
-        // Reset script state entry, if specified
-        if (isResettingState) { Preinitialize(true) }
-
-        // Register event handlers, if specified
-        if (isRegisteringEventListeners) {
-            on("chat:message", handleMessage);
-        }
-
-        // Confirm Initialization
-        LIB.ConfirmInitialization(SCRIPTNAME);
+        // Report initialization complete to EunoCORE loader
+        EunoCORE.ConfirmReady(SCRIPTNAME);
     };
     const PostInitialize = () => {
         // Display Help message, if so configured
-        if (STA.TE.isDisplayingHelpAtStart) {H.DisplayHelp({isAutoDisplaying: true})}
+        if (STA.TE.isDisplayingHelpAtStart) { H.DisplayHelp({isAutoDisplaying: true}) }
+
+        // Report postinitialization compelete to EunoCORE loader
+        EunoCORE.ConfirmReady(SCRIPTNAME);
     };
+    // #endregion ░░░░[Initialization]░░░░
+
     // #endregion _______ Initialization _______
 
     // #region ========== Events: Event Handlers ===========
@@ -404,35 +451,28 @@ const EunoLIB = (() => {
 
         // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "UTILITIES";
-        const DEFAULTSTATE = { /* initial values for state storage, if any */ };
-        const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
+        const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
         // #endregion _______ Namespacing _______
 
         // #region ========== Initialization: Script Startup & Event Listeners ===========
-        const Preinitialize = (isResettingState = false) => {
-            // Reset script state entry, if specified
-            if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+        const Preinitialize = () => {
+            // Initialize local state storage
+            EunoCORE.InitState(SCRIPTNAME);
 
-            // Initialize script state entry with default values where needed
-            Object.entries(DEFAULTSTATE)
-                .filter(([key]) => !(key in STA.TE))
-                .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+            // Report preinitialization complete to EunoCORE loader
+            EunoCORE.ConfirmReady(SCRIPTNAME);
+        };                                                                                                                     //
+        const Initialize = () => {
+            // Register event handlers
+            on("chat:message", handleMessage);
 
-            // Confirm Preinitialization
-            LIB.ConfirmPreinitialization(SCRIPTNAME);
+            // Alert readiness confirmation
+            U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]); log(`[Euno] ${SCRIPTNAME} Initialized`);
+
+            // Report initialization complete to EunoCORE loader
+            EunoCORE.ConfirmReady(SCRIPTNAME, `EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
         };
-        const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-            // Reset script state entry, if specified
-            if (isResettingState) { Preinitialize(true) }
-
-            // Register event handlers, if specified
-            if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
-
-            // Confirm Initialization
-            LIB.ConfirmInitialization(SCRIPTNAME, {name: `EunoLIB.${SCRIPTNAME}`, hLevel: 2, classes: ["silver"]});
-
-        };
-            // #endregion _______ Initialization _______
+        // #endregion _______ Initialization _______
 
         // #endregion ░░░░[FRONT]░░░░
 
@@ -656,6 +696,19 @@ const EunoLIB = (() => {
 
         // #endregion ░░░░[Strings]░░░░
 
+        // #region ░░░░░░░[Math]░░░░ Mathematical Operations, Interpolation, Scaling ░░░░░░
+        const Interpolate = (p1, p2, q) => {
+            const [p1X, p1Y, p2X, p2Y] = [...p1, ...p2].map((num) => Float(num));
+            if (["int", "float"].includes(GetType(q[0]))) {
+                q[0] = Float(q[0]);
+                return RoundNum(((p2Y - p1Y)/(p2X - p1X))*(q[0] - p1X) + p1Y, 2);
+            } else if (["int", "float"].includes(GetType(q[1]))) {
+                q[0] = Float(q[0]);
+                return RoundNum(((p2X - p1X)/(p2Y - p1Y))*(q[1] - p1Y) + p1X, 2);
+            }
+            return false;
+        };
+        // #endregion ░░░░[Math]░░░░
         // #region ░░░░░░░[Chat]░░░░ Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
         const CheckMessage = (msg, calls, options = {isGM: true}) => U.GetType(msg) === "list"
@@ -678,15 +731,15 @@ const EunoLIB = (() => {
                 .map((arg) => arg.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1")));
             return msgData;
         };
-        const Alert = (content, title, headerLevel = 1, classes = [], options = {noarchive: true}) => { // Simple alert to the GM. Style depends on presence of content, title, or both.
+        const Alert = (content, title, headerLevel = 1, classes = [], options = {noarchive: true}) => { // Simple alert to the GM. Style depends on presence of content, title, or botEunoCORE.H.
             if (content !== false && (content || title)) {
                 if (title) {
                     if (content === null) {
-                        sendChat(randStr(), `/w gm ${H.Box(H.Block(H[`H${headerLevel}`](title, classes), [], {padding: 0}), [], {"min-height": "auto", "border": "none"})}`, null, options);
+                        sendChat(randStr(), `/w gm ${EunoCORE.H.Box(EunoCORE.H.Block(EunoCORE.H[`H${headerLevel}`](title, classes), [], {padding: 0}), [], {"min-height": "auto", "border": "none"})}`, null, options);
                     } else {
-                        sendChat(randStr(), `/w gm ${H.Box(H.Block([
-                            H[`H${headerLevel}`](title, classes),
-                            H.Block(content)
+                        sendChat(randStr(), `/w gm ${EunoCORE.H.Box(EunoCORE.H.Block([
+                            EunoCORE.H[`H${headerLevel}`](title, classes),
+                            EunoCORE.H.Block(content)
                         ]))}`, null, options);
                     }
                 } else {
@@ -701,7 +754,7 @@ const EunoLIB = (() => {
                 Alert(content, null, undefined, undefined, options);
             }
         };
-        const Show = (obj, title = "Showing ...") => Alert(H.Box(H.Block([H.H1(title, ["tight"], {"margin-top": "0px"}), H.Block(JC(obj), [], {width: "283px", "margin": "0 0 0 -7px", "padding": "0", "outline": "2px solid black"})]))); // Show properties of stringified object to GM.
+        const Show = (obj, title = "Showing ...") => Alert(EunoCORE.H.Box(EunoCORE.H.Block([EunoCORE.H.H1(title, ["tight"], {"margin-top": "0px"}), EunoCORE.H.Block(JC(obj), [], {width: "283px", "margin": "0 0 0 -7px", "padding": "0", "outline": "2px solid black"})]))); // Show properties of stringified object to GM.
         const Flag = (msg, headerLevel = 1, classes = []) => Alert(null, msg, headerLevel, ["flag", ...classes]); // Simple one-line chat flag sent to the GM.
         // #endregion ░░░░[Chat]░░░░
 
@@ -749,6 +802,9 @@ const EunoLIB = (() => {
             // [Strings: RegExp]
             Ext,
 
+            // [Math]
+            Interpolate,
+
             // [Chat]
             CheckMessage, ParseMessage,
             Alert, Direct, Show, Flag,
@@ -764,32 +820,26 @@ const EunoLIB = (() => {
 
         // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "OBJECTS";
-        const DEFAULTSTATE = { /* initial values for state storage, if any */ };
-        const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
+        const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
         // #endregion _______ Namespacing _______
 
         // #region ========== Initialization: Script Startup & Event Listeners ===========
-        const Preinitialize = (isResettingState = false) => {
-            // Reset script state entry, if specified
-            if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+        const Preinitialize = () => {
+            // Initialize local state storage
+            EunoCORE.InitState(SCRIPTNAME);
 
-            // Initialize script state entry with default values where needed
-            Object.entries(DEFAULTSTATE)
-                .filter(([key]) => !(key in STA.TE))
-                .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+            // Report preinitialization complete to EunoCORE loader
+            EunoCORE.ConfirmReady(SCRIPTNAME);
+        };                                                                                                                     //
+        const Initialize = () => {
+            // Register event handlers
+            on("chat:message", handleMessage);
 
-            // Confirm Preinitialization
-            LIB.ConfirmPreinitialization(SCRIPTNAME);
-        };
-        const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-            // Reset script state entry, if specified
-            if (isResettingState) { Preinitialize(true) }
+            // Alert readiness confirmation
+            U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]); log(`[Euno] ${SCRIPTNAME} Initialized`);
 
-            // Register event handlers, if specified
-            if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
-
-            // Confirm Initialization
-            LIB.ConfirmInitialization(SCRIPTNAME, {name: `EunoLIB.${SCRIPTNAME}`, hLevel: 2, classes: ["silver"]});
+            // Report initialization complete to EunoCORE loader
+            EunoCORE.ConfirmReady(SCRIPTNAME);
         };
         // #endregion _______ Initialization _______
 
@@ -925,32 +975,26 @@ const EunoLIB = (() => {
 
         // #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "HTML";
-        const DEFAULTSTATE = {/* initial values for state storage, if any */};
-        const STA = {get TE() { return EunoCORE.getSTATE(SCRIPTNAME) }};
+        const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
         // #endregion _______ Namespacing _______
 
         // #region ========== Initialization: Script Startup & Event Listeners ===========
-        const Preinitialize = (isResettingState = false) => {
-            // Reset script state entry, if specified
-            if (isResettingState) { delete RO.OT[SCRIPTNAME] }
+        const Preinitialize = () => {
+            // Initialize local state storage
+            EunoCORE.InitState(SCRIPTNAME);
 
-            // Initialize script state entry with default values where needed
-            Object.entries(DEFAULTSTATE)
-                .filter(([key]) => !(key in STA.TE))
-                .forEach(([key, defaultVal]) => { STA.TE[key] = defaultVal });
+            // Report preinitialization complete to EunoCORE loader
+            EunoCORE.ConfirmReady(SCRIPTNAME);
+        };                                                                                                                     //
+        const Initialize = () => {
+            // Register event handlers
+            on("chat:message", handleMessage);
 
-            // Confirm Preinitialization
-            LIB.ConfirmPreinitialization(SCRIPTNAME);
-        };
-        const Initialize = (isRegisteringEventListeners = false, isResettingState = false) => {
-            // Reset script state entry, if specified
-            if (isResettingState) { Preinitialize(true) }
+            // Alert readiness confirmation
+            U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]); log(`[Euno] ${SCRIPTNAME} Initialized`);
 
-            // Register event handlers, if specified
-            if (isRegisteringEventListeners) { /* 'on()' event handlers, if any */ }
-
-            // Confirm Initialization
-            LIB.ConfirmInitialization(SCRIPTNAME, {name: `EunoLIB.${SCRIPTNAME}`, hLevel: 2, classes: ["silver"]});
+            // Report initialization complete to EunoCORE loader
+            EunoCORE.ConfirmReady(SCRIPTNAME);
         };
         // #endregion _______ Initialization _______
 
@@ -961,13 +1005,17 @@ const EunoLIB = (() => {
             boxPosition: {
                 width: 283,
                 borderWidth: 2,
+                paddingWidth: 6,
                 shifts: {top: -27, right: 0, bottom: -6, left: -45}
             },
-            bodyFontSize: 10
+            bodyFontSize: 10,
+            blockSpacing: 10,
+            get halfSpace() { return U.RoundNum(this.blockSpacing / 2, 2) },
+            get qartSpace() { return U.RoundNum(this.blockSpacing / 4, 2) }
         };
         const CSS = Object.fromEntries([
             /* #region Base Element Styles */
-            `    div {
+            `   div {
                     display: block;
                     width: auto;
                     height: auto;
@@ -979,7 +1027,6 @@ const EunoLIB = (() => {
                     outline: none;
                     text-shadow: none;
                     box-shadow: none;
-                    overflow: hidden;
                 }
                 span {
                     display: inline-block;
@@ -995,7 +1042,7 @@ const EunoLIB = (() => {
                     display: block;
                     margin: 6px 3px;
                     font-size: ${cssVars.bodyFontSize}px;
-                    font-family: Tahoma, sans-serif;
+                    font-family: Montserrat, sans-serif;
                     line-height: ${1.5 * cssVars.bodyFontSize}px;
                     text-align: left;
                 }
@@ -1029,7 +1076,7 @@ const EunoLIB = (() => {
                     height: 43px;
                     width: ${cssVars.boxPosition.width}px;
                     margin: 20px 0 -10px -6px;
-                    font-family: Impact, sans-serif;
+                    font-family: Anton, sans-serif;
                     line-height: 28px;
                     font-size: 24px;
                     font-weight: normal;
@@ -1044,7 +1091,7 @@ const EunoLIB = (() => {
                     height: 26px;
                     width: ${cssVars.boxPosition.width}px;
                     margin: 5px 0 0px -6px;
-                    font-family: 'Trebuchet MS', sans-serif;
+                    font-family: 'Montserrat', sans-serif;
                     line-height: 23px;
                     font-size: 16px;
                     color: ${C.COLORS.black};
@@ -1055,7 +1102,7 @@ const EunoLIB = (() => {
                 h3 {
                     display: block;
                     width: 100%;
-                    font-family: 'Trebuchet MS', sans-serif;
+                    font-family: 'Montserrat', sans-serif;
                     line-height: 20px;
                     margin: 0 0 9px 0;
                     color: ${C.COLORS.gold};
@@ -1111,7 +1158,7 @@ const EunoLIB = (() => {
                     width: 100%;
                     margin: 0 0 -30px 0;
                     color: ${C.COLORS.black};
-                    font-family: Impact; sans-serif;
+                    font-family: Anton, sans-serif;
                     line-height: 36px;
                     font-size: 24px;
                     font-weight: normal;
@@ -1136,7 +1183,7 @@ const EunoLIB = (() => {
                     margin: 0 0 -30px 0;
                     padding: 17px 0 0 0;
                     color: ${C.COLORS.black};
-                    font-family: Impact; sans-serif;
+                    font-family: Anton, sans-serif;
                     line-height: 36px;
                     font-size: 24px;
                     font-weight: normal;
@@ -1157,16 +1204,20 @@ const EunoLIB = (() => {
                     text-indent: 30px;
                 }
                 h1.flag {
-                    height: 31px;
-                    line-height: 29px;
+                    height: 28px;
+                    line-height: 28px;
                     background-image: url('${C.GetImgURL("h1FlagGold")}');
                 }
                 h1.dim {background-image: url('${C.GetImgURL("h1GoldDim")}')}
+                h1.dim.tight {background-image: url('${C.GetImgURL("h1GoldDimTight")}')}
                 h1.silver {background-image: url('${C.GetImgURL("h1Silver")}')}
                 h1.silver.dim {background-image: url('${C.GetImgURL("h1SilverDim")}')}
+                h1.silver.dim.tight {background-image: url('${C.GetImgURL("h1SilverDimTight")}')}
                 h1.bronze {background-image: url('${C.GetImgURL("h1Bronze")}')}
                 h1.bronze.dim {background-image: url('${C.GetImgURL("h1BronzeDim")}')}
+                h1.bronze.dim.tight {background-image: url('${C.GetImgURL("h1BronzeDimTight")}')}
                 h1.flag.silver {background-image: url('${C.GetImgURL("h1FlagSilver")}')}
+                h1.flag.bronze {background-image: url('${C.GetImgURL("h1FlagBronze")}')}
                 h1.tight {
                     height: 28px;
                     margin-top: 2px;
@@ -1176,17 +1227,20 @@ const EunoLIB = (() => {
                     height: 24px;
                     line-height: 21px;
                     background-image: url('${C.GetImgURL("h2FlagGold")}');
-                    background-position: center -2px;
                 }
                 h2.dim {background-image: url('${C.GetImgURL("h2GoldDim")}')}
+                h2.dim.tight {background-image: url('${C.GetImgURL("h2GoldDimTight")}')}
                 h2.silver {background-image: url('${C.GetImgURL("h2Silver")}')}
                 h2.silver.dim {background-image: url('${C.GetImgURL("h2SilverDim")}')}
+                h2.silver.dim.tight {background-image: url('${C.GetImgURL("h2SilverDimTight")}')}
                 h2.bronze {background-image: url('${C.GetImgURL("h2Bronze")}')}
                 h2.bronze.dim {background-image: url('${C.GetImgURL("h2BronzeDim")}')}
+                h2.bronze.dim.tight {background-image: url('${C.GetImgURL("h2BronzeDimTight")}')}
                 h2.flag.silver {background-image: url('${C.GetImgURL("h2FlagSilver")}')}
+                h2.flag.bronze {background-image: url('${C.GetImgURL("h2FlagBronze")}')}
                 .commandHighlight {
-                    margin: 0 3px;
-                    padding: 3px 8px 0 6px;
+                    margin: 0;
+                    padding: 1px 8px 0 6px;
                     color: ${C.COLORS.black};
                     font-family: monospace;
                     font-weight: bolder;
@@ -1225,7 +1279,7 @@ const EunoLIB = (() => {
                 }
                 span.buttonDesc {
                     display: inline-block;
-                    font-family: 'Trebuchet MS';
+                    font-family: 'Montserrat';
                     font-size: 20px;
                     vertical-align: middle;
                     padding-bottom: 2px;
@@ -1271,7 +1325,7 @@ const EunoLIB = (() => {
                 div.toggleButtonTitle {
                     display: inline-block;
                     width: 185px;
-                    font-family: Impact, sans-serif;
+                    font-family: Anton, sans-serif;
                     font-weight: normal;
                     font-size: 14px;
                     color: ${C.COLORS.black};
@@ -1282,7 +1336,7 @@ const EunoLIB = (() => {
                     display: inline-block;
                     height: 40px;
                     width: 160px;
-                    font-family: 'Tahoma', sans-serif;
+                    font-family: 'Montserrat', sans-serif;
                     font-size: ${cssVars.bodyFontSize}px;
                     color: ${C.COLORS.black};
                     line-height: 14px;
@@ -1301,7 +1355,7 @@ const EunoLIB = (() => {
             /* #endregion Class Styles */
         ].join("")
             .replace(/\/\*.*?\*\//g, "") // strip CSS comments
-            .replace(/\s+/g, " ") // remove excess white space
+            .replace(/[\n\s]+/g, " ") // remove excess white space
             .replace(/("|')[a-z]+:\/\/.+?\1/gu, (url) => url.replace(/:/gu, "^")) // escape colons in url entries
             .split(/\}/) // capture selector blocks
             .map((selBlock) => selBlock.split(/\{/).map((selBlock) => (selBlock || "").trim())) // separate selector from block
@@ -1421,7 +1475,7 @@ const EunoLIB = (() => {
             ButtonH3: (command, content, classes = [], styles = {}, attributes = {}) => H.H1(H.A(content, ["button"], {}, {href: command}), ["button", ...classes], styles, attributes),
             ButtonFooter: (command, content, classes = [], styles = {}, attributes = {}) => H.Footer(H.A(content || "&nbsp;", ["button"], {}, {href: command}), classes, styles, attributes),
             Command: (command, classes = [], styles = {}, attributes = {}) => H.Span(command, ["commandHighlight", ...classes], styles, attributes),
-            ButtonCommand: (command, classes = [], styles = {}, attributes = {}) => H.Command(H.A(command, ["button"], {}, {href: command}), ["shiftLeft", ...classes], styles, attributes),
+            ButtonCommand: (command, classes = [], styles = {}, attributes = {}) => `${H.Command(H.A(command, ["button"], {}, {href: command}), ["shiftLeft", ...classes], styles, attributes)}<br>`,
             ButtonToggle: ([title, body], command, classes = [], styles = {}, attributes = {}) => H.Div([
                 H.Div(title, ["toggleButtonTitle"]),
                 H.Div(body, ["toggleButtonBody"]),
@@ -1519,15 +1573,16 @@ const EunoLIB = (() => {
             ... customElements,
 
             // [HELP MESSAGES]
-            DisplayHelp
+            DisplayHelp,
+
+            // TEMPORARY RETURN FOR CODEPEN DEBUG COMPATIBILITY
+            CSS, cssVars
         };
 
     })();
 
     return {
-        Preinitialize, Initialize,
-        ConfirmPreinitialization: EunoCORE.ConfirmPreinitialization,
-        ConfirmInitialization: EunoCORE.ConfirmInitialization,
+        Preinitialize, Initialize, PostInitialize,
 
         UTILITIES,
         OBJECTS,

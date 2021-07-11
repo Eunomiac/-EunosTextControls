@@ -72,6 +72,15 @@ const EunoCONFIG = {
                 get "Shadows Into Light"() { return this.scaleOffsets(0.5) },
                 get "Arial"() { return this.scaleOffsets([0.6, 0.6]) },
                 get "Patrick Hand"() { return this.scaleOffsets(0.75) },
+                get "Tahoma"() { return this.scaleOffsets(0.75) },
+                get "Rye"() { return this.scaleOffsets(0.9) },
+                get "IM Fell DW Pica"() { return this.scaleOffsets(0.75) },
+                get "Nunito"() { return this.scaleOffsets(0.75) },
+                get Montserrat() { return this.scaleOffsets(0.5) },
+                get Merriweather() { return this.scaleOffsets(0.75) },
+                get "Della Respira"() { return this.scaleOffsets(0.75) },
+                get "Crimson Text"() { return this.scaleOffsets(0.75) },
+                get "Kaushan Script"() { return this.scaleOffsets(0.8) },
 
                 /** ░░ OVERRIDES: DIRECT REPLACEMENT ▒▒
                  *  Alternatively, you can define specific offsets for any font/size combination.

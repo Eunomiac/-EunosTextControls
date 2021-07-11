@@ -141,9 +141,71 @@ const C = {
     }
 };
 
+
+// // #region ████████ LAYOUT: Styles Controlling Positioning & Size ████████
+// `
+// `,
+// // #endregion ▄▄▄▄▄▄▄▄ LAYOUT ▄▄▄▄▄▄▄▄
+// /* #region POSITIONING & LAYOUT */
+// /* #region POSITIONING & LAYOUT:  */
+// `   div {
+//         display: block;
+//         height: auto;
+//         width: auto;
+//         margin: 0;
+//         padding: 0;
+//     }
+//     div.box {
+//         width: ${cssVars.boxPosition.width}px;
+//         margin: ${Object.values(cssVars.boxPosition.shifts).map((shift) => `${shift}px`).join(" ")};
+//     }
+//     div.block {
+//         padding: 0 ${cssVars.paddingWidth}px;
+//     }
+
+//     h1, h2 {margin: ${cssVars.halfSpace}px 0}
+//     h3, img, p {margin: ${cssVars.qartSpace}px 0}
+
+// }
+// `,
+// /* #endregion POSITIONING & LAYOUT */
+// /* #region FORMATTING & STYLING */
+// `   .box {
+//         color: ${C.COLORS.palegold};
+//     }
+//     .box.silver {
+//         color: ${C.COLORS.palesilver};
+//     }
+//     .box.bronze: {
+//         color: ${C.COLORS.palebronze};
+//     }
+
+//     .block {
+//         color: inherit;
+//         font-size: inherit;
+//         font-weight: inherit;
+
+//     }
+
+
+// div {
+//     display: block;
+//     height: auto; width: auto;
+//     margin: 0;
+//     padding: 0;
+//     color: inherit;
+//     font-size: inh
+
+// }
+// `,
+// /* #endregion FORMATTING & STYLING */
+
 const Float = (qNum) => parseFloat(qNum) || 0;
 const Int = (qNum) => parseInt(Math.round(Float(qNum)));
-
+const RoundNum = (qNum, numDecDigits = 0) => {
+    if (Float(qNum) === Int(qNum)) { return Int(qNum) }
+    return Math.round(Float(qNum) * 10 ** Int(numDecDigits)) / 10 ** Int(numDecDigits);
+};
 const NumToRoman = (num, isUsingGroupedChars = true) => {
     num = Int(num);
     if (num > 399999) { throw `[Euno] Error: Can't Romanize '${num}' (>= 400,000)` }
@@ -224,6 +286,17 @@ const  NumToOrdinal = (num, isReturningWords = false) => {
     }
     return `${num}${["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][Int(`${num}`.charAt(`${num}`.length - 1))]}`;
 };
+const Interpolate = (p1, p2, q) => {
+    const [p1X, p1Y, p2X, p2Y] = [...p1, ...p2].map((num) => Float(num));
+    if (["int", "float"].includes(GetType(q[0]))) {
+        q[0] = Float(q[0]);
+        return RoundNum(((p2Y - p1Y)/(p2X - p1X))*(q[0] - p1X) + p1Y, 2);
+    } else if (["int", "float"].includes(GetType(q[1]))) {
+        q[0] = Float(q[0]);
+        return RoundNum(((p2X - p1X)/(p2Y - p1Y))*(q[1] - p1Y) + p1X, 2);
+    }
+    return false;
+};
 
 const testCases = [
     [13231, 2432, 12, 84332, 331911, 459, 10, 224123],
@@ -231,6 +304,12 @@ const testCases = [
     ["-63478562965647375434785624596564737543478562965647375434785629656473754347856296564737543478562965647354.4532E+2", "-63478562965647375434785624596564737543478562965647375434785629656473754347856296564737543478562965647354.4532"],
     [0, ...[3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 45, 63, 75, 93, 105, 123, 135].map((exp) => `1E+${exp}`)]
 ];
+const interTestCases = [
+    [[1, 1], [5, 5], [false, 3]],
+    [[2, 2], [5, 5], [false, 3]],
+    [[1, 3], [5, 500], [3, false]],
+    [[-2, 1], [5, 5], [false, 3]]
+];
 
-console.log(testCases[0].map((num) => [num.toString(), NumToRoman(num, true)].join(": ")));
+console.log(interTestCases.map((points) => Interpolate(...points)));
 
