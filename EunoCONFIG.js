@@ -18,9 +18,9 @@ const EunoCONFIG = {
     },
     ETC: { //    ████[!ETC]██▓▒░ Settings for !ETC: Euno's Text Controls ░▒▓█████
 
-        /** IMPORTANT: Run '!etc fix all' to update sandbox objects after changing any of these settings. */
-
         DropShadows: { // ░▒▓█[ETC: Drop Shadows]█▓▒░ Configure Text Drop Shadows ░░░░░░
+
+            /** IMPORTANT: Run '!etc shadow fix' to update sandbox objects after changing any of these settings. */
 
             COLOR: "black", /** The color of the text shadows.
                               *   - Accepts any CSS-valid single-color value (e.g. color name, hex code, rgb/a)
@@ -28,78 +28,70 @@ const EunoCONFIG = {
                               *     for a black shadow that is only 75% opaque). */
 
             LAYER: "map", /** The layer on which to place the text shadow objects.
-                            *   - Assigning shadows to the map layer keeps them from interfering with selecting or moving master objects
-                            *     on the objects layer, should you wish the master objects to be easily selectable. */
+                            *   - Assigning shadows to the map layer keeps them from interfering with selecting things on the objects layer.
+                            *   - Assigning shadows to the same layer as their master objects is possible and will work, though it's a bit
+                            *     more tedious to work on your sandbox if you have to constantly avoid selecting shadow objects */
 
             OFFSETS: {/** The number of pixels to offset each text shadow from the position of its master text object.
                         *   - If any shadows appear too close or too far from their master objects for a specific font and/or size, these
                         *     are the values you want to change.
-                        *   - The first number is the horizontal (x) shift, the second is the vertical (y) shift. */
+                        *   - When passing arrays, the first number is the horizontal (x) shift RIGHT, the second is the vertical (y) shift DOWN.
+                        *     When passing single numbers, the value applies to both axes */
 
-                /** ▓▓ OFFSET DEFAULTS ▓▓
-                 *  These default offsets are used for all text objects, unless overridden (see below).
-                 *    - Changing these values will affect all text objects that do not have a specific override. */
-                generic: {
-                    8: [1, 1],
-                    10: [2, 2],
-                    12: [2, 2],
-                    14: [2, 2],
-                    16: [2, 2],
-                    18: [2, 2],
-                    20: [2, 2],
-                    22: [2, 2],
-                    26: [2.5, 2.5],
-                    32: [3, 3],
-                    40: [3, 3],
-                    56: [5, 5],
-                    72: [7, 7],
-                    100: [8, 8],
-                    200: [16, 16],
-                    300: [16, 16]
-                },
+                /** ▓▓ OFFSET DEFAULT MULTIPLIER ▓▓
+                 *  The default offset multiplier is used for all text objects, unless overridden (see below).
+                 *  This value is multiplied by the font size to derive the pixel offset of the shadow beneath, along both axes.
+                 *    - Changing these values will affect all text objects that do not have specific overrides set. */
+
+                defaultMults: [0.08, 0.08],
 
                 /** ▓▓ OFFSET OVERRIDES ▓▓
-                 *  You can correct the offsets for specific font and size combinations in one of two ways: by applying a multiplier to
-                 *  the default offsets above, or by replacing specific offsets directly.
-                 *    - You CANNOT use both methods for the same font family.
-                 *    - Supported sandbox fonts are: "Arial", "Candal", "Contrail One", "Patrick Hand" and "Shadows Into Light" */
+                 *  You can correct the offsets for specific font and size combinations in one of two ways: by applying a scaling multiplier to
+                 *  the default offsets derived from the multipliers above, or by replacing specific offsets directly.
+                 *    - If both methods are used for the same font/size combination, the multiplier will be applied FIRST (i.e.
+                 *      the override value will be applied as-is, without multiplication) */
 
-                /**  ░░ OVERRIDES: APPLY MULTIPLIER ▒▒
-                 *  You can apply a multiplier to the full set of default offsets, scaling them for an entire font family, by defining a getter
-                 *  and using the 'scaleOffsets()' function.
-                 *    - You can apply a different multiplier to the horizontal and vertical offsets by passing an array (see e.g. 'Arial', below) */
+                /**  ░░ OVERRIDES: APPLY SCALING MULTIPLIER ░░
+                 *  You can apply a multiplier to the full set of default offsets, scaling them for an entire font family, by assigning a number
+                 *  to the entire font family.
+                 *    - Unlike the default multipliers above, these scale the default shadow offsets directly (i.e. '0.5' will result in the default offset
+                 *      being halved).
+                 *    - You can apply different multipliers to the horizontal and vertical by passing an array */
 
-                get "Shadows Into Light"() { return this.scaleOffsets(0.5) },
-                get "Arial"() { return this.scaleOffsets([0.6, 0.6]) },
-                get "Patrick Hand"() { return this.scaleOffsets(0.75) },
-                get "Tahoma"() { return this.scaleOffsets(0.75) },
-                get "Rye"() { return this.scaleOffsets(0.9) },
-                get "IM Fell DW Pica"() { return this.scaleOffsets(0.75) },
-                get "Nunito"() { return this.scaleOffsets(0.75) },
-                get Montserrat() { return this.scaleOffsets(0.5) },
-                get Merriweather() { return this.scaleOffsets(0.75) },
-                get "Della Respira"() { return this.scaleOffsets(0.75) },
-                get "Crimson Text"() { return this.scaleOffsets(0.75) },
-                get "Kaushan Script"() { return this.scaleOffsets(0.8) },
-
-                /** ░░ OVERRIDES: DIRECT REPLACEMENT ▒▒
-                 *  Alternatively, you can define specific offsets for any font/size combination.
-                 *    - The default offsets will be used for any sizes you don't include. */
-
-                "Contrail One": {
-                    56: [3, 3],
-                    72: [5, 5],
-                    100: [6, 6],
-                    200: [12, 12]
+                multipliers: {
+                    "Shadows Into Light": 0.5,
+                    Arial: 0.6,
+                    "Patrick Hand": 0.75,
+                    Tahoma: 0.75,
+                    Rye: 0.9,
+                    "IM Fell DW Pica": 0.5,
+                    Nunito: 0.75,
+                    Montserrat: 0.5,
+                    Merriweather: 0.6,
+                    "Della Respira": 0.6,
+                    "Crimson Text": 0.4,
+                    "Kaushan Script": [0.4, 0.6]
                 },
 
-                // Scaling Function: 'scaleOffsets(mult)' or 'scaleOffsets([xMult, yMult])'
-                scaleOffsets: (mult) => _.mapObject(this.generic, ([xOffset, yOffset]) => [
-                    xOffset * [mult].flat()[0],
-                    yOffset * ([mult].flat()[1] || [mult].flat()[0])
-                ])
+                /** ░░ OVERRIDES: DIRECT REPLACEMENT ░░
+                 *  Alternatively, you can define specific offsets, measured in pixels, for any font/size combination.
+                 *    - The default/scaled offsets will be used for any sizes you don't include.
+                 *    - These values must be passed as arrays, even if the x- and y- offsets are the same. */
+
+                overrides: {
+                    "Contrail One": {
+                        56: [3, 3],
+                        72: [5, 5],
+                        100: [6, 6],
+                        200: [12, 12]
+                    }
+                }
             }
         }
     }
 };
+EunoCONFIG.ETC.DropShadows.OFFSETS.generic = Object.fromEntries([8, 10, 12, 14, 16, 18, 20, 22, 26, 32, 40, 56, 72, 100, 200, 300].map((size) => [
+    size,
+    EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMults.map((mult) => size * mult)
+]));
 void MarkStop("EunoCONFIG");
