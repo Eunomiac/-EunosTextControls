@@ -1,5 +1,4 @@
-void MarkStart("EunoLIB");
-log("Starting!");
+MarkStart("EunoLIB");
 /******▌████████████████████████████████████████████████████████████▐******\
 |*     ▌█░░░░    EunoLIB: Common Functions for EunoScripts     ░░░░█▐     *|
 |*     ▌████████████████████████████████████████████████████████████▐     *|
@@ -24,39 +23,32 @@ const EunoCORE = {
     // Clears local state storage for specified EunoScript (prompting reinitialization with defaults)
     DeleteLocalSTATE: (scriptName) => delete EunoCORE.ROOT[scriptName],
     // Initializes local state storage for specified EunoScript with default values, if any
-    InitState: (scriptName, DEFAULTSTATE = {}, isResettingState = false) => {
+    InitState: (scriptName, DEFAULTSTATE = {}) => {
         if (scriptName in EunoCORE.SCRIPTS) {
-        // Reset script state entry, if specified
-            if (isResettingState) {
-                delete EunoCORE.ROOT[scriptName];
-            }
-
             // Initialize script state entry with default values where needed
-            EunoCORE.ROOT[scriptName] = EunoCORE.ROOT[scriptName] || {}; //
+            EunoCORE.ROOT[scriptName] = EunoCORE.ROOT[scriptName] || {};
             Object.entries(DEFAULTSTATE)
-                .filter(([key]) => !(key in EunoCORE.ROOT[scriptName])) //
-                .forEach(([key, defaultVal]) => {
-                    EunoCORE.ROOT[scriptName][key] = defaultVal;
-                });
+                .filter(([key]) => !(key in EunoCORE.ROOT[scriptName]))
+                .forEach(([key, defaultVal]) => {EunoCORE.ROOT[scriptName][key] = defaultVal});
         }
     },
     // #endregion ░░░░[STATE STORAGE]░░░░
     // #region ░░░░░░░[SCRIPT REGISTRATION] Installed EunoScripts Register Themselves Here ░░░░░░░ ~
-    _scripts: {},
-    regSCRIPT: (name, script) => {
-        EunoCORE._scripts[name] = script;
+    regSCRIPT: (name, script, listenerOptions = {}) => {
+        this._scriptData = this._scriptData || {};
+        this._scriptData[name] = {
+            name,
+            script,
+            hasPreinitialize: "Preinitialize" in script,
+            hasInitialize: "Initialize" in script,
+            hasPostInitialize: "PostInitialize" in script,
+            listenerOptions
+        };
     },
+    get SCRIPTDATA() { return this._scriptData },
     get SCRIPTS() {
-        return EunoCORE._scripts;
-    },
-    get scriptsToPreinitialize() {
-        return _.pick(EunoCORE._scripts, (script) => "Preinitialize" in script);
-    },
-    get scriptsToInitialize() {
-        return _.pick(EunoCORE._scripts, (script) => "Initialize" in script);
-    },
-    get scriptsToPostInitialize() {
-        return _.pick(EunoCORE._scripts, (script) => "PostInitialize" in script);
+        return Object.fromEntries(Object.values(this.SCRIPTDATA)
+            .map(({name, script}) => [name, script]));
     },
     // #endregion ░░░░[SCRIPT REGISTRATION]░░░░
     // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░ ~
@@ -67,92 +59,68 @@ const EunoCORE = {
 
     // SCRIPT INITIALIZATION:
     _initSteps: ["Preinitialize", "Initialize", "PostInitialize"],
-    InitStep: false,
-    initializationLog: {},
     INITIALIZE: () => {
-        if (EunoCORE._initSteps.length) {
-            EunoCORE.InitStep = EunoCORE._initSteps.shift();
-            const scripts = EunoCORE[`scriptsTo${EunoCORE.InitStep}`];
+        if (this._initSteps.length) {
+            this._initStep = this._initSteps.shift();
 
             // Before Processing Each Script:
-            switch (EunoCORE.InitStep) {
+            switch (this._initStep) {
                 case "Preinitialize": {
-                    // Verify EunoCONFIG.js is installed
-                    try {
-                        EunoCONFIG;
-                    } catch {
-                        throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?";
-                    }
+                    try {EunoCONFIG} // Verify EunoCONFIG.js is installed
+                    catch {throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?"}
                     break;
                 }
                 case "Initialize": {
-                    // EunoCORE.U.Show(scripts);
-                    // EunoCORE.U.Flag("EunoCONFIG Ready"); log("[Euno] EunoCONFIG Ready");
+                    Object.values();
+                    EunoCORE.L.RegScriptListeners();
                     break;
                 }
-        // no default
+                // no default
             }
 
+            const scripts = Object.fromEntries(Object.entries(this.SCRIPTS)
+                .filter(([scriptName, scriptData]) => scriptData[`has${this._initStep}`])
+                .map(([scriptName, scriptData]) => [scriptName, scriptData.script]));
             if (Object.values(scripts).length) {
                 // Log scripts to initialization log, for later confirmation of step completion
-                EunoCORE.initializationLog = {...scripts};
+                this.initializationLog = {...scripts};
                 // Process each script through next initialization step
                 Object.values(scripts).forEach((script, i) => {
-                    script[EunoCORE.InitStep]();
+                    script[this._initStep]();
                 });
             }
             return false;
         } else {
-            EunoCORE.U.Flag("Initialization Complete!", 1);
+            this.U.Flag("Initialization Complete!");
         }
         // Initialization Complete!
         return true;
     },
     ConfirmReady: (scriptName) => {
-    // Scripts confirm init steps completed via this function.
-        EunoCORE.initializationLog[scriptName] = true;
-        if (
-            Object.values(EunoCORE.initializationLog).every((scriptStatus) => scriptStatus === true)
-        ) {
+        // Scripts confirm init steps completed via this function.
+        this.initializationLog[scriptName] = true;
+        if (Object.values(this.initializationLog).every((scriptStatus) => scriptStatus === true)) {
             // If all scripts have confirmed step completion, move to next step.
-            EunoCORE.INITIALIZE();
+            this.INITIALIZE();
         }
     },
     // #endregion ░░░░[INITIALIZATION]░░░░
     // #region ░░░░░░░[PREDEFINED FUNCTIONS] EunoLIB.UTILITY Functions Required Before Initialization ░░░░░░░ ~
     GetType: (val) => {
-        const TYPES = [
-            "id",
-            "hex",
-            "hexa",
-            "rgb",
-            "rgba",
-            "hsl",
-            "hsla",
-            "int",
-            "float",
-            "array",
-            "list",
-            "boolean",
-            "null",
-            "undefined",
-            "function",
-            "date",
-            "regexp",
-            "graphic",
-            "token",
-            "animation",
-            "card",
-            "character",
-            "text",
-            "path",
-            "jukeboxtrack",
-            "handout",
-            "page",
-            "campaign",
-            "player",
-            "string" // only if none of the above match
-        ];
+        /** TYPES RETURNED:
+         *
+         * "id",                        // is likely a Roll20 object id
+         * "hex", "hexa", "rgb", "rgba", "hsl", "hsla",             // css color values
+         * "int", "float", "bigint",    // numbers, even if cast to string
+         * "array", "list",             // list = simple object literal
+         * "boolean", "null", "undefined",
+         * "function",
+         * "date", "regexp", ... ... ...// ... as well as all other core javascript prototypes
+         * "graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro",
+         * "page", "campaign", "player", "deck", "card", "hand", "jukeboxtrack", "custfx",
+         * "string"                     // only if none of the above match
+         *
+         */
         const valType = Object.prototype.toString
             .call(val)
             .slice(8, -1)
@@ -187,10 +155,7 @@ const EunoCORE = {
             case "hexa": {
                 colorRef = colorRef.replace(/[^A-Za-z0-9]/gu, "");
                 if (colorRef.length === 3) {
-                    colorRef = colorRef
-                        .split("")
-                        .map((h) => `${h}${h}`)
-                        .join("");
+                    colorRef = colorRef.split("").map((h) => `${h}${h}`).join("");
                 }
                 colorVals.push(...colorRef.match(/.{2}/g).map((hex) => EunoCORE.HexToDec(hex)));
                 break;
@@ -294,223 +259,124 @@ const EunoCORE = {
         // #endregion ░░░░[COLORS]░░░░
         // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░ ~
         IMAGES: (() => {
-            const IMGROOT
-        = "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
-            return _.mapObject(
-                {
-                    titleMain: ["bookends", "headerMain.png", [283, 208]],
-                    titleMainButtons: ["bookends", "headerMainButtons.png", [283, 208]],
-                    titleETC: ["bookends", "headerScriptETC.png", [283, 142]],
-                    subtitleGold: ["bookends", "subtitleGold.png", [283, 60]],
-                    subtitleSilver: ["bookends", "subtitleSilver.png", [283, 60]],
-                    subtitleBronze: ["bookends", "subtitleBronze.png", [283, 60]],
-                    subtitleSilverETC: ["bookends", "subtitleSilverETC.png", [283, 60]],
-                    subtitleBronzeETC: ["bookends", "subtitleBronzeETC.png", [283, 60]],
-                    bgChatGold: ["backgrounds", "bgChatGold.jpg", [283, 563]],
-                    bgChatSilver: ["backgrounds", "bgChatSilver.jpg", [283, 563]],
-                    bgChatBronze: ["backgrounds", "bgChatBronze.jpg", [283, 563]],
-                    footerGold: ["bookends", "footerGold.png", [283, 37]],
-                    footerSilver: ["bookends", "footerSilver.png", [283, 37]],
-                    footerBronze: ["bookends", "footerBronze.png", [283, 37]],
-                    footerGoBackGold: ["bookends", "footerGoBackGold.png", [283, 37]],
-                    footerGoBackSilver: ["bookends", "footerGoBackSilver.png", [283, 37]],
-                    footerGoBackBronze: ["bookends", "footerGoBackBronze.png", [283, 37]],
-                    footerHideIntroGold: [
-                        "bookends",
-                        "footerHideIntroGold.png",
-                        [283, 37]
-                    ],
-                    buttonDownload: ["buttons", "buttonDownload.png", [50, 50]],
-                    buttonChat: ["buttons", "buttonChat.png", [50, 50]],
-                    buttonBug: ["buttons", "buttonBug.png", [50, 50]],
-                    h1Gold: ["emphasis", "h1Gold.png", [283, 40]],
-                    h1Silver: ["emphasis", "h1Silver.png", [283, 40]],
-                    h1Bronze: ["emphasis", "h1Bronze.png", [283, 40]],
-                    h1GoldDim: ["emphasis", "h1GoldDim.png", [283, 40]],
-                    h1SilverDim: ["emphasis", "h1SilverDim.png", [283, 40]],
-                    h1BronzeDim: ["emphasis", "h1BronzeDim.png", [283, 40]],
-                    h1GoldTight: ["emphasis", "h1GoldTight.png", [283, 28]],
-                    h1SilverTight: ["emphasis", "h1SilverTight.png", [283, 28]],
-                    h1BronzeTight: ["emphasis", "h1BronzeTight.png", [283, 28]],
-                    h1GoldTightDim: ["emphasis", "h1GoldTightDim.png", [283, 28]],
-                    h1SilverTightDim: ["emphasis", "h1SilverTightDim.png", [283, 28]],
-                    h1BronzeTightDim: ["emphasis", "h1BronzeTightDim.png", [283, 28]],
-                    h1FlagGold: ["emphasis", "h1FlagGold.png", [283, 28]],
-                    h1FlagSilver: ["emphasis", "h1FlagSilver.png", [283, 28]],
-                    h1FlagBronze: ["emphasis", "h1FlagBronze.png", [283, 28]],
-                    h2Gold: ["emphasis", "h2Gold.png", [283, 37]],
-                    h2Silver: ["emphasis", "h2Silver.png", [283, 37]],
-                    h2Bronze: ["emphasis", "h2Bronze.png", [283, 37]],
-                    h2GoldDim: ["emphasis", "h2GoldDim.png", [283, 37]],
-                    h2SilverDim: ["emphasis", "h2SilverDim.png", [283, 37]],
-                    h2BronzeDim: ["emphasis", "h2BronzeDim.png", [283, 37]],
-                    h2GoldTight: ["emphasis", "h2GoldTight.png", [283, 24]],
-                    h2SilverTight: ["emphasis", "h2SilverTight.png", [283, 24]],
-                    h2BronzeTight: ["emphasis", "h2BronzeTight.png", [283, 24]],
-                    h2GoldTightDim: ["emphasis", "h2GoldTightDim.png", [283, 24]],
-                    h2SilverTightDim: ["emphasis", "h2SilverTightDim.png", [283, 24]],
-                    h2BronzeTightDim: ["emphasis", "h2BronzeTightDim.png", [283, 24]],
-                    h2FlagGold: ["emphasis", "h2FlagGold.png", [283, 24]],
-                    h2FlagSilver: ["emphasis", "h2FlagSilver.png", [283, 24]],
-                    h2FlagBronze: ["emphasis", "h2FlagBronze.png", [283, 24]],
-                    h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]],
-                    commandGold: ["emphasis", "commandGold.png", [235, 37]],
-                    commandSilver: ["emphasis", "commandSilver.png", [235, 37]],
-                    commandBronze: ["emphasis", "commandBronze.png", [235, 37]],
-                    toggleButtonOnGold: ["buttons", "toggleOnGold.png", [273, 68]],
-                    toggleButtonOffGold: ["buttons", "toggleOffGold.png", [273, 68]],
-                    toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [273, 68]],
-                    toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [273, 68]]
-                },
-                ([folder, name, [width, height]]) => ({
-                    img: [IMGROOT, folder, name].join("/"),
-                    height,
-                    width
-                })
-            );
+            const IMGROOT = "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
+            return Object.fromEntries(Object.entries({
+                buttonDownload: ["buttons", "buttonDownload.png", [50, 50]],
+                buttonChat: ["buttons", "buttonChat.png", [50, 50]],
+                buttonBug: ["buttons", "buttonBug.png", [50, 50]],
+
+                //     #region ========== Gold: Level 1 Gold Theme =========== ~
+                bgChatGold: ["backgrounds", "bgChatGold.jpg", [283, 563]],
+
+                titleMain: ["bookends", "headerMain.png", [283, 208]],
+                titleMainButtons: ["bookends", "headerMainButtons.png", [283, 208]],
+                subtitleGold: ["bookends", "subtitleGold.png", [283, 60]],
+
+                footerGold: ["bookends", "footerGold.png", [283, 37]],
+                footerGoBackGold: ["bookends", "footerGoBackGold.png", [283, 37]],
+                footerHideIntroGold: ["bookends", "footerHideIntroGold.png", [283, 37]],
+
+                h1Gold: ["emphasis", "h1Gold.png", [283, 40]],
+                h1GoldDim: ["emphasis", "h1GoldDim.png", [283, 40]],
+                h1GoldTight: ["emphasis", "h1GoldTight.png", [283, 28]],
+                h1GoldTightDim: ["emphasis", "h1GoldTightDim.png", [283, 28]],
+                h1FlagGold: ["emphasis", "h1FlagGold.png", [283, 28]],
+
+                h2Gold: ["emphasis", "h2Gold.png", [283, 37]],
+                h2GoldDim: ["emphasis", "h2GoldDim.png", [283, 37]],
+                h2GoldTight: ["emphasis", "h2GoldTight.png", [283, 24]],
+                h2GoldTightDim: ["emphasis", "h2GoldTightDim.png", [283, 24]],
+                h2FlagGold: ["emphasis", "h2FlagGold.png", [283, 24]],
+
+                commandGold: ["emphasis", "commandGold.png", [235, 37]],
+
+                toggleButtonOnGold: ["buttons", "toggleOnGold.png", [273, 68]],
+                toggleButtonOffGold: ["buttons", "toggleOffGold.png", [273, 68]],
+                //     #endregion _______ Gold _______
+                //     #region ========== Silver: Level 2 Silver Theme =========== ~
+                bgChatSilver: ["backgrounds", "bgChatSilver.jpg", [283, 563]],
+
+                titleETC: ["bookends", "headerScriptETC.png", [283, 142]],
+                subtitleSilver: ["bookends", "subtitleSilver.png", [283, 60]],
+                subtitleSilverETC: ["bookends", "subtitleSilverETC.png", [283, 60]],
+
+                footerSilver: ["bookends", "footerSilver.png", [283, 37]],
+                footerGoBackSilver: ["bookends", "footerGoBackSilver.png", [283, 37]],
+
+                h1Silver: ["emphasis", "h1Silver.png", [283, 40]],
+                h1SilverDim: ["emphasis", "h1SilverDim.png", [283, 40]],
+                h1SilverTight: ["emphasis", "h1SilverTight.png", [283, 28]],
+                h1SilverTightDim: ["emphasis", "h1SilverTightDim.png", [283, 28]],
+                h1FlagSilver: ["emphasis", "h1FlagSilver.png", [283, 28]],
+
+                h2Silver: ["emphasis", "h2Silver.png", [283, 37]],
+                h2SilverDim: ["emphasis", "h2SilverDim.png", [283, 37]],
+                h2SilverTight: ["emphasis", "h2SilverTight.png", [283, 24]],
+                h2SilverTightDim: ["emphasis", "h2SilverTightDim.png", [283, 24]],
+                h2FlagSilver: ["emphasis", "h2FlagSilver.png", [283, 24]],
+
+                commandSilver: ["emphasis", "commandSilver.png", [235, 37]],
+
+                toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [273, 68]],
+                toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [273, 68]],
+                //     #endregion _______ Silver _______
+                //     #region ========== Bronze: Level 3 Bronze Theme =========== ~
+                bgChatBronze: ["backgrounds", "bgChatBronze.jpg", [283, 563]],
+
+                subtitleBronze: ["bookends", "subtitleBronze.png", [283, 60]],
+                subtitleBronzeETC: ["bookends", "subtitleBronzeETC.png", [283, 60]],
+
+                footerBronze: ["bookends", "footerBronze.png", [283, 37]],
+                footerGoBackBronze: ["bookends", "footerGoBackBronze.png", [283, 37]],
+
+                h1Bronze: ["emphasis", "h1Bronze.png", [283, 40]],
+                h1BronzeDim: ["emphasis", "h1BronzeDim.png", [283, 40]],
+                h1BronzeTight: ["emphasis", "h1BronzeTight.png", [283, 28]],
+                h1BronzeTightDim: ["emphasis", "h1BronzeTightDim.png", [283, 28]],
+                h1FlagBronze: ["emphasis", "h1FlagBronze.png", [283, 28]],
+
+                h2Bronze: ["emphasis", "h2Bronze.png", [283, 37]],
+                h2BronzeDim: ["emphasis", "h2BronzeDim.png", [283, 37]],
+                h2BronzeTight: ["emphasis", "h2BronzeTight.png", [283, 24]],
+                h2BronzeTightDim: ["emphasis", "h2BronzeTightDim.png", [283, 24]],
+                h2FlagBronze: ["emphasis", "h2FlagBronze.png", [283, 24]],
+
+                commandBronze: ["emphasis", "commandBronze.png", [235, 37]],
+                //     #endregion _______ Bronze _______
+
+                h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]]
+            }).map(([key, [folder, name, [width, height]]]) => [key, {height, width, img: [IMGROOT, folder, name].join("/")}]));
         })(),
-        GetImgURL: (imgKey) => EunoCORE.C.IMAGES[imgKey].img,
-        GetImgSize: (imgKey) => [
-            EunoCORE.C.IMAGES[imgKey].width,
-            EunoCORE.C.IMAGES[imgKey].height
-        ],
-        /* GetImgUrl: (imgKey, imgFolder) => {
-            if (!imgFolder && imgKey in EunoCORE.C.IMAGES) {
-                [imgFolder, imgKey] = EunoCORE.C.IMAGES[imgKey];
-            }
-            return [EunoCORE.C.IMGROOT, imgFolder.toLowerCase(), imgKey].join("/");
-        }, */
-        /* GetImgSize: (imgKey) => [...EunoCORE.C.IMAGES[imgKey]].pop(), */
+        GetImgURL: (imgKey) => this.IMAGES[imgKey].img,
+        GetImgSize: (imgKey) => [this.IMAGES[imgKey].width, this.IMAGES[imgKey].height],
         // #endregion ░░░░[IMAGES]░░░░
-        // #region ░░░░░░░[ROLL20 OBJECTS] Object Types ░░░░░░░ ~
+        // #region ░░░░░░░[ROLL20 OBJECTS] Roll20 Object Types ░░░░░░░ ~
         ROLL20TYPES: {
             all: [
-                "path",
-                "text",
-                "graphic",
-                "page",
-                "campaign",
-                "player",
-                "macro",
-                "rollabletable",
-                "tableitem",
-                "character",
-                "attribute",
-                "ability",
-                "handout",
-                "deck",
-                "card",
-                "hand",
-                "jukeboxtrack",
-                "custfx"
+                "graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro",
+                "page", "campaign", "player", "deck", "card", "hand", "jukeboxtrack", "custfx"
             ],
             canCreate: [
-                "graphic",
-                "text",
-                "path",
-                "character",
-                "ability",
-                "attribute",
-                "handout",
-                "rollabletable",
-                "tableitem",
-                "macro"
+                "graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro"
             ]
         },
         // #endregion ░░░░[ROLL20 OBJECTS]░░░░
         // #region ░░░░░░░[NUMBER STRINGS] Number Words, Ordinal Suffixes, Roman Numerals ░░░░░░░ ~
         NUMBERWORDS: {
             ones: [
-                "zero",
-                "one",
-                "two",
-                "three",
-                "four",
-                "five",
-                "six",
-                "seven",
-                "eight",
-                "nine",
-                "ten",
-                "eleven",
-                "twelve",
-                "thirteen",
-                "fourteen",
-                "fifteen",
-                "sixteen",
-                "seventeen",
-                "eighteen",
-                "nineteen",
-                "twenty"
+                "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+                "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"
             ],
-            tens: [
-                "",
-                "",
-                "twenty",
-                "thirty",
-                "forty",
-                "fifty",
-                "sixty",
-                "seventy",
-                "eighty",
-                "ninety"
-            ],
-            tiers: [
-                "",
-                "thousand",
-                "m-",
-                "b-",
-                "tr-",
-                "quadr-",
-                "quint-",
-                "sext-",
-                "sept-",
-                "oct-",
-                "non-"
-            ].map((prefix) => prefix.replace(/-$/, "illion")),
-            bigPrefixes: [
-                "",
-                "un",
-                "duo",
-                "tre",
-                "quattuor",
-                "quin",
-                "sex",
-                "octo",
-                "novem"
-            ],
-            bigSuffixes: [
-                "",
-                "dec-",
-                "vigint-",
-                "trigint-",
-                "quadragint-",
-                "quinquagint-",
-                "sexagint-",
-                "septuagint-",
-                "octogint-",
-                "nonagint-",
-                "cent-"
-            ].map((prefix) => prefix.replace(/-$/, "illion"))
+            tens: ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"],
+            tiers: ["", "thousand", "m-", "b-", "tr-", "quadr-", "quint-", "sext-", "sept-", "oct-", "non-"]
+                .map((prefix) => prefix.replace(/-$/, "illion")),
+            bigPrefixes: [ "", "un", "duo", "tre", "quattuor", "quin", "sex", "octo", "novem" ],
+            bigSuffixes: [ "", "dec-", "vigint-", "trigint-", "quadragint-", "quinquagint-", "sexagint-", "septuagint-", "octogint-", "nonagint-", "cent-" ]
+                .map((prefix) => prefix.replace(/-$/, "illion"))
         },
         ORDINALS: {
-            zero: "zeroeth",
-            one: "first",
-            two: "second",
-            three: "third",
-            four: "fourth",
-            five: "fifth",
-            eight: "eighth",
-            nine: "ninth",
-            twelve: "twelfth",
-            twenty: "twentieth",
-            thirty: "thirtieth",
-            forty: "fortieth",
-            fifty: "fiftieth",
-            sixty: "sixtieth",
-            seventy: "seventieth",
-            eighty: "eightieth",
-            ninety: "ninetieth"
+            zero: "zeroeth", one: "first", two: "second", three: "third", four: "fourth", five: "fifth", eight: "eighth", nine: "ninth", twelve: "twelfth",
+            twenty: "twentieth", thirty: "thirtieth", forty: "fortieth", fifty: "fiftieth", sixty: "sixtieth", seventy: "seventieth", eighty: "eightieth", ninety: "ninetieth"
         },
         ROMANNUMERALS: {
             grouped: [
@@ -535,11 +401,12 @@ const EunoCORE = {
     // #endregion ▄▄▄▄▄ C ▄▄▄▄▄
 
     // #region ░░░░░░░[SHORTHAND GETTERS] Shorthand Getters for Major Script Components ░░░░░░░ ~
-    // SHORTHAND GETTERS: Shorthand getters for major script components
     get CFG() { return EunoCONFIG },
     get LIB() { return EunoLIB },
+    get REG() { return EunoLIB.RE.G },
     get C() { return EunoCORE.CONSTANTS },
     get U() { return EunoLIB.UTILITIES },
+    get L() { return EunoLIB.LISTENER },
     get O() { return EunoLIB.OBJECTS },
     get H() { return EunoLIB.HTML }
     // #endregion ░░░░[SHORTHAND GETTERS]░░░░
@@ -552,61 +419,50 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     // #region ░░░░░░░[Namespacing] Basic References & Namespacing ░░░░░░░ ~
 
     const SCRIPTNAME = "EunoLIB";
-    const STA = {
-        get TE() {
-            return EunoCORE.GetLocalSTATE(SCRIPTNAME);
-        }
-    };
-    const RE = {
-        get G() {
-            return STA.TE.REGISTRY;
-        }
-    };
+    const STA = {get TE() {return EunoCORE.GetLocalSTATE(SCRIPTNAME)}};
+    const RE = {get G() {return STA.TE.REGISTRY}};
 
+    const {CFG, C} = EunoCORE; let LIB, U, L, O, H; // must wait for intialization to be assigned
     // #endregion ░░░░[Namespacing]░░░░
     // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░ ~
 
-    // Define shorthand references to major script components.
-    const {CFG, C} = EunoCORE;
-    let LIB, U, O, H; // these have to be declared now, but must wait for intialization to be assigned  \\
     const Preinitialize = () => {
-    // Initialize local state storage
+        // Initialize local state storage
         EunoCORE.InitState(SCRIPTNAME, {
             isDisplayingHelpAtStart: true
         });
 
         // Report preinitialization complete to EunoCORE loader
         EunoCORE.ConfirmReady(SCRIPTNAME);
-    }; //
+    };
     const Initialize = () => {
-    // Assign shorthand script references
-        ({LIB, U, O, H} = EunoCORE); //                                    ◀======
+        // Assign shorthand script references
+        ({LIB, U, L, O, H} = EunoCORE); //                                    ◀======
 
         // Report Config Readiness (verified earlier)
-        U.Flag("EunoCONFIG Ready", 1);
-        log("[Euno] EunoCONFIG Ready");
+        U.Flag("EunoCONFIG Ready"); log("[Euno] EunoCONFIG Ready");
 
         // Register event handlers
         on("chat:message", handleMessage);
 
         // Alert readiness confirmation
-        U.Flag(`${SCRIPTNAME} Ready`, 1);
-        log(`[Euno] ${SCRIPTNAME} Initialized`);
+        U.Flag(`${SCRIPTNAME} Ready`); log(`[Euno] ${SCRIPTNAME} Initialized`);
 
         // Report initialization complete to EunoCORE loader
         EunoCORE.ConfirmReady(SCRIPTNAME);
     };
     const PostInitialize = () => {
-    // Display Help message, if so configured
+        // Display Help message, if so configured
         if (STA.TE.isDisplayingHelpAtStart) {
             H.DisplayHelp({isAutoDisplaying: true});
         }
 
-        // Report postinitialization compelete to EunoCORE loader
+        // Report postinitialization complete to EunoCORE loader
         EunoCORE.ConfirmReady(SCRIPTNAME);
     };
+
     // #endregion ░░░░[Initialization]░░░░
-    // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░
+    // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░ ~
     const handleMessage = (msg) => {
         if (U.CheckMessage(msg, ["!euno", "!edev"])) {
             let {call, args, selected} = U.ParseMessage(msg, "all");
@@ -789,25 +645,20 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         const NumToString = (num) => {
             // Can take string representations of numbers, either in standard or scientific/engineering notation.
             // Returns a string representation of the number in standard notation.
-            if (Float(num) === 0) {
-                return "0";
-            }
+            if (Float(num) === 0) {return "0"}
             num = LCase(num).replace(/[^\d.e+-]/g, "");
-            const base = Ext(num, /^-?[\d.]+/);
-            const exp = Int(Ext(num, /e([+-]?\d+)$/).pop());
-            const baseInts = Ext(base, /^-?(\d+)/)
-                .pop()
-                .replace(/^0+/, "");
-            const baseDecs = LCase(Ext(base, /\.(\d+)/).pop()).replace(/0+$/, "");
+            const base = Extract(num, /^-?[\d.]+/);
+            const exp = Int(Extract(num, /e([+-]?\d+)$/).pop());
+            const baseInts = Extract(base, /^-?(\d+)/).pop().replace(/^0+/, "");
+            const baseDecs = LCase(Extract(base, /\.(\d+)/).pop()).replace(/0+$/, "");
 
             const numFinalInts = Math.max(0, baseInts.length + exp);
             const numFinalDecs = Math.max(0, baseDecs.length - exp);
 
-            const finalInts
-        = [
-            baseInts.slice(0, numFinalInts),
-            baseDecs.slice(0, Math.max(0, exp))
-        ].join("") || "0";
+            const finalInts = [
+                baseInts.slice(0, numFinalInts),
+                baseDecs.slice(0, Math.max(0, exp))
+            ].join("") || "0";
             const finalDecs = [
                 baseInts.length - numFinalInts <= 0
                     ? ""
@@ -918,8 +769,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             if (num <= 0) {
                 throw `[Euno] Error: Can't Romanize <= 0 (${num})`;
             }
-            const romanRef
-        = C.ROMANNUMERALS[isUsingGroupedChars ? "grouped" : "ungrouped"];
+            const romanRef = C.ROMANNUMERALS[isUsingGroupedChars ? "grouped" : "ungrouped"];
             const romanNum = NumToString(num)
                 .split("")
                 .reverse()
@@ -930,8 +780,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 ? romanNum.replace(/ⅩⅠ/gu, "Ⅺ").replace(/ⅩⅡ/gu, "Ⅻ")
                 : romanNum;
         };
-        const NumToSignedNum = (qNum, delim = "") =>
-            `${Float(qNum) < 0 ? "-" : "+"}${delim}${Math.abs(Float(qNum))}`;
+        const NumToSignedNum = (qNum, delim = "") => `${Float(qNum) < 0 ? "-" : "+"}${delim}${Math.abs(Float(qNum))}`;
         const NumToPaddedNum = (qNum, numDecDigits) => {
             const [leftDigits, rightDigits] = `${Float(qNum)}`.split(/\./);
             if (GetType(rightDigits) === "int") {
@@ -947,7 +796,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         //     #endregion _______ Numbers to Strings _______
         //     #region ========== RegExp: Regular Expressions =========== ~
-        const Ext = (qStr, qRegExp) => {
+        const Extract = (qStr, qRegExp) => {
             const isGrouping = /[)(]/.test(qRegExp.toString());
             const matches = qStr.match(new RegExp(qRegExp)) || [];
             if (isGrouping) {
@@ -958,7 +807,44 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ RegExp _______
         // #endregion ░░░░[Strings]░░░░
         // #region ░░░░░░░[Math] Mathematical Operations, Interpolation, Scaling ░░░░░░░ ~
-        const Interpolate = (coords, qPt) => {
+        const Interpolate = (coords, query) => {
+            const [iQuery, iBase] = ["int", "float"].includes(GetType(query[0]))
+                ? [1, 0]
+                : [0, 1];
+            const [base, qCoords, bCoords] = [
+                query[iBase],
+                coords.map((coord) => coord[iQuery]),
+                coords.map((coord) => coord[iBase])
+            ];
+            if (bCoords.includes(base)) {
+                return RoundNum(coords.find((coord) => coord[iBase] === base)[iQuery], 2);
+            }
+            const [
+                [query1, base1],
+                [query2, base2]
+            ] = (() => {
+                const iAbove = bCoords.findIndex((bCoord) => base < bCoord);
+                const iMax = coords.length - 1;
+                switch (iAbove) {
+                    case -1: return [
+                        [qCoords[iMax - 1], bCoords[iMax - 1]],
+                        [qCoords[iMax], bCoords[iMax]]
+                    ];
+                    case 0: return [
+                        [qCoords[0], bCoords[0]],
+                        [qCoords[1], bCoords[1]]
+                    ];
+                    default: return [
+                        [qCoords[iAbove - 1], bCoords[iAbove - 1]],
+                        [qCoords[iAbove], bCoords[iAbove]]
+                    ];
+                }
+            })();
+            return RoundNum((base - base1) * (query2 - query1) / (base2 - base1) + query1, 2);
+        };
+
+        /*
+
             if (["int", "float"].includes(GetType(qPt[0]))) { // y is unknown
                 const ptX = Float(qPt[0]);
                 const xCoords = coords.map(([x]) => x);
@@ -1003,6 +889,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
             return false;
         };
+           */
         // #endregion ░░░░[Math]░░░░
         // #region ░░░░░░░[Chat] Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░░ ~
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
@@ -1028,7 +915,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             return msgData;
         };
         const Alert = (content, title, headerLevel = 1, classes = [], options = {noarchive: true}) => {
-            // Simple alert to the GM. Style depends on presence of content, title, or botEunoCORE.H.
+            // Simple alert to the GM. Style depends on presence of content, title, or both.
             if (content !== false && (content || title)) {
                 if (title) {
                     if (content === null) {
@@ -1050,7 +937,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                         );
                     }
                 } else {
-                    sendChat(randStr(), `/w gm ${content}`.replace(/@@tilde@@/gu, "~")); // Restore escaped tildes), null, options);
+                    sendChat(randStr(), `/w gm ${content}`.replace(/@@tilde@@/gu, "~"), null, options);
                 }
             }
         };
@@ -1160,7 +1047,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             NumToSignedNum,
             NumToPaddedNum,
             // [Strings: RegExp]
-            Ext,
+            Extract,
 
             // [Math]
             Interpolate,
@@ -1181,6 +1068,41 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         // #endregion ▒▒▒▒[EXPORTS: U]▒▒▒▒
     })();
     // #endregion ▄▄▄▄▄ U ▄▄▄▄▄
+
+    // #region ████████ L (LISTENER): Master Event Listener ████████
+    const LISTENER = (() => {
+        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
+        //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
+        const SCRIPTNAME = "LISTENER";
+        const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
+        //     #endregion _______ Namespacing _______
+        //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
+        const Preinitialize = () => {
+            // Initialize local state storage
+            EunoCORE.InitState(SCRIPTNAME);
+
+            // Report preinitialization complete to EunoCORE loader
+            EunoCORE.ConfirmReady(SCRIPTNAME);
+        }; //
+        const Initialize = () => {
+            // Alert readiness confirmation
+            U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
+            log(`[Euno] ${SCRIPTNAME} Initialized`);
+
+            // Report initialization complete to EunoCORE loader
+            EunoCORE.ConfirmReady(SCRIPTNAME);
+        };
+            //     #endregion _______ Initialization _______
+        // #endregion ▒▒▒▒[FRONT]▒▒▒▒
+
+        // #region ▒░▒░▒░▒[EXPORTS] L (LISTENER) ▒░▒░▒░▒ ~
+        return {
+            Preinitialize,
+            Initialize
+        };
+        // #endregion ▒▒▒▒[EXPORTS: L]▒▒▒▒
+    })();
+    // #endregion ▄▄▄▄▄ L ▄▄▄▄▄
 
     // #region ████████ O (OBJECTS): Roll20 Object Manipulation ████████
     const OBJECTS = (() => {
@@ -2213,16 +2135,15 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 })();
 // #endregion ▄▄▄▄▄ EunoLIB ▄▄▄▄▄
 
-EunoCORE.regSCRIPT("EunoLIB", EunoLIB);
+EunoCORE.regSCRIPT("EunoLIB", EunoLIB, {onChat: {"!euno": {gmOnly: true, objTypes: false}}});
 EunoCORE.regSCRIPT("UTILITIES", EunoLIB.UTILITIES);
+EunoCORE.regSCRIPT("LISTENER", EunoLIB.LISTENER);
 EunoCORE.regSCRIPT("OBJECTS", EunoLIB.OBJECTS);
 EunoCORE.regSCRIPT("HTML", EunoLIB.HTML);
 
 on("ready", () => {
     if (EunoCORE.UpdateNamespace()) {
         EunoCORE.INITIALIZE();
-    } else {
-        throw "[Euno] ERROR: Failure to Update 'Euno' Namespace.";
-    }
+    } else {throw "[Euno] ERROR: Unable to Update Namespace."}
 });
-void MarkStop("EunoLIB");
+MarkStop("EunoLIB");
