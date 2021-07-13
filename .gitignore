@@ -1,4 +1,13 @@
+node_modules
 /.eslintrc.js
 /node_modules
-/workspace.code-workspace
+/*.code-workspace
 /.gitignore
+/.vscode
+/images/Inspiration
+/assets
+/out
+/css
+/_temp.js
+/_ETC-RefactorSource.js
+/codeTester.js
