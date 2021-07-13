@@ -1,8 +1,8 @@
-![Eunomiac's Roll20 Scripts](https://repository-images.githubusercontent.com/379321510/662e8a00-d94c-11eb-89c0-21afb9c80764)
+![Eunomiac's Roll20 Scripts](images/web/EunomiacsRoll20ScriptsLogo.png)
 
 I've written a ton of scripts in my neverending quest to transform the Roll20 sandbox into a more interactive, more feature-packed virtual tabletop. I haven't seen many implementations of these features elsewhere, so I decided to finally take the time to untangle my interdependent web of scripts and prepare them for contribution to the Roll20 community at large.  I'll be grouping these into packages by theme, the first of which to be released (in very early alpha) being **!ETC: Eunomiac's Text Controls**.
 
-![ETC: Eunomiac's Text Controls](https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/5d1778854720debd39b905d09f1b472858021864/images/ETCLogo.png)
+![ETC: Eunomiac's Text Controls](images/web/ETCLogo.png)
 
 Roll20's native support for Text Objects (i.e. text you create directly in the sandbox) is limited, especially if you'd like to make your sandbox into an infographic or HUD. Enter **!ETC** to provide a host of functions dedicated to streamlining, simplifying and automating your ability to use Text Objects for all manner of applications!
 
@@ -13,7 +13,7 @@ Roll20's native support for Text Objects (i.e. text you create directly in the s
 
 ## !ETC Feature: Text Drop Shadows
 
-![ETC Feature: Text Drop Shadows](https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images/ETCTextShadowsHeader.png)
+![ETC Feature: Text Drop Shadows](images/web/ETCTextShadowsHeader.png)
 
 Add drop shadows to text objects, either automatically (whenever one is created) or manually via chat command.
 * **Fully Plug-And-Play** — You can add/remove shadows from selected text objects with a command, or toggle on automatic shadowing, which will add a text shadow to any new text object created by any player.
@@ -33,11 +33,11 @@ Additional features in development include:
 # Beyond !ETC
 I am in the process of planning out a selection of other script packages:
 
-![ETC: Eunomiac's Grab Controls](https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/5d1778854720debd39b905d09f1b472858021864/images/EGCLogo.png)
+![ETC: Eunomiac's Grab Controls](images/web/EGCLogo.png)
 
 Who said you can't have buttons in the Roll20 Sandbox? **!EGC** circumvents this limitation by creating a new type of interactive control: the "Grab Pad".  You simply point **!EGC** at a sandbox object (graphic, text, path, anything), and it will add an invisible graphic object on top that can be controlled by whomever you specify.  Whenever that invisible pad is moved, it triggers a chat command or custom function (your choice) then immediately snaps back to its home position, ready to be used again.  In short, Grab Pads are like buttons that you wiggle instead of push.
 
-![ETC: Eunomiac's HTML Controls](https://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/5d1778854720debd39b905d09f1b472858021864/images/EHCLogo.png)
+![ETC: Eunomiac's HTML Controls](images/web/EHCLogo.png)
 
 Dispense with the limitations of the Roll20 content editors, and instead create gorgeous handouts and chat messages with (almost) full HTML and CSS support. Buttons capable of submitting API chat commands can be included in both chat messages and handouts, the latter being an excellent way to create a master GM "control panel" for your game.
 
