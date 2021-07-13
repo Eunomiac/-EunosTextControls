@@ -261,7 +261,7 @@ const EunoCORE = {
         // #endregion ░░░░[COLORS]░░░░
         // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░ ~
         IMAGES: (() => {
-            const IMGROOT = "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
+            const IMGROOT = "https://tinyurl.com/EunoScriptImages"; // "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
             return Object.fromEntries(Object.entries({
                 buttonDownload: ["buttons", "buttonDownload.png", [50, 50]],
                 buttonChat: ["buttons", "buttonChat.png", [50, 50]],
@@ -1298,7 +1298,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             blockSpacing: 10,
             shifts: {
                 boxAll: [-27, 0, -7, -45],
-                titleMainBottom: -35,
+                titleMainBottom: 0,
                 titleScriptsBottom: -62,
                 subtitleBottom: -24,
                 commandHighlightShiftLeft: -20,
@@ -1462,8 +1462,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 }
                 .block.silver {color: ${C.COLORS.white};}
                 .block.titleButtons {
+                    position: relative;
                     width: 40px;
-                    top: -165px;
+                    top: -200px;
                     left: 240px;
                 }
                 .title, .subtitle {
