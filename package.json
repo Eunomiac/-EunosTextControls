@@ -3,9 +3,7 @@
   "version": "0.1",
   "description": "Various API functions for controlling and manipulating Roll20 Text Objects.",
   "main": "EunosTextControls.js",
-  "scripts": {
-    
-  },
+  "scripts": {},
   "author": "Eunomiac",
   "license": "ISC",
   "devDependencies": {
@@ -17,6 +15,8 @@
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-babel": "^5.3.1",
     "eslint-plugin-react": "^7.23.2",
+    "gulp": "^4.0.2",
+    "gulp-replace": "^1.1.3",
     "jsdoc": "^3.6.7"
   }
 }
