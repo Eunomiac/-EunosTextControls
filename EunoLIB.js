@@ -5,7 +5,7 @@ MarkStart("EunoLIB");
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
-// #region ████████ EunoCORE: Functionality Required before Initialization ████████ ~
+// #region ████████ EunoCORE: Functionality Required before Initialization ████████
 const EunoCORE = {
     // #region ░░░░░░░[STORAGE]░░░░ Initialization & Management of 'state' Namespaces ░░░░░░░ ~
     // NAMESPACING: Namespace under global state variables
@@ -54,12 +54,14 @@ const EunoCORE = {
     // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░ ~
     // VERSION MIGRATION: Any migration processing necessary on version update
     UpdateNamespace: () => {
-        return true;
+        try {
+            /* Migration Tasks */
+            return true;
+        } catch (err) { throw `[Euno] ERROR: Unable to Update Namespace: ${err.message}` }
     },
-
     // SCRIPT INITIALIZATION:
-    _initSteps: ["Preinitialize", "Initialize", "PostInitialize"],
     INITIALIZE: () => {
+        this._initSteps = this._initSteps || ["Preinitialize", "Initialize", "PostInitialize"];
         if (this._initSteps.length) {
             this._initStep = this._initSteps.shift();
 
@@ -69,7 +71,8 @@ const EunoCORE = {
                     try {EunoCONFIG} // Verify EunoCONFIG.js is installed
                     catch {throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?"}
                     break;
-                }
+                } // falls through
+                // falls through
                 case "Initialize": {
                     Object.values();
                     EunoCORE.L.RegScriptListeners();
@@ -90,10 +93,9 @@ const EunoCORE = {
                 });
             }
             return false;
-        } else {
-            this.U.Flag("Initialization Complete!");
         }
         // Initialization Complete!
+        this.U.Flag("Initialization Complete!");
         return true;
     },
     ConfirmReady: (scriptName) => {
@@ -842,54 +844,6 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             })();
             return RoundNum((base - base1) * (query2 - query1) / (base2 - base1) + query1, 2);
         };
-
-        /*
-
-            if (["int", "float"].includes(GetType(qPt[0]))) { // y is unknown
-                const ptX = Float(qPt[0]);
-                const xCoords = coords.map(([x]) => x);
-                // Check if x-coord is already represented by a given coord
-                if (xCoords.includes(ptX)) {
-                    return coords.find(([x]) => x === ptX);
-                }
-                // Find two points in coords that are closest to given x
-                const [minX, maxX] = [Math.min(...xCoords), Math.max(...xCoords)];
-                console.log([coords, qPt, xCoords, ptX, minX, maxX]);
-                const upperIndex = xCoords.findIndex((xCo) => ptX < xCo);
-                const nearCoords = [];
-                if (upperIndex === 0) {
-                    nearCoords.push(coords[0], coords[1]);
-                } else if (upperIndex === -1) {
-                    nearCoords.push(coords[coords.length - 2], coords[coords.length - 1]);
-                } else {
-                    nearCoords.push(coords[upperIndex - 1], coords[upperIndex]);
-                }
-                const [[p1X, p1Y], [p2X, p2Y]] = nearCoords;
-                return RoundNum(((p2Y - p1Y) / (p2X - p1X)) * (ptX - p1X) + p1Y, 2);
-            } else if (["int", "float"].includes(GetType(qPt[1]))) { // x is unknown
-                const ptY = Float(qPt[1]);
-                const yCoords = coords.map(([x, y]) => y);
-                // Check if y-coord is already represented by a given coord
-                if (yCoords.includes(ptY)) {
-                    return coords.find(([x, y]) => y === ptY);
-                }
-                // Find two points in coords that are closest to given y
-                const [minY, maxY] = [Math.min(...yCoords), Math.max(...yCoords)];
-                const upperIndex = yCoords.findIndex((yCo) => ptY < yCo);
-                const nearCoords = [];
-                if (upperIndex === 0) {
-                    nearCoords.push(coords[0], coords[1]);
-                } else if (upperIndex === -1) {
-                    nearCoords.push(coords[coords.length - 2], coords[coords.length - 1]);
-                } else {
-                    nearCoords.push(coords[upperIndex - 1], coords[upperIndex]);
-                }
-                const [[p1X, p1Y], [p2X, p2Y]] = nearCoords;
-                return RoundNum(((p2X - p1X) / (p2Y - p1Y)) * (ptY - p1Y) + p1X, 2);
-            }
-            return false;
-        };
-           */
         // #endregion ░░░░[Math]░░░░
         // #region ░░░░░░░[Chat] Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░░ ~
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
@@ -2141,9 +2095,5 @@ EunoCORE.regSCRIPT("LISTENER", EunoLIB.LISTENER);
 EunoCORE.regSCRIPT("OBJECTS", EunoLIB.OBJECTS);
 EunoCORE.regSCRIPT("HTML", EunoLIB.HTML);
 
-on("ready", () => {
-    if (EunoCORE.UpdateNamespace()) {
-        EunoCORE.INITIALIZE();
-    } else {throw "[Euno] ERROR: Unable to Update Namespace."}
-});
+on("ready", () => { EunoCORE.UpdateNamespace(); EunoCORE.INITIALIZE() });
 MarkStop("EunoLIB");
