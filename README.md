@@ -13,7 +13,7 @@ Roll20's native support for Text Objects (i.e. text you create directly in the s
 
 ## !ETC Feature: Text Drop Shadows
 
-![ETC Feature: Text Drop Shadows](images/web/ETCTextShadowsHeader.png)
+![ETC Feature: Text Drop Shadows](images/web/ETCDropShadowsHeader.png)
 
 Add drop shadows to text objects, either automatically (whenever one is created) or manually via chat command.
 * **Fully Plug-And-Play** — You can add/remove shadows from selected text objects with a command, or toggle on automatic shadowing, which will add a text shadow to any new text object created by any player.
