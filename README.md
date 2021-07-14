@@ -12,16 +12,9 @@ Roll20's native support for Text Objects (i.e. text you create directly in the s
 ... and you're done! Instructions are printed to chat on script startup, and can be reviewed at any time by typing "**!etc**".
 
 ## !ETC Feature: Text Drop Shadows
-
 ![ETC Feature: Text Drop Shadows](images/web/ETCDropShadowsHeader.png)
-
-Add drop shadows to text objects, either automatically (whenever one is created) or manually via chat command.
-* **Fully Plug-And-Play** — You can add/remove shadows from selected text objects with a command, or toggle on automatic shadowing, which will add a text shadow to any new text object created by any player.
-* **Completely Hands-Off** — Text shadows are created on the map layer (by default), then z-ordered behind their master text objects. Shadows will move when their master object moves; they will update their content, size, font, etc. to match their master object; and they will remove themselves if their master object is ever removed—all without any user involvement. Ideally, you should never have to think about the text shadow objects themselves.
-* **Tuned for All Fonts & Sizes** — The shadows are positioned depending on the font family and size, for a pleasing look whether you're shadowing a huge heading or a paragraph of body text.  Configuration options clearly marked and commented in the script allow further fine-tuning of these details, if the default settings aren't to your liking: You can configure different vertical and horizontal offsets, specify specific offsets for specific font and size combinations, change the color of the shadows, and specify the layer on which text shadows should be created.
-
 ## !ETC Feature: Auto-Prune Empty Text Objects
-Ever notice that, when you click off of a text object, Roll20 goes and creates another text object wherever you clicked? If you then click elsewhere without typing anything, that empty and invisible text object remains (potentially interfering with box-selecting objects, among other vexations).  By toggling Auto-Prune on, **!ETC** will automatically remove any empty text objects from the sandbox whenever they are created.
+![ETC Feature: Auto-Prune Empty Text Objects](images/web/ETCEmptyPruningHeader.png)
 
 ## Future Plans for !ETC
 Additional features in development include:
