@@ -1,22 +1,31 @@
-![Eunomiac's Roll20 Scripts](images/web/EunomiacsRoll20ScriptsLogo.png)
 
+![Eunomiac's Roll20 Scripts](images/web/EunomiacsRoll20ScriptsLogo.png)
 I've written a ton of scripts in my neverending quest to transform the Roll20 sandbox into a more interactive, more feature-packed virtual tabletop. I haven't seen many implementations of these features elsewhere, so I decided to finally take the time to untangle my interdependent web of scripts and prepare them for contribution to the Roll20 community at large.  I'll be grouping these into packages by theme, the first of which to be released (in very early alpha) being **!ETC: Eunomiac's Text Controls**.
 
 ![ETC: Eunomiac's Text Controls](images/web/ETCLogo.png)
 
 Roll20's native support for Text Objects (i.e. text you create directly in the sandbox) is limited, especially if you'd like to make your sandbox into an infographic or HUD. Enter **!ETC** to provide a host of functions dedicated to streamlining, simplifying and automating your ability to use Text Objects for all manner of applications!
 
-## Installation & Setup
-* **Install ETC.js** — Install the contents of **ETC.js** as a new script in the "API Scripts" section of your game management page.
+# Installation & Setup
+* **Download Latest Release** — Download the latest release at :link:[this link](https://github.com/Eunomiac/EunosRoll20Scripts/releases).
+* **Install EunoScript Dependencies** — If you haven't already: 
+    * **Install EunoCONFIG.js** — Install the contents of **EunoCONFIG.js** as a new script in the "API Scripts" section of your game management page.
+    * **Install EunoLIB.js** — Install the contents of **EunoLIB.js** in the same way, as a new script *after* EunoCONFIG.js.
+* **Install EunoScript Modules** — Install any or all of the modular scripts provided in the release, ensuring the above dependencies are located before them on your "API Scripts" page.
+    * **ETC.js** — **Euno's Text Controls** is the only modular script that has been released thus far, though much more is forthcoming: Keep reading for details on future plans.
 
-... and you're done! Instructions are printed to chat on script startup, and can be reviewed at any time by typing "**!etc**".
+Once complete, you should have at least three scripts installed in the following order (they do not need to be at the absolute beginning of your scripts, as in the image, as long as they're in the correct order)
 
-## !ETC Feature: Text Drop Shadows
+![Example of Successfully-Installed ETC](images/web/scriptInstallExample.png)
+
+... and you're done! Instructions are printed to chat on script startup, and can be reviewed at any time by typing "`!euno`".
+
+# !ETC Features
 ![ETC Feature: Text Drop Shadows](images/web/ETCDropShadowsHeader.png)
-## !ETC Feature: Auto-Prune Empty Text Objects
 ![ETC Feature: Auto-Prune Empty Text Objects](images/web/ETCEmptyPruningHeader.png)
+![ETC Feature: Binding, Locking & Toggling](images/web/ETCBindingHeader.png)
 
-## Future Plans for !ETC
+# Future Plans for !ETC
 Additional features in development include:
 * **Text Justification & Alignment** — Define height and/or width for a text object, then the horizontal justification *(left/center/right)* and/or the vertical alignment *(top/middle/bottom)* of its contents. <b>!ETC</b> will constantly update the text object whenever its content changes, adding line breaks and padding as necessary to maintain the prescribed settings. You can also configure overflow behavior (if both height and width are specified): truncated, truncated with ellipses, or allowed to overflow along one or both axes.
 * **Attribute Linking** — Link a text object in the sandbox to an attribute on a character, then choose from a number of different ways to display that value: directly, as a bar showing current value out of maximum value, or by repeating a symbol, character or string a number of times equal to the attribute value. The text object will automatically update whenever the linked attribute is changed.
