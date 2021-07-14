@@ -675,5 +675,5 @@ const ETC = (() => {
     // #endregion ▒▒▒▒[EXPORTS: ETC]▒▒▒▒
 })();
 
-EunoCORE.regSCRIPT("ETC", ETC);
+EunoCORE.Register("ETC", ETC);
 void MarkStop("ETC");
