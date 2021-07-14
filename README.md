@@ -1,5 +1,5 @@
-
 ![Eunomiac's Roll20 Scripts](images/web/EunomiacsRoll20ScriptsLogo.png)
+
 I've written a ton of scripts in my neverending quest to transform the Roll20 sandbox into a more interactive, more feature-packed virtual tabletop. I haven't seen many implementations of these features elsewhere, so I decided to finally take the time to untangle my interdependent web of scripts and prepare them for contribution to the Roll20 community at large.  I'll be grouping these into packages by theme, the first of which to be released (in very early alpha) being **!ETC: Eunomiac's Text Controls**.
 
 ![ETC: Eunomiac's Text Controls](images/web/ETCLogo.png)
