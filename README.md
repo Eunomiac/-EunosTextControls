@@ -9,16 +9,16 @@ Roll20's native support for Text Objects (i.e. text you create directly in the s
 # Installation & Setup
 * **Download Latest Release** — Download the latest release at :link:[this link](https://github.com/Eunomiac/EunosRoll20Scripts/releases).
 * **Install EunoScript Dependencies** — If you haven't already: 
-    * **Install EunoCONFIG.js** — Install the contents of **EunoCONFIG.js** as a new script in the "API Scripts" section of your game management page.
-    * **Install EunoLIB.js** — Install the contents of **EunoLIB.js** in the same way, as a new script *after* EunoCONFIG.js.
+    * **Install `EunoCONFIG.js`** — Install the contents of **`EunoCONFIG.js`** as a new script in the "API Scripts" section of your game management page.
+    * **Install `EunoLIB.js`** — Install the contents of **`EunoLIB.js`** in the same way, as a new script *after* **`EunoCONFIG.js`**.
 * **Install EunoScript Modules** — Install any or all of the modular scripts provided in the release, ensuring the above dependencies are located before them on your "API Scripts" page.
-    * **ETC.js** — **Euno's Text Controls** is the only modular script that has been released thus far, though much more is forthcoming: Keep reading for details on future plans.
+    * **`ETC.js`** — **Eunomiac's Text Controls** is the only modular script that has been released thus far, though much more is forthcoming: Keep reading for details on future plans.
 
-Once complete, you should have at least three scripts installed in the following order (they do not need to be at the absolute beginning of your scripts, as in the image, as long as they're in the correct order)
+Once complete, you should have at least three scripts installed in the following order (though they do not need to be at the absolute beginning of your scripts):
 
 ![Example of Successfully-Installed ETC](images/web/scriptInstallExample.png)
 
-... and you're done! Instructions are printed to chat on script startup, and can be reviewed at any time by typing "`!euno`".
+... and you're done! Instructions are printed to chat on script startup, and can be reviewed at any time by typing "**`!euno`**".
 
 # !ETC Features
 ![ETC Feature: Text Drop Shadows](images/web/ETCDropShadowsHeader.png)
@@ -41,6 +41,4 @@ Who said you can't have buttons in the Roll20 Sandbox? **!EGC** circumvents this
 
 ![ETC: Eunomiac's HTML Controls](images/web/EHCLogo.png)
 
-Dispense with the limitations of the Roll20 content editors, and instead create gorgeous handouts and chat messages with (almost) full HTML and CSS support. Buttons capable of submitting API chat commands can be included in both chat messages and handouts, the latter being an excellent way to create a master GM "control panel" for your game.
-
-... and more, in even earlier stages of development! 
+Dispense with the limitations of the Roll20 content editors, and instead create gorgeous handouts and chat messages with (almost) full HTML and CSS support. **!EHC** will offer myriad styling and customization options related to HTML and CSS styling, including clickable buttons capable of submitting API chat commands that can be included in both chat messages and handouts, the latter being an excellent way to create a master GM "control panel" for your game!
