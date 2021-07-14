@@ -63,14 +63,14 @@ const EunoCONFIG = {
                     Arial: 0.6,
                     "Patrick Hand": 0.75,
                     Tahoma: 0.75,
-                    Rye: 0.9,
+                    Rye: 0.5,
                     "IM Fell DW Pica": 0.5,
                     Nunito: 0.75,
                     Montserrat: 0.5,
                     Merriweather: 0.6,
-                    "Della Respira": 0.6,
+                    "Della Respira": 0.4,
                     "Crimson Text": 0.4,
-                    "Kaushan Script": [0.4, 0.6]
+                    "Kaushan Script": [0.4, 0.4]
                 },
 
                 /** ░░ OVERRIDES: DIRECT REPLACEMENT ░░
