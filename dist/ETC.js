@@ -618,16 +618,20 @@ const ETC = (() => {
     const displayToggles = () => {
         U.Alert(H.Box([
             H.Subtitle("Options", ["etc"]),
-            H.Block(H.Paras([
+            H.Block(
                 H.ButtonToggle([
                     "Auto-Shadow",
                     "Whe~ther sha~dows are auto~ma~ti~cally ap~plied to new text ob~jects upon cre~a~tion."
-                ], `!etc toggle autoshadow ${STA.TE.isAutoShadowing ? "false" : "true"}`, [`toggle${STA.TE.isAutoShadowing ? "On" : "Off"}`, "silver"], {}, {title: `Click to ${STA.TE.isAutoShadowing ? "DEACTIVATE" : "ACTIVATE"} automatic text shadows for all text objects.`}),
+                ], `!etc toggle autoshadow ${STA.TE.isAutoShadowing ? "false" : "true"}`, [`toggle${STA.TE.isAutoShadowing ? "On" : "Off"}`, "silver"], {}, {title: `Click to ${STA.TE.isAutoShadowing ? "DEACTIVATE" : "ACTIVATE"} automatic text shadows for all text objects.`})
+                , ["silver"]
+            ),
+            H.Block(
                 H.ButtonToggle([
                     "Auto-Prune",
                     "Whe~ther empty (in~vi~sible) text ob~jects are auto~ma~ti~cally re~moved from the sand~box."
                 ], `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"}`, [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "silver"], {}, {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`})
-            ], ["tight"]), ["silver"]),
+                , ["silver"]
+            ),
             H.ButtonFooter("!etc", "", ["goBack", "silver"])
         ], ["silver"]));
     };
@@ -674,4 +678,4 @@ const ETC = (() => {
     // #endregion ▒▒▒▒[EXPORTS: ETC]▒▒▒▒
 })();
 
-EunoCORE.regSCRIPT("ETC", ETC);
+EunoCORE.Register("ETC", ETC);

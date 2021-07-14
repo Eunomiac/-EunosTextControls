@@ -1,5 +1,3 @@
-const {on} = require("gulp");
-
 MarkStart("EunoLIB");
 /******▌████████████████████████████████████████████████████████████▐******\
 |*     ▌█░░░░    EunoLIB: Common Functions for EunoScripts     ░░░░█▐     *|
@@ -11,40 +9,52 @@ const EunoCORE = {
     // #region ░░░░░░░[STORAGE]░░░░ Initialization & Management of 'state' Namespaces ░░░░░░░ ~
     ROOTNAME: "EunoScripts", // Namespace under global state variables
     get ROOT() { // Root state namespace for all EunoScripts
-        state[EunoCORE.ROOTNAME] = state[EunoCORE.ROOTNAME] || {};
-        return state[EunoCORE.ROOTNAME];
-    },
-    GetLocalSTATE: (scriptName) => { // Returns script state namespace for specified EunoScript
-        if (scriptName in EunoCORE.SCRIPTS) {
-            EunoCORE.ROOT[scriptName] = EunoCORE.ROOT[scriptName] || {};
-            return EunoCORE.ROOT[scriptName];
+        if (!(this.ROOTNAME in state)) {
+            state[this.ROOTNAME] = {isEunoState: true};
+        } else if (!state[this.ROOTNAME].isEunoState) {
+            throw "[Euno] State Conflict: Another script has claimed state.EunoScripts";
         }
-        return false;
+        return state[this.ROOTNAME];
     },
-    DeleteLocalSTATE: (scriptName) => delete EunoCORE.ROOT[scriptName], // Clears local state storage for specified EunoScript
-    InitState: function(scriptName, DEFAULTSTATE = {}) { // Initializes script state storage, applying any default values
-        const stateRef = this.GetLocalState(scriptName);
-        if (stateRef) {
-            Object.entries(DEFAULTSTATE)
-                .filter(([key]) => !(key in stateRef))
-                .forEach(([key, defaultVal]) => {stateRef[key] = defaultVal});
+    GetLocalSTATE: function(scriptName) { // Returns script state namespace for specified EunoScript
+        if (!(scriptName in this.ROOT)) {
+            if (scriptName in this.SCRIPTDATA && this.SCRIPTDATA[scriptName].hasDefaultSTATE) {
+                this.ROOT[scriptName] = this.ROOT[scriptName] || {...this.getScript(scriptName).DEFAULTSTATE};
+            } else {
+                throw `[Euno] State Access Error: ${scriptName} has not initialized state storage`;
+            }
+        }
+        return this.ROOT[scriptName];
+    },
+    InitLocalSTATE: function(scriptName) { // Initializes script state storage
+        const script = this.getScript(scriptName);
+        if (script.hasDefaultSTATE) {
+            const stateRef = this.GetLocalSTATE(scriptName);
+            if (stateRef) {
+                Object.entries(script.DEFAULTSTATE)
+                    .filter(([key]) => !(key in stateRef))
+                    .forEach(([key, defaultVal]) => {stateRef[key] = defaultVal});
+            }
         }
     },
+    DeleteLocalSTATE: function(scriptName) { delete this.ROOT[scriptName] }, // Clears local state storage for specified EunoScript
     // #endregion ░░░░[STATE STORAGE]░░░░
     // #region ░░░░░░░[SCRIPT REGISTRATION] Installed EunoScripts Register Themselves Here ░░░░░░░ ~
-    Register: function (name, script) {
-        this._scriptData = this._scriptData || {};
-        this._scriptData[name] = {
+    _scriptData: {},
+    get SCRIPTDATA() { return this._scriptData },
+    getScript: function(scriptName) { return (this.SCRIPTDATA[scriptName] || {script: false}).script },
+
+    Register: function(name, script) {
+        this.SCRIPTDATA[name] = {
             name,
             script,
+            hasDefaultSTATE: "DEFAULTSTATE" in script,
             hasPreinitialize: "Preinitialize" in script,
             hasInitialize: "Initialize" in script,
             hasListeners: "Listeners" in script,
             hasPostInitialize: "PostInitialize" in script
         };
     },
-    get SCRIPTDATA() { return this._scriptData },
-    get SCRIPTS() { return Object.fromEntries(Object.values(this.SCRIPTDATA).map(({name, script}) => [name, script])) },
     // #endregion ░░░░[SCRIPT REGISTRATION]░░░░
     // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░ ~
     // VERSION MIGRATION: Any migration processing necessary on version update
@@ -55,10 +65,10 @@ const EunoCORE = {
         } catch (err) { throw `[Euno] ERROR: Unable to Update Namespace: ${err.message}` }
     },
     // SCRIPT INITIALIZATION
+    InitSteps: ["Preinitialize", "Initialize", "Listeners", "PostInitialize"],
     RegisterListener: function(scriptName, script) {
         const handleEvent = (event, ...args) => {
-            const [eventCall, ...eventDetails] = event.split(/:/);
-            M;
+            const [eventCall, ...eventParams] = event.split(/:/);
             switch (eventCall) {
                 case "chat": {
                     break;
@@ -75,6 +85,7 @@ const EunoCORE = {
 
                     break;
                 }
+                // no default
             }
         };
 
@@ -91,13 +102,18 @@ const EunoCORE = {
 
 
     INITIALIZE: function() {
-        this._initSteps = this._initSteps || ["Preinitialize", "Initialize", "Listeners", "PostInitialize"];
-        if (this._initSteps.length) {
-            this._initStep = this._initSteps.shift();
-            const scriptDatas = Object.entries(this.SCRIPTS)
-                .filter(([scriptName, scriptData]) => scriptData[`has${this._initStep}`]);
+        if (this.InitSteps.length) {
+            const initStep = this.InitSteps.shift();
 
-            switch (this._initStep) {
+            /* Temporarily Disable Listener Step */
+            if (initStep === "Listeners") {
+                return this.INITIALIZE();
+            }
+
+            const scriptDatas = Object.fromEntries(Object.entries(this.SCRIPTDATA)
+                .filter(([scriptName, scriptData]) => scriptData[`has${initStep}`]));
+
+            switch (initStep) {
                 case "Preinitialize": {
                     try {EunoCONFIG} // Verify EunoCONFIG.js is installed
                     catch {throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?"}
@@ -112,16 +128,13 @@ const EunoCORE = {
                 // no default
             }
 
-            const scripts = Object.fromEntries(Object.entries(this.SCRIPTS)
-                .filter(([scriptName, scriptData]) => scriptData[`has${this._initStep}`])
+            const scripts = Object.fromEntries(Object.entries(scriptDatas)
                 .map(([scriptName, scriptData]) => [scriptName, scriptData.script]));
             if (Object.values(scripts).length) {
                 // Log scripts to initialization log, for later confirmation of step completion
                 this.initializationLog = {...scripts};
                 // Process each script through next initialization step
-                Object.values(scripts).forEach((script, i) => {
-                    script[this._initStep]();
-                });
+                Object.values(scripts).forEach((script) => { script[initStep]() });
             }
             return false;
         }
@@ -154,8 +167,7 @@ const EunoCORE = {
          * "string"                     // only if none of the above match
          *
          */
-        const valType = Object.prototype.toString
-            .call(val)
+        const valType = Object.prototype.toString.call(val)
             .slice(8, -1)
             .toLowerCase()
             .trim();
@@ -282,7 +294,8 @@ const EunoCORE = {
         ],
         // #endregion ░░░░[COLORS]░░░░
         // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░ ~
-        IMAGES: (() => {
+
+        IMAGES: (function() {
             const IMGROOT = "https://tinyurl.com/EunoScriptImages"; // "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
             return Object.fromEntries(Object.entries({
                 buttonDownload: ["buttons", "buttonDownload.png", [50, 50]],
@@ -294,11 +307,11 @@ const EunoCORE = {
 
                 titleMain: ["bookends", "headerMain.png", [283, 208]],
                 titleMainButtons: ["bookends", "headerMainButtons.png", [283, 208]],
-                subtitleGold: ["bookends", "subtitleGold.png", [283, 60]],
+                subtitleGold: ["bookends", "subtitleGold.png", [283, 142]],
 
-                footerGold: ["bookends", "footerGold.png", [283, 37]],
-                footerGoBackGold: ["bookends", "footerGoBackGold.png", [283, 37]],
-                footerHideIntroGold: ["bookends", "footerHideIntroGold.png", [283, 37]],
+                footerGold: ["bookends", "footerGold.png", [283, 142]],
+                footerGoBackGold: ["bookends", "footerGoBackGold.png", [283, 142]],
+                footerHideIntroGold: ["bookends", "footerHideIntroGold.png", [283, 142]],
 
                 h1Gold: ["emphasis", "h1Gold.png", [283, 40]],
                 h1GoldDim: ["emphasis", "h1GoldDim.png", [283, 40]],
@@ -321,11 +334,12 @@ const EunoCORE = {
                 bgChatSilver: ["backgrounds", "bgChatSilver.jpg", [283, 563]],
 
                 titleETC: ["bookends", "headerScriptETC.png", [283, 142]],
-                subtitleSilver: ["bookends", "subtitleSilver.png", [283, 60]],
-                subtitleSilverETC: ["bookends", "subtitleSilverETC.png", [283, 60]],
+                titleEGC: ["bookends", "headerScriptEGC.png", [283, 142]],
+                titleEHC: ["bookends", "headerScriptEHC.png", [283, 142]],
+                subtitleSilver: ["bookends", "subtitleSilver.png", [283, 142]],
 
-                footerSilver: ["bookends", "footerSilver.png", [283, 37]],
-                footerGoBackSilver: ["bookends", "footerGoBackSilver.png", [283, 37]],
+                footerSilver: ["bookends", "footerSilver.png", [283, 142]],
+                footerGoBackSilver: ["bookends", "footerGoBackSilver.png", [283, 142]],
 
                 h1Silver: ["emphasis", "h1Silver.png", [283, 40]],
                 h1SilverDim: ["emphasis", "h1SilverDim.png", [283, 40]],
@@ -347,11 +361,13 @@ const EunoCORE = {
                 //     #region ========== Bronze: Level 3 Bronze Theme =========== ~
                 bgChatBronze: ["backgrounds", "bgChatBronze.jpg", [283, 563]],
 
-                subtitleBronze: ["bookends", "subtitleBronze.png", [283, 60]],
-                subtitleBronzeETC: ["bookends", "subtitleBronzeETC.png", [283, 60]],
+                subtitleBronze: ["bookends", "subtitleBronze.png", [283, 142]],
+                subtitleBronzeETC: ["bookends", "subtitleBronzeETC.png", [283, 142]],
+                subtitleBronzeEGC: ["bookends", "subtitleBronzeEGC.png", [283, 142]],
+                subtitleBronzeEHC: ["bookends", "subtitleBronzeEHC.png", [283, 142]],
 
-                footerBronze: ["bookends", "footerBronze.png", [283, 37]],
-                footerGoBackBronze: ["bookends", "footerGoBackBronze.png", [283, 37]],
+                footerBronze: ["bookends", "footerBronze.png", [283, 142]],
+                footerGoBackBronze: ["bookends", "footerGoBackBronze.png", [283, 142]],
 
                 h1Bronze: ["emphasis", "h1Bronze.png", [283, 40]],
                 h1BronzeDim: ["emphasis", "h1BronzeDim.png", [283, 40]],
@@ -366,13 +382,22 @@ const EunoCORE = {
                 h2FlagBronze: ["emphasis", "h2FlagBronze.png", [283, 24]],
 
                 commandBronze: ["emphasis", "commandBronze.png", [235, 37]],
+
+                toggleButtonOnBronze: ["buttons", "toggleOnBronze.png", [273, 68]],
+                toggleButtonOffBronze: ["buttons", "toggleOffBronze.png", [273, 68]],
                 //     #endregion _______ Bronze _______
 
                 h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]]
             }).map(([key, [folder, name, [width, height]]]) => [key, {height, width, img: [IMGROOT, folder, name].join("/")}]));
         })(),
-        GetImgURL: (imgKey) => this.IMAGES[imgKey].img,
-        GetImgSize: (imgKey) => [this.IMAGES[imgKey].width, this.IMAGES[imgKey].height],
+        GetImgURL: function(imgKey) { return this.IMAGES[imgKey].img },
+        GetImgSize: function(imgKey) {
+            if (imgKey in this.IMAGES) {
+                return [this.IMAGES[imgKey].width, this.IMAGES[imgKey].height];
+            } else {
+                throw `[Euno] Error: Bad Image Key: ${imgKey}`;
+            }
+        },
         // #endregion ░░░░[IMAGES]░░░░
         // #region ░░░░░░░[ROLL20 OBJECTS] Roll20 Object Types ░░░░░░░ ~
         ROLL20TYPES: {
@@ -430,7 +455,7 @@ const EunoCORE = {
     get REG() { return EunoLIB.RE.G },
     get C() { return EunoCORE.CONSTANTS },
     get U() { return EunoLIB.UTILITIES },
-    get L() { return EunoLIB.LISTENER },
+    get L() { return () => false}, // EunoLIB.LISTENER },
     get O() { return EunoLIB.OBJECTS },
     get H() { return EunoLIB.HTML }
     // #endregion ░░░░[SHORTHAND GETTERS]░░░░
@@ -449,12 +474,13 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     const {CFG, C} = EunoCORE; let LIB, U, L, O, H; // must wait for intialization to be assigned
     // #endregion ░░░░[Namespacing]░░░░
     // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░ ~
+    const DEFAULTSTATE = {
+        isDisplayingHelpAtStart: true
+    };
 
     const Preinitialize = () => {
         // Initialize local state storage
-        EunoCORE.InitState(SCRIPTNAME, {
-            isDisplayingHelpAtStart: true
-        });
+        EunoCORE.InitLocalSTATE(SCRIPTNAME);
 
         // Report preinitialization complete to EunoCORE loader
         EunoCORE.ConfirmReady(SCRIPTNAME);
@@ -487,49 +513,38 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #endregion ░░░░[Initialization]░░░░
     // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░ ~
-    const Listeners = {
+    /*     const Listeners = {
         "chat:message": [
             {regexp: /^(!euno|!edev)/, gmOnly: true, objTypes: [], handler: handleMessage}
         ]
-    };
-    const handleMessage
-
-
-    = (msg) => {
+    }; */
+    const handleMessage = (msg) => {
         if (U.CheckMessage(msg, ["!euno", "!edev"])) {
             let {call, args, selected} = U.ParseMessage(msg, "all");
             if (call === "!euno") {
-                try {
-                    ({
-                        toggle: () =>
-                            ({
-                                intro: () => {
-                                    STA.TE.isDisplayingHelpAtStart = args.includes(true);
-                                    if (STA.TE.isDisplayingHelpAtStart) {
-                                        U.Flag("Showing Help at Start.", 2);
-                                    } else {
-                                        U.Flag("Hiding Help at Start.", 2, ["silver"]);
-                                    }
-                                }
-                            }[U.LCase((call = args.shift()))]())
-                    }[U.LCase((call = args.shift()))]());
-                } catch {
-                    H.DisplayHelp();
-                }
+                try {({
+                    toggle: () => ( {
+                        intro: () => {
+                            STA.TE.isDisplayingHelpAtStart = args.includes(true);
+                            if (STA.TE.isDisplayingHelpAtStart) {
+                                U.Flag("Showing Help at Start.", 2);
+                            } else {
+                                U.Flag("Hiding Help at Start.", 2, ["silver"]);
+                            }
+                        }
+                    }[ U.LCase((call = args.shift())) ]() )
+                }[ U.LCase((call = args.shift())) ]() );
+                } catch { H.DisplayHelp() }
             } else if (call === "!edev") {
-                try {
-                    ({
-                        get: () =>
-                            ({
-                                state: () => U.Show(state),
-                                root: () => U.Show(EunoCORE.ROOT),
-                                stateref: () => U.Show(STA.TE),
-                                data: () => U.Show(selected)
-                            }[U.LCase((call = args.shift()))]())
-                    }[U.LCase((call = args.shift()))]());
-                } catch {
-                    H.Flag(`[EDev] Bad Call: '${call}'`, 2);
-                }
+                try {({
+                    get: () => ( {
+                        stateall: () => U.Show(state),
+                        root: () => U.Show(EunoCORE.ROOT),
+                        state: () => U.Show(STA.TE),
+                        data: () => U.Show(selected)
+                    }[U.LCase((call = args.shift()))]())
+                }[U.LCase((call = args.shift()))]());
+                } catch { U.Flag(`[EDev] Error: Bad Call: '${call}'`, 2) }
             }
         }
     };
@@ -548,22 +563,13 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         //     #endregion _______ Namespacing _______
         //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
-        const Preinitialize = () => {
-            // Initialize local state storage
-            EunoCORE.InitState(SCRIPTNAME);
-
-            // Report preinitialization complete to EunoCORE loader
-            EunoCORE.ConfirmReady(SCRIPTNAME);
-        }; //
         const Initialize = () => {
             // Alert readiness confirmation
             U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
             log(`[Euno] ${SCRIPTNAME} Initialized`);
 
             // Report initialization complete to EunoCORE loader
-            EunoCORE.ConfirmReady(SCRIPTNAME, `EunoLIB.${SCRIPTNAME} Ready`, 2, [
-                "silver"
-            ]);
+            EunoCORE.ConfirmReady(SCRIPTNAME, `EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
         };
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
@@ -584,13 +590,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             if (Float(qNum) === Int(qNum)) {
                 return Int(qNum);
             }
-            return (
-                Math.round(Float(qNum) * 10 ** Int(numDecDigits))
-        / 10 ** Int(numDecDigits)
-            );
+            return Math.round(Float(qNum) * 10 ** Int(numDecDigits)) / 10 ** Int(numDecDigits);
         };
-        const BindNum = (qNum, minVal, maxVal) =>
-            Math.max(Math.min(Float(qNum), Float(maxVal)), Float(minVal));
+        const BindNum = (qNum, minVal, maxVal) => Math.max(Math.min(Float(qNum), Float(maxVal)), Float(minVal));
         const CycleNum = (qNum, minVal, maxVal) => {
             qNum = Float(qNum);
             minVal = Float(minVal);
@@ -633,22 +635,15 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 return val.map((v) => ParseString(v));
             }
             switch (GetType(val)) {
-                case "int":
-                    return Int(val);
-                case "float":
-                    return Float(val);
+                case "int": return Int(val);
+                case "float": return Float(val);
                 default: {
                     switch (LCase(val)) {
-                        case "true":
-                            return true;
-                        case "false":
-                            return false;
-                        case "null":
-                            return null;
-                        case "undefined":
-                            return undefined;
-                        default:
-                            return val;
+                        case "true": return true;
+                        case "false": return false;
+                        case "null": return null;
+                        case "undefined": return undefined;
+                        default: return val;
                     }
                 }
             }
@@ -788,8 +783,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             const romanRef = C.ROMANNUMERALS[isUsingGroupedChars ? "grouped" : "ungrouped"];
             const romanNum = NumToString(num)
                 .split("")
-                .reverse();
-            m.map((digit, i) => romanRef[i][Int(digit)])
+                .reverse()
+                .map((digit, i) => romanRef[i][Int(digit)])
                 .reverse()
                 .join("");
             return isUsingGroupedChars
@@ -861,11 +856,11 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         // #endregion ░░░░[Math]░░░░
         // #region ░░░░░░░[Chat] Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░░ ~
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
-        const CheckMessage = (msg, calls, options = {isGM: true}) => {
+        const CheckMessage = (msg, calls, {isGM = true}) => {
             return U.GetType(msg) === "list"
                     && msg.type === "api"
                     && U.Arrayify(calls).some((call) => msg.content.startsWith(call))
-                    && (!options.isGM || playerIsGM(msg.playerid));
+                    && (!isGM || playerIsGM(msg.playerid));
         };
         const ParseMessage = (msg, types = []) => {
             const msgData = {
@@ -879,7 +874,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 content: msg.content,
                 selected: Object.fromEntries(U.Arrayify(types).map((type) => [type, O.GetSelObj([msg], type)]))
             };
-            [msgData.call, ...msgData.args] = U.ParseString(U.Arrayify(msg.content.match(/!\S*|\s@"[^"]*"|\s"[^"]*"|\s[^\s]*/gu)).map((arg) => arg.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1")));
+            [msgData.call, ...msgData.args] = U.ParseString(U.Arrayify(msg.content
+                .match(/!\S*|\s@"[^"]*"|\s"[^"]*"|\s[^\s]*/gu))
+                .map((arg) => arg.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1")));
             return msgData;
         };
         const Alert = (content, title, headerLevel = 1, classes = [], options = {noarchive: true}) => {
@@ -942,13 +939,10 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
              * @param {function} [valFunc]
              * @return {object}
              */
-            [valFunc, keyFunc] = [valFunc, keyFunc].filter((x) => typeof x === "function" || typeof x === "boolean");
+            [valFunc, keyFunc] = [valFunc, keyFunc].filter((x) => ["function", "boolean"].includes(typeof x));
             keyFunc = keyFunc || ((k) => k);
             valFunc = valFunc || ((v) => v);
-            return Object.fromEntries(Object.entries(obj).map(([key, val]) => [
-                keyFunc(key, val),
-                valFunc(val, key)
-            ]));
+            return Object.fromEntries(Object.entries(obj).map(([key, val]) => [keyFunc(key, val), valFunc(val, key)]));
         };
         const Remove = (arr, searchFunc) => {
             if (GetType(searchFunc) === "int") {
@@ -1038,7 +1032,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     // #endregion ▄▄▄▄▄ U ▄▄▄▄▄
 
     // #region ████████ L (LISTENER): Master Event Listener ████████
-    const LISTENER = (() => {
+    /*     const LISTENER = (() => {
         // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
         //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
         const SCRIPTNAME = "LISTENER";
@@ -1069,7 +1063,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             Initialize
         };
         // #endregion ▒▒▒▒[EXPORTS: L]▒▒▒▒
-    })();
+    })(); */
     // #endregion ▄▄▄▄▄ L ▄▄▄▄▄
 
     // #region ████████ O (OBJECTS): Roll20 Object Manipulation ████████
@@ -1086,7 +1080,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
         const Preinitialize = () => {
             // Initialize local state storage
-            EunoCORE.InitState(SCRIPTNAME);
+            EunoCORE.InitLocalSTATE(SCRIPTNAME);
 
             // Report preinitialization complete to EunoCORE loader
             EunoCORE.ConfirmReady(SCRIPTNAME);
@@ -1290,7 +1284,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
         const Preinitialize = () => {
             // Initialize local state storage
-            EunoCORE.InitState(SCRIPTNAME);
+            EunoCORE.InitLocalSTATE(SCRIPTNAME);
 
             // Report preinitialization complete to EunoCORE loader
             EunoCORE.ConfirmReady(SCRIPTNAME);
@@ -1311,10 +1305,11 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             chatWidth: 283,
             blockSpacing: 10,
             shifts: {
-                boxAll: [-27, 0, -7, -45],
+                boxAll: [-27, 0, -6, -45],
                 titleMainBottom: 0,
                 titleScriptsBottom: -62,
-                subtitleBottom: -24,
+                subtitleBottom: -100,
+                footerTop: -75,
                 commandHighlightShiftLeft: -20,
                 h1Bottom: C.GetImgSize("h1GoldTight")[1] - C.GetImgSize("h1Gold")[1],
                 h2Bottom: C.GetImgSize("h2GoldTight")[1] - C.GetImgSize("h2Gold")[1]
@@ -1364,10 +1359,10 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 }
             },
             get halfSpace() {
-                return U.RoundNum(this.blockSpacing / 2, 2);
+                return EunoCORE.U.RoundNum(this.blockSpacing / 2, 2);
             },
             get qartSpace() {
-                return U.RoundNum(this.blockSpacing / 4, 2);
+                return EunoCORE.U.RoundNum(this.blockSpacing / 4, 2);
             }
         };
         const CSS = {};
@@ -1390,6 +1385,11 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                     text-align: inherit;
                 }
 
+                div {
+                    position: relative;
+                    z-index: 1;
+                }
+
                 p, h1, h2, h3, img {
                     margin: ${cssVars.blockSpacing}px 0;
                 }
@@ -1403,7 +1403,6 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                     font-size: ${cssVars.font.bodySansSerif.size}px;
                     font-weight: ${cssVars.font.bodySansSerif.weight};
                     text-align: center;
-                    position: relative;
                     background-image: url('${C.GetImgURL("bgChatGold")}');
                     background-size: auto;
                     background-repeat: repeat;
@@ -1499,15 +1498,15 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                     margin-bottom: ${cssVars.shifts.titleScriptsBottom}px;
                 }
                 .subtitle {
-                    height: ${C.GetImgSize("subtitleSilverETC")[1]}px;
-                    background-image: url('${C.GetImgURL("subtitleSilverETC")}');
+                    height: ${C.GetImgSize("subtitleBronzeETC")[1]}px;
+                    background-image: url('${C.GetImgURL("subtitleBronzeETC")}');
                     background-size: auto;
                     margin-bottom: ${cssVars.shifts.subtitleBottom}px;
                     padding-top: ${cssVars.padding.subtitleTop}px;
                     line-height: 30px;
                 }
                 .subtitle.etc {
-                    background-image: url('${C.GetImgURL("subtitleSilverETC")}');
+                    background-image: url('${C.GetImgURL("subtitleBronzeETC")}');
                 }
                 .flag {
                     margin: 0;
@@ -1578,8 +1577,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 }
                 .footer {
                     height: ${C.GetImgSize("footerGold")[1]}px;
-                    margin-top: ${cssVars.padding.box}px;
+                    margin-top: ${cssVars.shifts.footerTop}px;
                     background-image: url('${C.GetImgURL("footerGold")}');
+                    z-index: 0;
                 }
                 .footer.silver {background-image: url('${C.GetImgURL("footerSilver")}')}
                 .footer.hideIntro {background-image: url('${C.GetImgURL("footerHideIntroGold")}')}
@@ -1786,32 +1786,17 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ Parsing Functions _______
         //     #region ========== Elements: Basic Element Constructors by Tag =========== ~
         const baseElements = {
-            Div: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(content, "div", classes, styles, attributes),
-            Span: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(content, "span", classes, styles, attributes),
-            P: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(content, "p", classes, styles, attributes),
-            Img: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(false, "img", classes, styles, attributes),
-            A: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(content, "a", classes, styles, attributes),
-            Pre: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(content, "pre", classes, styles, attributes),
-            H1: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(content, "h1", classes, styles, attributes),
-            H2: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(content, "h2", classes, styles, attributes),
-            H3: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(content, "h3", classes, styles, attributes),
-            OL: (content, classes = [], styles = {}, attributes = {}) =>
-                Tag(
-                    U.Arrayify(content).map((item) => Tag(item, "li")),
-                    "ol",
-                    classes,
-                    styles,
-                    attributes
-                )
+            Div: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "div", classes, styles, attributes),
+            Span: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "span", classes, styles, attributes),
+            P: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "p", classes, styles, attributes),
+            Img: (content, classes = [], styles = {}, attributes = {}) => Tag(false, "img", classes, styles, attributes),
+            A: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "a", classes, styles, attributes),
+            Pre: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "pre", classes, styles, attributes),
+            H1: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h1", classes, styles, attributes),
+            H2: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h2", classes, styles, attributes),
+            H3: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "h3", classes, styles, attributes),
+            OL: (content, classes = [], styles = {}, attributes = {}) => Tag(U.Arrayify(content)
+                .map((item) => Tag(item, "li")), "ol", classes, styles, attributes )
         };
         //     #endregion _______ Elements _______
         // #endregion ░░░░[Parsing]░░░░
@@ -2093,7 +2078,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     // #region ▒░▒░▒░▒[EXPORTS] EunoLIB ▒░▒░▒░▒ ~
     return {
         Preinitialize, Initialize, PostInitialize,
-        Listeners,
+        // Listeners,
 
         UTILITIES,
         OBJECTS,
@@ -2105,7 +2090,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
 EunoCORE.Register("EunoLIB", EunoLIB);
 EunoCORE.Register("UTILITIES", EunoLIB.UTILITIES);
-EunoCORE.Register("LISTENER", EunoLIB.LISTENER);
+// EunoCORE.Register("LISTENER", EunoLIB.LISTENER);
 EunoCORE.Register("OBJECTS", EunoLIB.OBJECTS);
 EunoCORE.Register("HTML", EunoLIB.HTML);
 
