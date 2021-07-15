@@ -246,7 +246,7 @@ const ETC = (() => {
                         const [multX, multY] = U.GetType(OFFSETS.multipliers[fontFamily]) === "array"
                             ? OFFSETS.multipliers[fontFamily]
                             : [OFFSETS.multipliers[fontFamily], OFFSETS.multipliers[fontFamily]];
-                        return [offset[0] * multX, offset[1] * multY];
+                        return [U.RoundNum(offset[0] * multX, 4), U.RoundNum(offset[1] * multY, 4)];
                     }
                     if (fontFamily in OFFSETS.overrides
                         && fontSize in OFFSETS.overrides[fontFamily]) {
