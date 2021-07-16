@@ -1,36 +1,30 @@
 /******▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██████▓▒░ !ETC: EUNOMIAC'S TEXT CONTROLS for Roll20 ░▒▓█████▐     *|
-|*     ▌████████████████████████████████████████████████████████████▐     *|
+|*     ▌████████████████████v0.15a███Jul 16 2021████████████████████▐     *|
 |*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
 const ETC = (() => {
-    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
-    // #region ░░░░░░░[Namespacing]░░░░ Basic References & Namespacing ░░░░░░ ~
+    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
+    // #region ░░░░░░░[Namespacing]░░░░ Basic References & Namespacing ░░░░░░
 
     const SCRIPTNAME = "ETC";
     const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
     const RE = {get G() { return STA.TE.REGISTRY }};
 
     // #endregion ░░░░[Namespacing]░░░░
-    // #region ░░░░░░░[Initialization]░░░░ Script Startup & Event Listeners ░░░░░░ ~
+    // #region ░░░░░░░[Initialization]░░░░ Script Startup & Event Listeners ░░░░░░
 
     // Define shorthand references to major script components.
     const {CFG, C} = EunoCORE;
     let LIB, U, O, H, Flag; // these have to be declared now, but must wait for intialization to be assigned  \\
-    const Preinitialize = () => {
-        // Initialize local state storage
-        EunoCORE.InitState(SCRIPTNAME, {
-            REGISTRY: {},
-            hiddenMasterIDs: [],
-            shadowOffsets: {},
-            isAutoShadowing: false,
-            isAutoPruning: false
-        });
-
-        // Report preinitialization complete to EunoCORE loader
-        EunoCORE.ConfirmReady(SCRIPTNAME);
-    };                                                                                                                     //
+    const DEFAULTSTATE = {
+        REGISTRY: {},
+        hiddenMasterIDs: [],
+        shadowOffsets: {},
+        isAutoShadowing: false,
+        isAutoPruning: false
+    };                                                                                                                  //
     const Initialize = () => {
         // Assign shorthand script references
         ({LIB, U, O, H} = EunoCORE); //                                    ◀======
@@ -54,7 +48,7 @@ const ETC = (() => {
         EunoCORE.ConfirmReady(SCRIPTNAME);
     };
     // #endregion ░░░░[Initialization]░░░░
-    // #region ░░░░░░░[Handlers]░░░░ Event Handlers: chat:message, change:text, add:text, destroy:text ░░░░░░ ~
+    // #region ░░░░░░░[Handlers]░░░░ Event Handlers: chat:message, change:text, add:text, destroy:text ░░░░░░
 
     const handleMessage = (msg) => {
         if (U.CheckMessage(msg, "!etc")) {
@@ -83,7 +77,7 @@ const ETC = (() => {
                     prune: () => displayHelp("textPruning")
                 }[U.LCase(call = args.shift())])(),
                 reset: () => ({
-                    all: () => EunoCORE.InitState(true),
+                    all: () => EunoCORE.InitLocalSTATE(true),
                     reg: () => STA.TE.REGISTRY = {}
                 }[U.LCase(call = args.shift())])()
             }[U.LCase(call = args.shift())])();
@@ -130,7 +124,7 @@ const ETC = (() => {
 
     // #endregion ░░░░[Handlers]░░░░
     // #endregion ▒▒▒▒[FRONT]▒▒▒▒
-    // #region ▒░▒░▒░▒[UTILITY] General Utility Functions for Text Objects ▒░▒░▒░▒ ~
+    // #region ▒░▒░▒░▒[UTILITY] General Utility Functions for Text Objects ▒░▒░▒░▒
     const ignoreQueue = [];
     const getText = (qText) => O.GetObj(qText, "text", RE.G);
     const getTextData = (qText, isReturningArray = false) => {
@@ -203,7 +197,7 @@ const ETC = (() => {
     };
     // #endregion ▒▒▒▒[UTILITY]▒▒▒▒
 
-    // #region ████████ ETC: Master Control & General Functions for ETC ████████ ~
+    // #region ████████ ETC: Master Control & General Functions for ETC ████████
 
     const toggleFeature = (feature, isActive, options = {}) => {
         isActive = isActive === true;
@@ -230,8 +224,8 @@ const ETC = (() => {
 
     // #endregion ▄▄▄▄▄▄▄▄ ETC ▄▄▄▄▄▄▄▄
 
-    // #region ████████ TEXT SHADOWS: Applying Text Shadows to Text Objects ████████ ~
-    // #region ░░░░░░░[Offsets]░░░░ Determining Shadow Offset Distances ░░░░░░░ ~
+    // #region ████████ TEXT SHADOWS: Applying Text Shadows to Text Objects ████████
+    // #region ░░░░░░░[Offsets]░░░░ Determining Shadow Offset Distances ░░░░░░░
 
     const processOffsets = () => {
         const OFFSETS = {...CFG.ETC.DropShadows.OFFSETS};
@@ -244,11 +238,11 @@ const ETC = (() => {
                         const [multX, multY] = U.GetType(OFFSETS.multipliers[fontFamily]) === "array"
                             ? OFFSETS.multipliers[fontFamily]
                             : [OFFSETS.multipliers[fontFamily], OFFSETS.multipliers[fontFamily]];
-                        return [offset[0] * multX, offset[1] * multY];
+                        return [U.RoundNum(offset[0] * multX, 4), U.RoundNum(offset[1] * multY, 4)];
                     }
-                    if (fontFamily in OFFSETS.overrides
-                        && fontSize in OFFSETS.overrides[fontFamily]) {
-                        return OFFSETS.overrides[fontFamily][fontSize];
+                    if (fontFamily in OFFSETS.replacements
+                        && fontSize in OFFSETS.replacements[fontFamily]) {
+                        return OFFSETS.replacements[fontFamily][fontSize];
                     }
                     return offset;
                 }
@@ -279,7 +273,7 @@ const ETC = (() => {
     };
 
     // #endregion ░░░░[Offsets]░░░░
-    // #region ░░░░░░░[Add & Remove]░░░░ Creation, Registration, Unregistration of Text Shadows ░░░░░░░ ~
+    // #region ░░░░░░░[Add & Remove]░░░░ Creation, Registration, Unregistration of Text Shadows ░░░░░░░
 
     const makeTextShadow = (qMaster) => {
         U.Arrayify(getText(qMaster)).forEach((masterObj) => {
@@ -344,7 +338,7 @@ const ETC = (() => {
     };
 
     // #endregion ░░░░[Add & Remove]░░░░
-    // #region ░░░░░░░[Hiding & Showing]░░░░ Hiding, Showing Text Shadows ░░░░░░░ ~
+    // #region ░░░░░░░[Hiding & Showing]░░░░ Hiding, Showing Text Shadows ░░░░░░░
 
     const hideTextShadows = () => unregTextShadow(getTextShadow(["registered"]), true);
     const showTextShadows = () => {
@@ -357,7 +351,7 @@ const ETC = (() => {
             .map((masterData) => masterData.id));
     };
     // #endregion ░░░░[Hiding & Showing]░░░░
-    // #region ░░░░░░░[Synchronization]░░░░ Synchronizing Text Objects' Position & Settings ░░░░░░░ ~
+    // #region ░░░░░░░[Synchronization]░░░░ Synchronizing Text Objects' Position & Settings ░░░░░░░
 
     const isLocked = (qText) => (getTextData(qText) || {}).isPositionLocked;
     const lockTextObj = (qText) => U.Arrayify(getTextMaster(qText)).forEach((masterObj) => {
@@ -450,7 +444,7 @@ const ETC = (() => {
     // #endregion ░░░░[Synchronization]░░░░
     // #endregion ▄▄▄▄▄ TEXT SHADOWS ▄▄▄▄▄
 
-    // #region ████████ TEXT PRUNING: Removing Empty (and Invisible) Text Objects ████████ ~
+    // #region ████████ TEXT PRUNING: Removing Empty (and Invisible) Text Objects ████████
 
     const pruneText = (qText, isAutomatic = false) => {
         let removalCount = 0;
@@ -468,8 +462,8 @@ const ETC = (() => {
 
     // #endregion ▄▄▄▄▄ TEXT PRUNING ▄▄▄▄▄
 
-    // #region ████████ ATTRIBUTE LINKING: Linking Character Attributes to Text Object Displays ████████ ~
-    // #region ░░░░░░░[Linking]░░░░ Linking Attributes to Text Objects ░░░░░░░ ~
+    // #region ████████ ATTRIBUTE LINKING: Linking Character Attributes to Text Object Displays ████████
+    // #region ░░░░░░░[Linking]░░░░ Linking Attributes to Text Objects ░░░░░░░
 
     /* const getAttr = (charRef, attrRef) => {
                 const charID = (D.GetChar(charRef) || (() => false)).id;
@@ -509,7 +503,7 @@ const ETC = (() => {
     // #endregion ░░░░[Linking]░░░░
     // #endregion ▄▄▄▄▄ ATTRIBUTE LINKING ▄▄▄▄▄
 
-    // #region ████████ CHAT MESSAGES: Help, Errors & Menus ████████ ~
+    // #region ████████ CHAT MESSAGES: Help, Errors & Menus ████████
 
     const displayHelp = (helpKey) => {
         U.Alert({
@@ -673,8 +667,8 @@ const ETC = (() => {
 
     // #endregion ▄▄▄▄▄ CHAT MESSAGES ▄▄▄▄▄
 
-    // #region ▒░▒░▒░▒[EXPORTS] ETC ▒░▒░▒░▒ ~
-    return {Preinitialize, Initialize};
+    // #region ▒░▒░▒░▒[EXPORTS] ETC ▒░▒░▒░▒
+    return {DEFAULTSTATE, Initialize};
     // #endregion ▒▒▒▒[EXPORTS: ETC]▒▒▒▒
 })();
 

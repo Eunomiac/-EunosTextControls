@@ -1,7 +1,7 @@
 void MarkStart("ETC");
 /******▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██████▓▒░ !ETC: EUNOMIAC'S TEXT CONTROLS for Roll20 ░▒▓█████▐     *|
-|*     ▌████████████████████████████████████████████████████████████▐     *|
+|*     ▌███████████████████v@@VERSION@@██@@DATE@@███████████████████▐     *|
 |*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
@@ -25,14 +25,7 @@ const ETC = (() => {
         shadowOffsets: {},
         isAutoShadowing: false,
         isAutoPruning: false
-    };
-    const Preinitialize = () => {
-        // Initialize local state storage
-        EunoCORE.InitLocalSTATE(SCRIPTNAME );
-
-        // Report preinitialization complete to EunoCORE loader
-        EunoCORE.ConfirmReady(SCRIPTNAME);
-    };                                                                                                                     //
+    };                                                                                                                  //
     const Initialize = () => {
         // Assign shorthand script references
         ({LIB, U, O, H} = EunoCORE); //                                    ◀======
@@ -248,9 +241,9 @@ const ETC = (() => {
                             : [OFFSETS.multipliers[fontFamily], OFFSETS.multipliers[fontFamily]];
                         return [U.RoundNum(offset[0] * multX, 4), U.RoundNum(offset[1] * multY, 4)];
                     }
-                    if (fontFamily in OFFSETS.overrides
-                        && fontSize in OFFSETS.overrides[fontFamily]) {
-                        return OFFSETS.overrides[fontFamily][fontSize];
+                    if (fontFamily in OFFSETS.replacements
+                        && fontSize in OFFSETS.replacements[fontFamily]) {
+                        return OFFSETS.replacements[fontFamily][fontSize];
                     }
                     return offset;
                 }
@@ -519,32 +512,32 @@ const ETC = (() => {
                 H.Span(null, ["title", "etc"]),
                 H.Block([
                     H.P("<b>!ETC</b> is in~ten~ded to be a com~pre~hen~sive so~lu~tion to man~ag~ing Roll20 Text Ob~jects."),
-                    H.H2("!ETC Chat Commands"),
+                    H.H2("!ETC Chat Commands", ["silver"]),
                     H.Paras([ // ↪
                         H.ButtonCommand([
                             "!etc",
                             "View this help mes~sage."
-                        ]),
+                        ], ["silver"]),
                         H.ButtonCommand([
                             "!etc setup",
                             "Ac~ti~vate or de~ac~ti~vate any of the fea~tures in this script pack~age."
-                        ]),
+                        ], ["silver"]),
                         H.ButtonCommand([
                             "!etc reset all",
                             "<b><u>FULLY</u></b> re~set <b><u>ALL</u></b> <b>!ETC</b> script fea~tures, re~turn~ing <b>!ETC</b> to its de~fault in~stal~la~tion state."
-                        ])
+                        ], ["silver"])
                     ]),
-                    H.H2("!ETC Features"),
-                    H.Paras("Learn more about each of <b>!ETC</b>'s fea~tures by click~ing the head~ings be~low:"),
-                    H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight"], {}, {title: "Control drop shadow behavior."}),
-                    H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight"], {}, {title: "Configure pruning of empty text objects."}),
-                    H.H1("Attribute Linking", ["dim", "tight"]),
-                    H.H1("Table & Chart Styling", ["dim", "tight"]),
-                    H.H1("Timers & Calendars", ["dim", "tight"]),
-                    H.H1("Miscellaneous", ["dim", "tight"])
-                ]),
-                H.ButtonFooter("!euno", "", ["goBack"])
-            ]),
+                    H.H2("!ETC Features", ["silver"]),
+                    H.P("Learn more about each of <b>!ETC</b>'s fea~tures by click~ing the head~ings be~low:"),
+                    H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight", "silver"], {}, {title: "Control drop shadow behavior."}),
+                    H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight", "silver"], {}, {title: "Configure pruning of empty text objects."}),
+                    H.H1("Attribute Linking", ["dim", "tight", "silver"]),
+                    H.H1("Table & Chart Styling", ["dim", "tight", "silver"]),
+                    H.H1("Timers & Calendars", ["dim", "tight", "silver"]),
+                    H.H1("Miscellaneous", ["dim", "tight", "silver"])
+                ], []),
+                H.ButtonFooter("!euno", "", ["goBack", "silver"])
+            ], ["silver"]),
             dropShadows: H.Box([
                 H.Subtitle("Drop Shadows", ["etc"]),
                 H.Block([
@@ -553,68 +546,68 @@ const ETC = (() => {
                         H.InlineHeader([
                             "Adding/Removing",
                             "Add/remove sha~dows from sel~ec~ted text ob~jects with a com~mand, or tog~gle on auto~ma~tic sha~dow~ing to have <b>!ETC</b> ap~ply sha~dows to all new text ob~jects."
-                        ], ["silver"]),
+                        ], ["bronze"]),
                         H.InlineHeader([
                             "Shadow Objects",
                             `Text sha~dows are cre~ated on the <b>${U.UCase(CFG.ETC.DropShadows.LAYER)}</b> la~yer. Sha~dows will move when their mas~ter ob~ject moves; they will up~date their con~tent, size, font, etc. to match their mas~ter ob~ject; and they will re~move them~selves if their mas~ter ob~ject is ever re~moved.`
-                        ], ["silver"]),
+                        ], ["bronze"]),
                         H.InlineHeader([
                             "Configure Offsets",
                             "If the pos~i~tion~ing of sha~dows for any font/size com~bin~a~tion isn't to your lik~ing, you can con~fi~gure new off~sets by chat com~mand (see be~low)."
-                        ], ["silver"])
+                        ], ["bronze"])
                     ]),
-                    H.H2("Chat Commands", ["silver"]),
+                    H.H2("Chat Commands", ["bronze"]),
                     H.Paras([
                         H.ButtonCommand([
                             "!etc shadow add",
                             "<u>ADD</u> sha~dows to all sel~ec~ted text ob~jects."
-                        ], ["silver"]),
+                        ], ["bronze"]),
                         H.ButtonCommand([
                             "!etc shadow clear",
                             "<u>RE~MOVE</u> sha~dows from all sel~ec~ted text ob~jects."
-                        ], ["silver"]),
+                        ], ["bronze"]),
                         H.ButtonCommand([
                             "!etc shadow clear all",
                             "<u>RE~MOVE</u> sha~dows from <b><u>ALL</u></b> text ob~jects."
-                        ], ["silver"]),
+                        ], ["bronze"]),
                         H.ButtonCommand([
                             "!etc shadow hide",
                             "<u>HIDE</u> all text sha~dows."
-                        ], ["silver"]),
+                        ], ["bronze"]),
                         H.ButtonCommand([
                             "!etc shadow show",
                             "<u>SHOW</u> all hid~den text sha~dows."
-                        ], ["silver"]),
+                        ], ["bronze"]),
                         H.ButtonCommand([
                             "!etc shadow fix",
                             "Ver~i~fy and cor~rect pre~sence and pos~i~tions of text sha~dows."
-                        ], ["silver"])
+                        ], ["bronze"])
                     ]),
-                    H.H2("Automation", ["silver"]),
+                    H.H2("Automation", ["bronze"]),
                     H.P(H.ButtonToggle([
                         "Auto-Shadow",
                         "Whe~ther sha~dows are auto~ma~ti~cally ap~plied to new text ob~jects upon cre~a~tion."
-                    ], `!etc toggle autoshadow ${STA.TE.isAutoShadowing ? "false" : "true"} feature`, [`toggle${STA.TE.isAutoShadowing ? "On" : "Off"}`, "silver"], {}, {title: `Click to ${STA.TE.isAutoShadowing ? "DEACTIVATE" : "ACTIVATE"} automatic text shadows for all text objects.`}))
-                ], ["silver"]),
-                H.ButtonFooter("!etc", "", ["silver", "goBack"])
-            ], ["silver"]),
+                    ], `!etc toggle autoshadow ${STA.TE.isAutoShadowing ? "false" : "true"} feature`, [`toggle${STA.TE.isAutoShadowing ? "On" : "Off"}`, "bronze"], {}, {title: `Click to ${STA.TE.isAutoShadowing ? "DEACTIVATE" : "ACTIVATE"} automatic text shadows for all text objects.`}))
+                ], ["bronze"]),
+                H.ButtonFooter("!etc", "", ["bronze", "goBack"])
+            ], ["bronze"]),
             textPruning: H.Box([
                 H.Subtitle("Empty Text Pruning", ["etc"]),
                 H.Block([
                     H.P("Ever notice that, when you click off of a text object, Roll20 goes and creates another text object wherever you clicked? If you then click elsewhere without typing anything, that empty and invisible text object remains (potentially interfering with box-selecting objects, among other vexations). Empty Text Pruning addresses this issue by removing empty text objects, either automatically or by chat command."),
-                    H.H2("Chat Commands", ["silver"]),
+                    H.H2("Chat Commands", ["bronze"]),
                     H.P(H.ButtonCommand([
                         "!etc prune all",
                         "<u>REMOVE</u> all empty (invisible) text objects from the sandbox."
-                    ], ["silver"])),
-                    H.H2("Automation", ["silver"]),
+                    ], ["bronze"])),
+                    H.H2("Automation", ["bronze"]),
                     H.P(H.ButtonToggle([
                         "Auto-Prune",
                         "Whe~ther empty (in~vi~sible) text ob~jects are auto~ma~ti~cally re~moved from the sand~box."
-                    ], `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"} feature`, [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "silver"], {}, {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`}))
-                ], ["silver"]),
-                H.ButtonFooter("!etc", "", ["goBack", "silver"])
-            ], ["silver"])
+                    ], `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"} feature`, [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "bronze"], {}, {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`}))
+                ], ["bronze"]),
+                H.ButtonFooter("!etc", "", ["goBack", "bronze"])
+            ], ["bronze"])
         }[helpKey]);
     };
     const displayToggles = () => {
@@ -624,18 +617,18 @@ const ETC = (() => {
                 H.ButtonToggle([
                     "Auto-Shadow",
                     "Whe~ther sha~dows are auto~ma~ti~cally ap~plied to new text ob~jects upon cre~a~tion."
-                ], `!etc toggle autoshadow ${STA.TE.isAutoShadowing ? "false" : "true"}`, [`toggle${STA.TE.isAutoShadowing ? "On" : "Off"}`, "silver"], {}, {title: `Click to ${STA.TE.isAutoShadowing ? "DEACTIVATE" : "ACTIVATE"} automatic text shadows for all text objects.`})
-                , ["silver"]
+                ], `!etc toggle autoshadow ${STA.TE.isAutoShadowing ? "false" : "true"}`, [`toggle${STA.TE.isAutoShadowing ? "On" : "Off"}`, "bronze"], {}, {title: `Click to ${STA.TE.isAutoShadowing ? "DEACTIVATE" : "ACTIVATE"} automatic text shadows for all text objects.`})
+                , ["bronze"]
             ),
             H.Block(
                 H.ButtonToggle([
                     "Auto-Prune",
                     "Whe~ther empty (in~vi~sible) text ob~jects are auto~ma~ti~cally re~moved from the sand~box."
-                ], `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"}`, [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "silver"], {}, {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`})
-                , ["silver"]
+                ], `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"}`, [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "bronze"], {}, {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`})
+                , ["bronze"]
             ),
-            H.ButtonFooter("!etc", "", ["goBack", "silver"])
-        ], ["silver"]));
+            H.ButtonFooter("!etc", "", ["goBack", "bronze"])
+        ], ["bronze"]));
     };
     const displayError = (errorTag) => {
         const ERRORHTML = {
@@ -676,7 +669,7 @@ const ETC = (() => {
     // #endregion ▄▄▄▄▄ CHAT MESSAGES ▄▄▄▄▄
 
     // #region ▒░▒░▒░▒[EXPORTS] ETC ▒░▒░▒░▒ ~
-    return {Preinitialize, Initialize};
+    return {DEFAULTSTATE, Initialize};
     // #endregion ▒▒▒▒[EXPORTS: ETC]▒▒▒▒
 })();
 

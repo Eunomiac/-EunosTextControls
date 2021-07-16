@@ -1,7 +1,7 @@
 MarkStart("EunoLIB");
 /******▌████████████████████████████████████████████████████████████▐******\
 |*     ▌█░░░░    EunoLIB: Common Functions for EunoScripts     ░░░░█▐     *|
-|*     ▌████████████████████████████████████████████████████████████▐     *|
+|*     ▌███████████████████v@@VERSION@@██@@DATE@@███████████████████▐     *|
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
@@ -41,6 +41,7 @@ const EunoCORE = {
     },
     // #endregion ░░░░[SCRIPT REGISTRATION]░░░░
     // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░ ~
+    InitSteps: ["Preinitialize", "Initialize", /* "Listeners", */"PostInitialize"],
     // VERSION MIGRATION: Any migration processing necessary on version update
     UpdateNamespace: () => {
         try {
@@ -58,13 +59,10 @@ const EunoCORE = {
         }
     },
     INITIALIZE: function() {
-        this.InitSteps = this.InitSteps || ["Preinitialize", "Initialize", /* "Listeners", */"PostInitialize"];
         if (this.InitSteps.length) {
             const initStep = this.InitSteps.shift();
 
-            const scriptDatas = Object.fromEntries(Object.entries
-            (this._scriptData)
-                .filter(([scriptName, scriptData]) => scriptData[`has${initStep}`]));
+            const scriptDatas = Object.values(this._scriptData).filter((scriptData) => scriptData[`has${initStep}`]);
 
             switch (initStep) {
                 case "Preinitialize": {
@@ -78,12 +76,15 @@ const EunoCORE = {
                     scriptDatas.forEach(({name, script, Listeners: listenData}) => this.L.RegisterListener(name, script, listenData));
                     return false;
                 }
-                case "PostInitialize": break;
+                case "PostInitialize": {
+                    this.U.Flag("Initialization Complete!");
+                    break;
+                }
                 // no default
             }
 
             if (scriptDatas.length) {
-                const scripts = Object.entries(scriptDatas).map(([scriptName, {script}]) => [scriptName, script]);
+                const scripts = scriptDatas.map(({name: scriptName, script}) => [scriptName, script]);
                 // Log scripts to initialization log, for later confirmation of step completion
                 this.initializationLog = {...Object.fromEntries(scripts)};
                 // Process each script through next initialization step
@@ -93,7 +94,6 @@ const EunoCORE = {
             return this.INITIALIZE();
         }
         // Initialization Complete!
-        this.U.Flag("Initialization Complete!");
         return true;
     },
     // #endregion ░░░░[INITIALIZATION]░░░░
@@ -147,7 +147,7 @@ const EunoCORE = {
         // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░ ~
 
         IMAGES: (function() {
-            const IMGROOT = "https://tinyurl.com/EunoScriptImages"; // "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
+            const IMGROOT = "https://tinyurl.com/xczfeezdv"; // "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
             return Object.fromEntries(Object.entries({
                 buttonDownload: ["buttons", "buttonDownload.png", [50, 50]],
                 buttonChat: ["buttons", "buttonChat.png", [50, 50]],
@@ -800,7 +800,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         // #endregion ░░░░[Math]░░░░
         // #region ░░░░░░░[Chat] Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░░ ~
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
-        const CheckMessage = (msg, calls, {isGM = true}) => {
+        const CheckMessage = (msg, calls, {isGM = true} = {}) => {
             return U.GetType(msg) === "list"
                     && msg.type === "api"
                     && U.Arrayify(calls).some((call) => msg.content.startsWith(call))
@@ -2032,7 +2032,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #region ▒░▒░▒░▒[EXPORTS] EunoLIB ▒░▒░▒░▒ ~
     return {
-        Initialize, PostInitialize,
+        DEFAULTSTATE, Initialize, PostInitialize,
         // Listeners,
 
         UTILITIES,
@@ -2049,5 +2049,5 @@ EunoCORE.Register("UTILITIES", EunoLIB.UTILITIES);
 EunoCORE.Register("OBJECTS", EunoLIB.OBJECTS);
 EunoCORE.Register("HTML", EunoLIB.HTML);
 
-on("ready", EunoCORE.INITIALIZE);
+on("ready", () => EunoCORE.INITIALIZE());
 MarkStop("EunoLIB");

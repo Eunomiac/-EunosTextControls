@@ -1,49 +1,46 @@
 /******▌████████████████████████████████████████████████████████████▐******\
 |*     ▌█░░░░    EunoLIB: Common Functions for EunoScripts     ░░░░█▐     *|
-|*     ▌████████████████████████████████████████████████████████████▐     *|
+|*     ▌████████████████████v0.15a███Jul 16 2021████████████████████▐     *|
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
 \******▌████████████████████████████████████████████████████████████▐******/
 
+// #region ████████ EunoCORE: Functionality Required in Advance of Initialization ████████
 const EunoCORE = {
-    // #region ░░░░░░░[STORAGE]░░░░ Initialization & Management of 'state' Namespaces ░░░░░░░ ~
+    // #region ░░░░░░░[STORAGE]░░░░ Initialization & Management of 'state' Namespaces ░░░░░░░
     ROOTNAME: "EunoScripts", // Namespace under global state variables
     get ROOT() { // Root state namespace for all EunoScripts
-        state[EunoCORE.ROOTNAME] = state[EunoCORE.ROOTNAME] || {};
-        return state[EunoCORE.ROOTNAME];
+        if (!(this.ROOTNAME in state)) { state[this.ROOTNAME] = {isEunoState: true} }
+        if (!state[this.ROOTNAME].isEunoState) { throw "[Euno] State Conflict: Another script has claimed state.EunoScripts" }
+        return state[this.ROOTNAME];
     },
-    GetLocalSTATE: (scriptName) => { // Returns script state namespace for specified EunoScript
-        if (scriptName in EunoCORE.SCRIPTS) {
-            EunoCORE.ROOT[scriptName] = EunoCORE.ROOT[scriptName] || {};
-            return EunoCORE.ROOT[scriptName];
+    GetLocalSTATE: function(scriptName) { // Returns script state namespace for specified EunoScript
+        if (!(scriptName in this.ROOT)) {
+            if (!(scriptName in this.SCRIPTDATA)) { throw `[Euno] Unrecognized Script: ${scriptName}` }
+            if (!this.SCRIPTDATA[scriptName].hasDefaultSTATE) { throw `[Euno] State Access Error: ${scriptName} has not initialized state storage` }
+            this.ROOT[scriptName] = {...this.getScript(scriptName).DEFAULTSTATE};
         }
-        return false;
+        return this.ROOT[scriptName];
     },
-    DeleteLocalSTATE: (scriptName) => delete EunoCORE.ROOT[scriptName], // Clears local state storage for specified EunoScript
-    InitState: function(scriptName, DEFAULTSTATE = {}) { // Initializes script state storage, applying any default values
-        const stateRef = this.GetLocalState(scriptName);
-        if (stateRef) {
-            Object.entries(DEFAULTSTATE)
-                .filter(([key]) => !(key in stateRef))
-                .forEach(([key, defaultVal]) => {stateRef[key] = defaultVal});
-        }
-    },
+    DeleteLocalSTATE: function(scriptName) { delete this.ROOT[scriptName] }, // Clears local state storage for specified EunoScript
     // #endregion ░░░░[STATE STORAGE]░░░░
-    // #region ░░░░░░░[SCRIPT REGISTRATION] Installed EunoScripts Register Themselves Here ░░░░░░░ ~
-    Register: function (name, script) {
-        this._scriptData = this._scriptData || {};
+    // #region ░░░░░░░[SCRIPT REGISTRATION] Installed EunoScripts Register Themselves Here ░░░░░░░
+    _scriptData: {},
+    get SCRIPTDATA() { return this._scriptData },
+    getScript: function(scriptName) { return (this.SCRIPTDATA[scriptName] || {script: false}).script },
+    Register: function(name, script) {
         this._scriptData[name] = {
             name,
             script,
+            hasDefaultSTATE: "DEFAULTSTATE" in script,
             hasPreinitialize: "Preinitialize" in script,
             hasInitialize: "Initialize" in script,
-            // hasListeners: "Listeners" in script,
+            hasListeners: "Listeners" in script,
             hasPostInitialize: "PostInitialize" in script
         };
     },
-    get SCRIPTDATA() { return this._scriptData },
-    get SCRIPTS() { return Object.fromEntries(Object.values(this.SCRIPTDATA).map(({name, script}) => [name, script])) },
     // #endregion ░░░░[SCRIPT REGISTRATION]░░░░
-    // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░ ~
+    // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░
+    InitSteps: ["Preinitialize", "Initialize", /* "Listeners", */"PostInitialize"],
     // VERSION MIGRATION: Any migration processing necessary on version update
     UpdateNamespace: () => {
         try {
@@ -52,55 +49,23 @@ const EunoCORE = {
         } catch (err) { throw `[Euno] ERROR: Unable to Update Namespace: ${err.message}` }
     },
     // SCRIPT INITIALIZATION
-    /* RegisterListener: function(scriptName, script) {
-        const handleEvent = (event, ...args) => {
-            const [eventCall, ...eventDetails] = event.split(/:/);
-            switch (eventCall) {
-                case "chat": {
-                    break;
-                }
-                case "change": {
-
-                    break;
-                }
-                case "add": {
-
-                    break;
-                }
-                case "destroy": {
-
-                    break;
-                }
-            }
-        };
-
-        const {Listeners: listenData} = script;
-        for (const [event, {regexp, gmOnly, objTypes, handler}] of Object.entries(listenData)) {
-            this._listeners = this._listeners || {};
-            if (!(event in this._listeners)) {
-                on(event, (...args) => handleEvent(event, ...args));
-                this._listeners[event] = {};
-            }
-            this._listeners[event][regexp] = {handler, objTypes, gmOnly};
+    ConfirmReady: function(scriptName) {
+        // Scripts confirm init steps completed via this function.
+        this.initializationLog[scriptName] = true;
+        if (Object.values(this.initializationLog).every((scriptStatus) => scriptStatus === true)) {
+            // If all scripts have confirmed step completion, move to next step.
+            this.INITIALIZE();
         }
-    }, */
-
-
+    },
     INITIALIZE: function() {
-        this._initSteps = this._initSteps || ["Preinitialize", "Initialize", "Listeners", "PostInitialize"];
-        if (this._initSteps.length) {
-            this._initStep = this._initSteps.shift();
+        if (this.InitSteps.length) {
+            const initStep = this.InitSteps.shift();
 
-            /* Temporarily Disable Listener Step */
-            if (this._initStep === "Listeners") {
-                this._initStep = this._initSteps.shift();
-            }
+            const scriptDatas = Object.values(this._scriptData).filter((scriptData) => scriptData[`has${initStep}`]);
 
-            const scriptDatas = Object.entries(this.SCRIPTS)
-                .filter(([scriptName, scriptData]) => scriptData[`has${this._initStep}`]);
-
-            switch (this._initStep) {
+            switch (initStep) {
                 case "Preinitialize": {
+                    this.UpdateNamespace();
                     try {EunoCONFIG} // Verify EunoCONFIG.js is installed
                     catch {throw "[Euno] Error: Can't find 'EunoCONFIG.js'. Is it installed?"}
                     break;
@@ -110,142 +75,38 @@ const EunoCORE = {
                     scriptDatas.forEach(({name, script, Listeners: listenData}) => this.L.RegisterListener(name, script, listenData));
                     return false;
                 }
-                case "PostInitialize": break;
+                case "PostInitialize": {
+                    this.U.Flag("Initialization Complete!");
+                    break;
+                }
             }
 
-            const scripts = Object.fromEntries(Object.entries(this.SCRIPTS)
-                .filter(([scriptName, scriptData]) => scriptData[`has${this._initStep}`])
-                .map(([scriptName, scriptData]) => [scriptName, scriptData.script]));
-            if (Object.values(scripts).length) {
+            if (scriptDatas.length) {
+                const scripts = scriptDatas.map(({name: scriptName, script}) => [scriptName, script]);
                 // Log scripts to initialization log, for later confirmation of step completion
-                this.initializationLog = {...scripts};
+                this.initializationLog = {...Object.fromEntries(scripts)};
                 // Process each script through next initialization step
-                Object.values(scripts).forEach((script, i) => {
-                    script[this._initStep]();
-                });
+                scripts.forEach(([, script]) => { script[initStep]() });
+                return false;
             }
-            return false;
+            return this.INITIALIZE();
         }
         // Initialization Complete!
-        this.U.Flag("Initialization Complete!");
         return true;
     },
-    ConfirmReady: function(scriptName) {
-        // Scripts confirm init steps completed via this function.
-        this.initializationLog[scriptName] = true;
-        if (Object.values(this.initializationLog).every((scriptStatus) => scriptStatus === true)) {
-            // If all scripts have confirmed step completion, move to next step.
-            this.INITIALIZE();
-        }
-    },
     // #endregion ░░░░[INITIALIZATION]░░░░
-    // #region ░░░░░░░[PREDEFINED FUNCTIONS] EunoLIB.UTILITY Functions Required Before Initialization ░░░░░░░ ~
-    GetType: (val) => {
-        /** TYPES RETURNED:
-         *
-         * "id",                        // is likely a Roll20 object id
-         * "hex", "hexa", "rgb", "rgba", "hsl", "hsla",             // css color values
-         * "int", "float", "bigint",    // numbers, even if cast to string
-         * "array", "list",             // list = simple object literal
-         * "boolean", "null", "undefined",
-         * "function",
-         * "date", "regexp", ... ... ...// ... as well as all other core javascript prototypes
-         * "graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro",
-         * "page", "campaign", "player", "deck", "card", "hand", "jukeboxtrack", "custfx",
-         * "string"                     // only if none of the above match
-         *
-         */
-        const valType = Object.prototype.toString
-            .call(val)
-            .slice(8, -1)
-            .toLowerCase()
-            .trim();
-        switch (valType) {
-            case "string":
-                return (
-                    Object.entries({
-                        hex: /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/,
-                        hexa: /^#[A-Fa-f0-9]{8}$/,
-                        rgb: /^rgb\((\s*\d{1,3}[,\s)]){3}$/,
-                        rgba: /^rgba\((\s*\d{1,3}[,\s)]){3}(\s*[\d\.]+[,\s)])$/,
-                        hsl: /^hsl\((\s*[\d\.%]+[,\s)]){3}$/,
-                        hsla: /^hsla\((\s*[\d\.%]+[,\s)]){3}(\s*[\d\.]+[,\s)])$/,
-                        int: /^(-|\+)?[\d,]+$/,
-                        float: /^(-|\+|\d)[\d,\s]*\.[\d\s]*$/,
-                        id: /^-[a-zA-Z0-9_-]{19}$/
-                    }).find(([type, pattern]) => pattern.test(val.trim())) || ["string"]
-                ).shift();
-            case "number":
-                return /\./.test(`${val}`) ? "float" : "int";
-        }
-        return valType;
-    },
-    ScaleColor: (colorRef, scaleFactor = 1) => {
-        const colorVals = [];
-        const colorRefType = EunoCORE.GetType(colorRef);
-        switch (colorRefType) {
-            case "hex": case "hexa": {
-                colorRef = colorRef.replace(/[^A-Za-z0-9]/g, "");
-                if (colorRef.length === 3) {
-                    colorRef = colorRef.split("").map((h) => `${h}${h}`).join("");
-                }
-                colorVals.push(...colorRef.match(/.{2}/g).map((hex) => EunoCORE.HexToDec(hex)));
-                break;
-            }
-            case "rgb": case "rgba": case "hsl": case "hsla": {
-                colorVals.push(...colorRef.match(/[\d\.%]+[,\s)]/g).map((val) => {
-                    if (/%/.test(val)) {
-                        return parseInt(val.replace(/[^\d\.]/g, "")) / 100;
-                    }
-                    return /\./.test(val) ? parseFloat(val) : parseInt(val);
-                }));
-                break;
-            }
-            case "string": return colorRef;
-            default: return false;
-        }
-        for (let i = 0; i < 3; i++) {
-            colorVals[i] = Math.round(colorVals[i] * scaleFactor);
-        }
-        switch (colorRefType) {
-            case "hexa": return `rgba(${colorVals.join(", ")})`;
-            case "hex": return `#${colorVals.map((val) => EunoCORE.DecToHex(val)).join("")}`;
-            default: return `${colorRefType}(${colorVals.join(", ")})`;
-        }
-    },
-    HexToDec: (hex) =>
-        hex
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "")
-            .split("")
-            .reverse()
-            .reduce(
-                (tot, digit, i) =>
-                    tot + Math.pow(16, i) * "0123456789abcdef".search(digit),
-                0
-            ),
-    DecToHex: (dec) => {
-        const hex = [];
-        let quot = parseInt(dec);
-        do {
-            hex.push("0123456789abcdef".charAt(quot % 16));
-            quot = Math.floor(quot / 16);
-        } while (quot > 0);
-        return hex.reverse().join("");
-    },
-    // #endregion ░░░░[PREDEFINED FUNCTIONS]░░░░
 
     // #region ████████ C (EunoCORE.CONSTANTS): Globally-Accessible Constants ████████
     CONSTANTS: {
-        // #region ░░░░░░░[COLORS] Color Definitions ░░░░░░░ ~
+        // #region ░░░░░░░[COLORS] Color Definitions ░░░░░░░
         COLORS: {
             // Black / Grey / White
             black: "#000",
-            get grey10() { return EunoCORE.ScaleColor("#FFF", 0.1) },
-            get grey25() { return EunoCORE.ScaleColor("#FFF", 0.25) },
-            get grey() { return EunoCORE.ScaleColor("#FFF", 0.5) },
-            get grey75() { return EunoCORE.ScaleColor("#FFF", 0.75) },
-            get grey90() { return EunoCORE.ScaleColor("#FFF", 0.9) },
+            grey10: `rgb(${new Array(3).fill(parseInt(255 * 0.1)).join(", ")})`,
+            grey25: `rgb(${new Array(3).fill(parseInt(255 * 0.25)).join(", ")})`,
+            grey: `rgb(${new Array(3).fill(parseInt(255 * 0.5)).join(", ")})`,
+            grey75: `rgb(${new Array(3).fill(parseInt(255 * 0.75)).join(", ")})`,
+            grey90: `rgb(${new Array(3).fill(parseInt(255 * 0.9)).join(", ")})`,
             white: "#FFF",
 
             // Gold
@@ -261,7 +122,7 @@ const EunoCORE = {
             palebronze: "#E6BF99"
         },
         // #endregion ░░░░[COLORS]░░░░
-        // #region ░░░░░░░[FONTS] Supported Sandbox Fonts ░░░░░░░ ~
+        // #region ░░░░░░░[FONTS] Supported Sandbox Fonts ░░░░░░░
         FONTS: [
             "Arial",
             "Patrick Hand",
@@ -281,7 +142,7 @@ const EunoCORE = {
             "Kaushan Script"
         ],
         // #endregion ░░░░[COLORS]░░░░
-        // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░ ~
+        // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░
 
         IMAGES: (function() {
             const IMGROOT = "https://tinyurl.com/EunoScriptImages"; // "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
@@ -290,7 +151,7 @@ const EunoCORE = {
                 buttonChat: ["buttons", "buttonChat.png", [50, 50]],
                 buttonBug: ["buttons", "buttonBug.png", [50, 50]],
 
-                //     #region ========== Gold: Level 1 Gold Theme =========== ~
+                //     #region ========== Gold: Level 1 Gold Theme ===========
                 bgChatGold: ["backgrounds", "bgChatGold.jpg", [283, 563]],
 
                 titleMain: ["bookends", "headerMain.png", [283, 208]],
@@ -318,7 +179,7 @@ const EunoCORE = {
                 toggleButtonOnGold: ["buttons", "toggleOnGold.png", [273, 68]],
                 toggleButtonOffGold: ["buttons", "toggleOffGold.png", [273, 68]],
                 //     #endregion _______ Gold _______
-                //     #region ========== Silver: Level 2 Silver Theme =========== ~
+                //     #region ========== Silver: Level 2 Silver Theme ===========
                 bgChatSilver: ["backgrounds", "bgChatSilver.jpg", [283, 563]],
 
                 titleETC: ["bookends", "headerScriptETC.png", [283, 142]],
@@ -346,7 +207,7 @@ const EunoCORE = {
                 toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [273, 68]],
                 toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [273, 68]],
                 //     #endregion _______ Silver _______
-                //     #region ========== Bronze: Level 3 Bronze Theme =========== ~
+                //     #region ========== Bronze: Level 3 Bronze Theme ===========
                 bgChatBronze: ["backgrounds", "bgChatBronze.jpg", [283, 563]],
 
                 subtitleBronze: ["bookends", "subtitleBronze.png", [283, 142]],
@@ -383,11 +244,11 @@ const EunoCORE = {
             if (imgKey in this.IMAGES) {
                 return [this.IMAGES[imgKey].width, this.IMAGES[imgKey].height];
             } else {
-                throw `Bad Image Key: ${imgKey}`;
+                throw `[Euno] Error: Bad Image Key: ${imgKey}`;
             }
         },
         // #endregion ░░░░[IMAGES]░░░░
-        // #region ░░░░░░░[ROLL20 OBJECTS] Roll20 Object Types ░░░░░░░ ~
+        // #region ░░░░░░░[ROLL20 OBJECTS] Roll20 Object Types ░░░░░░░
         ROLL20TYPES: {
             all: [
                 "graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro",
@@ -398,7 +259,7 @@ const EunoCORE = {
             ]
         },
         // #endregion ░░░░[ROLL20 OBJECTS]░░░░
-        // #region ░░░░░░░[NUMBER STRINGS] Number Words, Ordinal Suffixes, Roman Numerals ░░░░░░░ ~
+        // #region ░░░░░░░[NUMBER STRINGS] Number Words, Ordinal Suffixes, Roman Numerals ░░░░░░░
         NUMBERWORDS: {
             ones: [
                 "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
@@ -437,7 +298,7 @@ const EunoCORE = {
     },
     // #endregion ▄▄▄▄▄ C ▄▄▄▄▄
 
-    // #region ░░░░░░░[SHORTHAND GETTERS] Shorthand Getters for Major Script Components ░░░░░░░ ~
+    // #region ░░░░░░░[SHORTHAND GETTERS] Shorthand Getters for Major Script Components ░░░░░░░
     get CFG() { return EunoCONFIG },
     get LIB() { return EunoLIB },
     get REG() { return EunoLIB.RE.G },
@@ -452,8 +313,8 @@ const EunoCORE = {
 
 // #region ████████ EunoLIB: Library of Script Dependencies ████████
 const EunoLIB = /** @lends EunoLIB */ (() => {
-    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
-    // #region ░░░░░░░[Namespacing] Basic References & Namespacing ░░░░░░░ ~
+    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
+    // #region ░░░░░░░[Namespacing] Basic References & Namespacing ░░░░░░░
 
     const SCRIPTNAME = "EunoLIB";
     const STA = {get TE() {return EunoCORE.GetLocalSTATE(SCRIPTNAME)}};
@@ -461,16 +322,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     const {CFG, C} = EunoCORE; let LIB, U, L, O, H; // must wait for intialization to be assigned
     // #endregion ░░░░[Namespacing]░░░░
-    // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░ ~
-
-    const Preinitialize = () => {
-        // Initialize local state storage
-        EunoCORE.InitState(SCRIPTNAME, {
-            isDisplayingHelpAtStart: true
-        });
-
-        // Report preinitialization complete to EunoCORE loader
-        EunoCORE.ConfirmReady(SCRIPTNAME);
+    // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░
+    const DEFAULTSTATE = {
+        isDisplayingHelpAtStart: true
     };
     const Initialize = () => {
         // Assign shorthand script references
@@ -499,7 +353,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     };
 
     // #endregion ░░░░[Initialization]░░░░
-    // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░ ~
+    // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░
     /*     const Listeners = {
         "chat:message": [
             {regexp: /^(!euno|!edev)/, gmOnly: true, objTypes: [], handler: handleMessage}
@@ -509,37 +363,29 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         if (U.CheckMessage(msg, ["!euno", "!edev"])) {
             let {call, args, selected} = U.ParseMessage(msg, "all");
             if (call === "!euno") {
-                try {
-                    ({
-                        toggle: () =>
-                            ({
-                                intro: () => {
-                                    STA.TE.isDisplayingHelpAtStart = args.includes(true);
-                                    if (STA.TE.isDisplayingHelpAtStart) {
-                                        U.Flag("Showing Help at Start.", 2);
-                                    } else {
-                                        U.Flag("Hiding Help at Start.", 2, ["silver"]);
-                                    }
-                                }
-                            }[U.LCase((call = args.shift()))]())
-                    }[U.LCase((call = args.shift()))]());
-                } catch {
-                    H.DisplayHelp();
-                }
+                try {({
+                    toggle: () => ( {
+                        intro: () => {
+                            STA.TE.isDisplayingHelpAtStart = args.includes(true);
+                            if (STA.TE.isDisplayingHelpAtStart) {
+                                U.Flag("Showing Help at Start.", 2);
+                            } else {
+                                U.Flag("Hiding Help at Start.", 2, ["silver"]);
+                            }
+                        }
+                    }[ U.LCase((call = args.shift())) ]() )
+                }[ U.LCase((call = args.shift())) ]() );
+                } catch { H.DisplayHelp() }
             } else if (call === "!edev") {
-                try {
-                    ({
-                        get: () =>
-                            ({
-                                state: () => U.Show(state),
-                                root: () => U.Show(EunoCORE.ROOT),
-                                stateref: () => U.Show(STA.TE),
-                                data: () => U.Show(selected)
-                            }[U.LCase((call = args.shift()))]())
-                    }[U.LCase((call = args.shift()))]());
-                } catch {
-                    H.Flag(`[EDev] Bad Call: '${call}'`, 2);
-                }
+                try {({
+                    get: () => ( {
+                        stateall: () => U.Show(state),
+                        root: () => U.Show(EunoCORE.ROOT),
+                        state: () => U.Show(STA.TE),
+                        data: () => U.Show(selected)
+                    }[U.LCase((call = args.shift()))]())
+                }[U.LCase((call = args.shift()))]());
+                } catch { U.Flag(`[EDev] Error: Bad Call: '${call}'`, 2) }
             }
         }
     };
@@ -548,8 +394,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #region ████████ U (UTILITIES): Global Utility Functions ████████
     const UTILITIES = (() => {
-        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
-        //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
+        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
+        //     #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "UTILITIES";
         const STA = {
             get TE() {
@@ -557,50 +403,89 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         //     #endregion _______ Namespacing _______
-        //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
-        const Preinitialize = () => {
-            // Initialize local state storage
-            EunoCORE.InitState(SCRIPTNAME);
-
-            // Report preinitialization complete to EunoCORE loader
-            EunoCORE.ConfirmReady(SCRIPTNAME);
-        }; //
+        //     #region ========== Initialization: Script Startup & Event Listeners ===========
         const Initialize = () => {
             // Alert readiness confirmation
-            U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
+            Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
             log(`[Euno] ${SCRIPTNAME} Initialized`);
 
             // Report initialization complete to EunoCORE loader
-            EunoCORE.ConfirmReady(SCRIPTNAME, `EunoLIB.${SCRIPTNAME} Ready`, 2, [
-                "silver"
-            ]);
+            EunoCORE.ConfirmReady(SCRIPTNAME, `EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
         };
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ░░░░░░░[Validation] Verification & Type Checking ░░░░░░░ ~
+        // #region ░░░░░░░[Validation] Verification & Type Checking ░░░░░░░
         const GetType = (val) => {
-            const type = EunoCORE.GetType(val);
-            return type === "object" ? O.GetR20Type(val) || "list" : type;
+            /** TYPES RETURNED:
+             *
+             * "id",                        // is likely a Roll20 object id
+             * "hex", "hexa", "rgb", "rgba", "hsl", "hsla",             // css color values
+             * "int", "float", "bigint",    // numbers, even if cast to string
+             * "array", "list",             // list = simple object literal
+             * "boolean", "null", "undefined",
+             * "function",
+             * "date", "regexp", ... ... ...// ... as well as all other core javascript prototypes
+             * "graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro",
+             * "page", "campaign", "player", "deck", "card", "hand", "jukeboxtrack", "custfx",
+             * "string"                     // only if none of the above match
+             *
+             */
+            const valType = Object.prototype.toString.call(val)
+                .slice(8, -1)
+                .toLowerCase()
+                .trim();
+            switch (valType) {
+                case "string":
+                    return (
+                        Object.entries({
+                            hex: /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/,
+                            hexa: /^#[A-Fa-f0-9]{8}$/,
+                            rgb: /^rgb\((\s*\d{1,3}[,\s)]){3}$/,
+                            rgba: /^rgba\((\s*\d{1,3}[,\s)]){3}(\s*[\d\.]+[,\s)])$/,
+                            hsl: /^hsl\((\s*[\d\.%]+[,\s)]){3}$/,
+                            hsla: /^hsla\((\s*[\d\.%]+[,\s)]){3}(\s*[\d\.]+[,\s)])$/,
+                            int: /^(-|\+)?[\d,]+$/,
+                            float: /^(-|\+|\d)[\d,\s]*\.[\d\s]*$/,
+                            id: /^-[a-zA-Z0-9_-]{19}$/
+                        }).find(([type, pattern]) => pattern.test(val.trim())) || ["string"]
+                    ).shift();
+                case "number":
+                    return /\./.test(`${val}`) ? "float" : "int";
+                case "object":
+                    return O.GetR20Type(val) || "list";
+            }
+            return valType;
         };
         // #endregion ░░░░[Validation]░░░░
-        // #region ░░░░░░░[Numbers] Number Generation, Manipulation, Parsing from Strings ░░░░░░░ ~
-        //     #region ========== Parsing: "Safe" Parsing of Numbers =========== ~
+        // #region ░░░░░░░[Conversion]░░░░ Converting Between String Types ░░░░░░░
+        const HexToDec = (hex) => LCase(hex)
+            .replace(/[^a-z0-9]/g, "")
+            .split("").reverse()
+            .reduce((tot, digit, i) => tot + Math.pow(16, i) * "0123456789abcdef".search(digit), 0);
+        const DecToHex = (dec) => {
+            const hex = [];
+            let quot = parseInt(dec);
+            do {
+                hex.push("0123456789abcdef".charAt(quot % 16));
+                quot = Math.floor(quot / 16);
+            } while (quot > 0);
+            return hex.reverse().join("");
+        };
+        // #endregion ░░░░[Conversion]░░░░
+        // #region ░░░░░░░[Numbers] Number Generation, Manipulation, Parsing from Strings ░░░░░░░
+        //     #region ========== Parsing: "Safe" Parsing of Numbers ===========
         const Float = (qNum) => parseFloat(qNum) || 0;
         const Int = (qNum) => parseInt(Math.round(Float(qNum)));
         //     #endregion _______ Parsing _______
-        //     #region ========== Constraining: Rounding, Binding, Cycling =========== ~
+        //     #region ========== Constraining: Rounding, Binding, Cycling ===========
         const RoundNum = (qNum, numDecDigits = 0) => {
             if (Float(qNum) === Int(qNum)) {
                 return Int(qNum);
             }
-            return (
-                Math.round(Float(qNum) * 10 ** Int(numDecDigits))
-        / 10 ** Int(numDecDigits)
-            );
+            return Math.round(Float(qNum) * 10 ** Int(numDecDigits)) / 10 ** Int(numDecDigits);
         };
-        const BindNum = (qNum, minVal, maxVal) =>
-            Math.max(Math.min(Float(qNum), Float(maxVal)), Float(minVal));
+        const BindNum = (qNum, minVal, maxVal) => Math.max(Math.min(Float(qNum), Float(maxVal)), Float(minVal));
         const CycleNum = (qNum, minVal, maxVal) => {
             qNum = Float(qNum);
             minVal = Float(minVal);
@@ -615,8 +500,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         //     #endregion _______ Constraining _______
         // #endregion ░░░░[Numbers]░░░░
-        // #region ░░░░░░░[Strings] String Manipulation, JSON, Type Conversion ░░░░░░░ ~
-        //     #region ========== Case Conversion: Upper, Lower, Sentence & Title Case =========== ~
+        // #region ░░░░░░░[Strings] String Manipulation, JSON, Type Conversion ░░░░░░░
+        //     #region ========== Case Conversion: Upper, Lower, Sentence & Title Case ===========
         const UCase = (val) => `${val || ""}`.toUpperCase(); // "Safe" toUpperCase()
         const LCase = (val) => `${val || ""}`.toLowerCase(); // "Safe" toLowerCase()
         const SCase = (val) => {
@@ -636,29 +521,22 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 ).slice(1)}`)
             .join(" ");
         //     #endregion _______ Case Conversion _______
-        //     #region ========== Type Conversion: To Numbers, Objects, JSON =========== ~
+        //     #region ========== Type Conversion: To Numbers, Objects, JSON ===========
         const ParseString = (val) => {
             // Converts strings into appropriate data type
             if (GetType(val) === "array") {
                 return val.map((v) => ParseString(v));
             }
             switch (GetType(val)) {
-                case "int":
-                    return Int(val);
-                case "float":
-                    return Float(val);
+                case "int": return Int(val);
+                case "float": return Float(val);
                 default: {
                     switch (LCase(val)) {
-                        case "true":
-                            return true;
-                        case "false":
-                            return false;
-                        case "null":
-                            return null;
-                        case "undefined":
-                            return undefined;
-                        default:
-                            return val;
+                        case "true": return true;
+                        case "false": return false;
+                        case "null": return null;
+                        case "undefined": return undefined;
+                        default: return val;
                     }
                 }
             }
@@ -673,12 +551,12 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 .replace(/ /g, "&nbsp;");
         const JC = (val) => H.Pre(JS(val)); // Stringification for data objects and other code for display in R20 chat.
         //     #endregion _______ Type Conversion _______
-        //     #region ========== Formatting: Lists, Pluralization, Possessives =========== ~
+        //     #region ========== Formatting: Lists, Pluralization, Possessives ===========
         const Pluralize = (qty, singular, plural) => Float(qty) === 1
             ? `${qty} ${singular}`
             : plural || `${singular}s`.replace(/ss$/, "ses").replace(/ys$/, "ies");
         //     #endregion _______ Formatting _______
-        //     #region ========== Numbers to Strings: Convert Numbers to Words, Signed Numbers, Ordinals, Roman Numerals =========== ~
+        //     #region ========== Numbers to Strings: Convert Numbers to Words, Signed Numbers, Ordinals, Roman Numerals ===========
         const NumToString = (num) => {
             // Can take string representations of numbers, either in standard or scientific/engineering notation.
             // Returns a string representation of the number in standard notation.
@@ -821,7 +699,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             return `${leftDigits}.${"0".repeat(numDecDigits)}`;
         };
         //     #endregion _______ Numbers to Strings _______
-        //     #region ========== RegExp: Regular Expressions =========== ~
+        //     #region ========== RegExp: Regular Expressions ===========
         const Extract = (qStr, qRegExp) => {
             const isGrouping = /[)(]/.test(qRegExp.toString());
             const matches = qStr.match(new RegExp(qRegExp)) || [];
@@ -832,7 +710,55 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         //     #endregion _______ RegExp _______
         // #endregion ░░░░[Strings]░░░░
-        // #region ░░░░░░░[Math] Mathematical Operations, Interpolation, Scaling ░░░░░░░ ~
+        // #region ░░░░░░░[Math] Mathematical Operations, Interpolation, Scaling ░░░░░░░
+        const Scale = (qObj, scaleFactor = 1, sigDigits = 2) => {
+            if (GetType(qObj) === "list") {
+                return KVPMap(qObj, (val) => RoundNum(Float(val) * Float(scaleFactor), sigDigits));
+            }
+            if (GetType(qObj) === "array") {
+                return qObj.map((val) => RoundNum(Float(val) * Float(scaleFactor), sigDigits));
+            }
+            if (["int", "float"].includes(GetType(qObj))) {
+                return RoundNum(Float(qObj) * Float(scaleFactor), sigDigits);
+            }
+            return qObj;
+        };
+        const ScaleColor = (colorRef, scaleFactor = 1) => {
+            const colorVals = [];
+            const colorRefType = GetType(colorRef);
+            switch (colorRefType) {
+                case "string": {
+                    if (colorRef in C.COLORS) {
+                        return ScaleColor(C.COLORS[colorRef], scaleFactor);
+                    }
+                    return colorRef;
+                }
+                case "hex": case "hexa": {
+                    colorRef = colorRef.replace(/[^A-Za-z0-9]/g, "");
+                    if (colorRef.length === 3) {
+                        colorRef = colorRef.split("").map((h) => `${h}${h}`).join("");
+                    }
+                    colorVals.push(...colorRef.match(/.{2}/g).map((hex) => HexToDec(hex)));
+                    break;
+                }
+                case "rgb": case "rgba": case "hsl": case "hsla": {
+                    colorVals.push(...colorRef.match(/[\d\.%]+[,\s)]/g).map((val) => {
+                        if (/%/.test(val)) {
+                            return Int(val.replace(/[^\d\.]/g, "")) / 100;
+                        }
+                        return /\./.test(val) ? Float(val) : Int(val);
+                    }));
+                    break;
+                }
+                default: return colorRef;
+            }
+            const scaledColorVals = Scale(colorVals, scaleFactor, 0);
+            switch (colorRefType) {
+                case "hexa": return `rgba(${scaledColorVals.join(", ")})`;
+                case "hex": return `#${scaledColorVals.map((val) => EunoCORE.DecToHex(val)).join("")}`;
+                default: return `${colorRefType}(${scaledColorVals.join(", ")})`;
+            }
+        };
         const Interpolate = (coords, query) => {
             const [iQuery, iBase] = ["int", "float"].includes(GetType(query[0]))
                 ? [1, 0]
@@ -869,13 +795,13 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             return RoundNum((base - base1) * (query2 - query1) / (base2 - base1) + query1, 2);
         };
         // #endregion ░░░░[Math]░░░░
-        // #region ░░░░░░░[Chat] Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░░ ~
+        // #region ░░░░░░░[Chat] Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░░
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
-        const CheckMessage = (msg, calls, options = {isGM: true}) => {
+        const CheckMessage = (msg, calls, {isGM = true} = {}) => {
             return U.GetType(msg) === "list"
                     && msg.type === "api"
                     && U.Arrayify(calls).some((call) => msg.content.startsWith(call))
-                    && (!options.isGM || playerIsGM(msg.playerid));
+                    && (!isGM || playerIsGM(msg.playerid));
         };
         const ParseMessage = (msg, types = []) => {
             const msgData = {
@@ -889,7 +815,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 content: msg.content,
                 selected: Object.fromEntries(U.Arrayify(types).map((type) => [type, O.GetSelObj([msg], type)]))
             };
-            [msgData.call, ...msgData.args] = U.ParseString(U.Arrayify(msg.content.match(/!\S*|\s@"[^"]*"|\s"[^"]*"|\s[^\s]*/gu)).map((arg) => arg.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1")));
+            [msgData.call, ...msgData.args] = U.ParseString(U.Arrayify(msg.content
+                .match(/!\S*|\s@"[^"]*"|\s"[^"]*"|\s[^\s]*/gu))
+                .map((arg) => arg.replace(/^\s*(@)?"?|"?"?\s*$/gu, "$1")));
             return msgData;
         };
         const Alert = (content, title, headerLevel = 1, classes = [], options = {noarchive: true}) => {
@@ -939,7 +867,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         const Flag = (msg, headerLevel = 1, classes = []) => Alert(null, msg, headerLevel, ["flag", ...classes]); // Simple one-line chat flag sent to the GM.
         // #endregion ░░░░[Chat]░░░░
-        // #region ░░░░░░░[Arrays & Objects] Array & Object Processing ░░░░░░░ ~
+        // #region ░░░░░░░[Arrays & Objects] Array & Object Processing ░░░░░░░
         // Arrayify: Ensures value returns as an array containing only truthy objects.
         //     Useful when iterating over a map to functions that return falsy values on failure
         const Arrayify = (x) => [x].flat().filter((xx) => xx === "" || xx === 0 || Boolean(xx));
@@ -952,96 +880,128 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
              * @param {function} [valFunc]
              * @return {object}
              */
-            [valFunc, keyFunc] = [valFunc, keyFunc].filter((x) => typeof x === "function" || typeof x === "boolean");
+            [valFunc, keyFunc] = [valFunc, keyFunc].filter((x) => ["function", "boolean"].includes(typeof x));
             keyFunc = keyFunc || ((k) => k);
             valFunc = valFunc || ((v) => v);
-            return Object.fromEntries(Object.entries(obj).map(([key, val]) => [
-                keyFunc(key, val),
-                valFunc(val, key)
-            ]));
+            return Object.fromEntries(Object.entries(obj).map(([key, val]) => [keyFunc(key, val), valFunc(val, key)]));
         };
-        const Remove = (arr, searchFunc) => {
-            if (GetType(searchFunc) === "int") {
-                const searchIndex = Int(searchFunc);
-                searchFunc = (elem, i) => i === searchIndex;
-            } else if (GetType(searchFunc) !== "function") {
-                const searchTerm = JSON.stringify(searchFunc);
-                searchFunc = (elem) => JSON.stringify(elem) === searchTerm;
+        const KVPFilter = (obj, keyTestFunc, valTestFunc) => {
+            [valTestFunc, keyTestFunc] = [valTestFunc, keyTestFunc].filter((x) => ["function", "boolean"].includes(typeof x));
+            keyTestFunc = keyTestFunc || (() => true);
+            valTestFunc = valTestFunc || (() => true);
+            return Object.fromEntries(Object.entries(obj).filter(([key, val]) => keyTestFunc(key) && valTestFunc(val)));
+        };
+        const KVPForEach = (obj, func) => Object.entries(obj).forEach(([key, val]) => func(val, key));
+        const parseSearchFunc = (qObj, searchFunc) => {
+            const [objType, funcType] = [qObj, searchFunc].map(GetType);
+            if (["list", "array"].includes(objType)) {
+                if (funcType === "function") { return searchFunc }
+                if (objType === "list" && searchFunc in qObj) { return ([key]) => key === searchFunc }
+                if (funcType === "regexp") {
+                    if (objType === "list") { return ([, val]) => searchFunc.test(val) }
+                    return (val) => searchFunc.test(val);
+                }
+                if (funcType === "int") {
+                    if (objType === "list") { return ([, val]) => val === Object.values(qObj)[Int(searchFunc)] }
+                    return (elem, i) => i = Int(searchFunc);
+                }
+                if (["first", "last", "random"].includes(searchFunc)) {
+                    return parseSearchFunc(qObj, {
+                        first: 0,
+                        last: Object.values(qObj).length - 1,
+                        random: Math.floor(Math.random() * Object.values(qObj).length)
+                    }[searchFunc]);
+                }
+                searchFunc = JSON.stringify(searchFunc);
+                if (objType === "list") { return ([, val]) => JSON.stringify(val) === searchFunc }
+                return (val) => JSON.stringify(val) === searchFunc;
             }
-            const index = arr.findIndex(searchFunc);
-            if (index >= 0) {
-                for (let i = 0; i <= arr.length; i++) {
-                    if (i === index) {
-                        arr.shift();
-                    } else {
-                        arr.push(arr.shift());
+            return searchFunc;
+        };
+        const Remove = (qObj, searchFunc) => {
+            if (GetType(qObj) === "list") {
+                const remKey = Object.entries(qObj).find(parseSearchFunc(qObj, searchFunc));
+                if (remKey) {
+                    const {[remKey]: remVal} = qObj;
+                    delete qObj[remKey];
+                    return remVal;
+                }
+            } else if (GetType(qObj) === "array") {
+                const index = qObj.findIndex(parseSearchFunc(qObj, searchFunc));
+                if (index >= 0) {
+                    let remVal;
+                    for (let i = 0; i <= qObj.length; i++) {
+                        if (i === index) {
+                            remVal = qObj.shift();
+                        } else {
+                            qObj.push(qObj.shift());
+                        }
                     }
+                    return remVal;
                 }
             }
+            return false;
+        };
+        const Replace = (qObj, searchFunc, repVal) => {
+            const qType = GetType(qObj);
+            let repKey;
+            if (qType === "list") {
+                repKey = (Object.entries(qObj).find(parseSearchFunc(qObj, searchFunc)) || [false])[0];
+                if (repKey === false) { return false }
+            } else if (qType === "array") {
+                repKey = qObj.findIndex(parseSearchFunc(qObj, searchFunc));
+                if (repKey === -1) { return false }
+            }
+            if (GetType(repVal) === "function") {
+                qObj[repKey] = repVal(qObj[repKey], repKey);
+            } else {
+                qObj[repKey] = repVal;
+            }
+            return true;
         };
         // #endregion ░░░░[Arrays & Objects]░░░░
 
-        // #region ▒░▒░▒░▒[EXPORTS] U (UTILITIES) ▒░▒░▒░▒ ~
+        // #region ▒░▒░▒░▒[EXPORTS] U (UTILITIES) ▒░▒░▒░▒
         return {
             // [FRONT: Initialization]
-            Preinitialize,
             Initialize,
 
             // [Validation]
             GetType,
 
             // [Conversion]
-            HexToDec: EunoCORE.HexToDec,
-            DecToHex: EunoCORE.DecToHex,
-
-            // [Scaling]
-            ScaleColor: EunoCORE.ScaleColor,
+            HexToDec, DecToHex,
 
             // [Numbers: Parsing]
-            Float,
-            Int,
-
+            Float, Int,
             // [Numbers: Constraining]
-            RoundNum,
-            BindNum,
-            CycleNum,
+            RoundNum, BindNum, CycleNum,
 
             // [Strings: Case Conversion]
-            UCase,
-            LCase,
-            SCase,
-            TCase,
+            UCase, LCase,
+            SCase, TCase,
             // [Strings: Type Conversion]
-            ParseString,
-            ParseParams,
-            JS,
-            JC,
+            ParseString, ParseParams,
+            JS, JC,
             // [Strings: Formatting]
             Pluralize,
             // [Strings: Numbers to Strings]
-            NumToWords,
-            NumToOrdinal,
-            NumToRoman,
-            NumToSignedNum,
-            NumToPaddedNum,
+            NumToWords, NumToOrdinal, NumToRoman, NumToSignedNum, NumToPaddedNum,
             // [Strings: RegExp]
             Extract,
 
             // [Math]
+            Scale, ScaleColor,
             Interpolate,
 
             // [Chat]
-            CheckMessage,
-            ParseMessage,
-            Alert,
-            Direct,
-            Show,
-            Flag,
+            CheckMessage, ParseMessage,
+            Alert, Direct, Show, Flag,
 
             // [Arrays & Objects]
             Arrayify,
-            Remove,
-            KVPMap
+            KVPMap, KVPFilter, KVPForEach,
+            Remove, Replace
         };
         // #endregion ▒▒▒▒[EXPORTS: U]▒▒▒▒
     })();
@@ -1049,19 +1009,12 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #region ████████ L (LISTENER): Master Event Listener ████████
     /*     const LISTENER = (() => {
-        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
-        //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
+        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
+        //     #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "LISTENER";
         const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
         //     #endregion _______ Namespacing _______
-        //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
-        const Preinitialize = () => {
-            // Initialize local state storage
-            EunoCORE.InitState(SCRIPTNAME);
-
-            // Report preinitialization complete to EunoCORE loader
-            EunoCORE.ConfirmReady(SCRIPTNAME);
-        }; //
+        //     #region ========== Initialization: Script Startup & Event Listeners ===========
         const Initialize = () => {
             // Alert readiness confirmation
             U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
@@ -1073,9 +1026,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ▒░▒░▒░▒[EXPORTS] L (LISTENER) ▒░▒░▒░▒ ~
+        // #region ▒░▒░▒░▒[EXPORTS] L (LISTENER) ▒░▒░▒░▒
         return {
-            Preinitialize,
             Initialize
         };
         // #endregion ▒▒▒▒[EXPORTS: L]▒▒▒▒
@@ -1084,8 +1036,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #region ████████ O (OBJECTS): Roll20 Object Manipulation ████████
     const OBJECTS = (() => {
-        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
-        //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
+        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
+        //     #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "OBJECTS";
         const STA = {
             get TE() {
@@ -1093,14 +1045,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         //     #endregion _______ Namespacing _______
-        //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
-        const Preinitialize = () => {
-            // Initialize local state storage
-            EunoCORE.InitState(SCRIPTNAME);
-
-            // Report preinitialization complete to EunoCORE loader
-            EunoCORE.ConfirmReady(SCRIPTNAME);
-        }; //
+        //     #region ========== Initialization: Script Startup & Event Listeners ===========
         const Initialize = () => {
             // Alert readiness confirmation
             U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
@@ -1112,7 +1057,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ░░░░░░░[Getters] Retrieving Sandbox Objects ░░░░░░░ ~
+        // #region ░░░░░░░[Getters] Retrieving Sandbox Objects ░░░░░░░
         const GetR20Type = (val) => {
             if (val && typeof val === "object" && "id" in val && "get" in val) {
                 const type = val.get("_type");
@@ -1271,9 +1216,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ░░░░[Getters]░░░░
 
-        // #region ▒░▒░▒░▒[EXPORTS] O (OBJECTS) ▒░▒░▒░▒ ~
+        // #region ▒░▒░▒░▒[EXPORTS] O (OBJECTS) ▒░▒░▒░▒
         return {
-            Preinitialize,
             Initialize,
 
             GetR20Type,
@@ -1287,8 +1231,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #region ████████ H (HTML): HTML/CSS Parsing & Styling for Chat & Handouts ████████
     const HTML = (() => {
-        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
-        //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
+        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
+        //     #region ========== Namespacing: Basic State References & Namespacing ===========
         const SCRIPTNAME = "HTML";
         const STA = {
             get TE() {
@@ -1296,14 +1240,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         //     #endregion _______ Namespacing _______
-        //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
-        const Preinitialize = () => {
-            // Initialize local state storage
-            EunoCORE.InitState(SCRIPTNAME);
-
-            // Report preinitialization complete to EunoCORE loader
-            EunoCORE.ConfirmReady(SCRIPTNAME);
-        }; //
+        //     #region ========== Initialization: Script Startup & Event Listeners ===========
         const Initialize = () => {
             // Alert readiness confirmation
             U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
@@ -1315,12 +1252,12 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ░░░░░░░[Styles] CSS Class Style Definitions ░░░░░░░ ~
+        // #region ░░░░░░░[Styles] CSS Class Style Definitions ░░░░░░░
         const cssVars = {
             chatWidth: 283,
             blockSpacing: 10,
             shifts: {
-                boxAll: [-27, 0, -7, -45],
+                boxAll: [-27, 0, -6, -45],
                 titleMainBottom: 0,
                 titleScriptsBottom: -62,
                 subtitleBottom: -100,
@@ -1374,15 +1311,15 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 }
             },
             get halfSpace() {
-                return U.RoundNum(this.blockSpacing / 2, 2);
+                return EunoCORE.U.RoundNum(this.blockSpacing / 2, 2);
             },
             get qartSpace() {
-                return U.RoundNum(this.blockSpacing / 4, 2);
+                return EunoCORE.U.RoundNum(this.blockSpacing / 4, 2);
             }
         };
         const CSS = {};
         [
-            //     #region ========== Base Styles: Default Styles for Base Element Tags =========== ~
+            //     #region ========== Base Styles: Default Styles for Base Element Tags ===========
             `   div, span, a, p, pre, h1, h2, h3, img {
                     display: block;
                     height: auto; width: auto;
@@ -1479,7 +1416,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 }
             `,
             //     #endregion _______ Base Styles _______
-            //     #region ========== Class Styles: Styles Applied by CSS Class Reference =========== ~
+            //     #region ========== Class Styles: Styles Applied by CSS Class Reference ===========
             `   .box.silver {
                     color: ${C.COLORS.white};
                     background-image: url('${C.GetImgURL("bgChatSilver")}');
@@ -1592,7 +1529,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 }
                 .footer {
                     height: ${C.GetImgSize("footerGold")[1]}px;
-                    margin-top: ${cssVars.padding.box}px;
+                    margin-top: ${cssVars.shifts.footerTop}px;
                     background-image: url('${C.GetImgURL("footerGold")}');
                     z-index: 0;
                 }
@@ -1694,8 +1631,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 CSS[sel] = Object.assign(CSS[sel] || {}, block);
             });
         // #endregion ░░░░[Styles]░░░░
-        // #region ░░░░░░░[Parsing] Parsing Style Data to Inline CSS ░░░░░░░ ~
-        //     #region ========== Parsing Functions: Functions for Parsing to Inline CSS =========== ~
+        // #region ░░░░░░░[Parsing] Parsing Style Data to Inline CSS ░░░░░░░
+        //     #region ========== Parsing Functions: Functions for Parsing to Inline CSS ===========
         const getStyles = (tag, classes = []) => {
             classes = [classes].flat();
             const styleSteps = [{classes}];
@@ -1799,7 +1736,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 .replace(/~/gu, "&shy;"); // Turn unescaped tildes into soft hyphen breaks
         };
         //     #endregion _______ Parsing Functions _______
-        //     #region ========== Elements: Basic Element Constructors by Tag =========== ~
+        //     #region ========== Elements: Basic Element Constructors by Tag ===========
         const baseElements = {
             Div: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "div", classes, styles, attributes),
             Span: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "span", classes, styles, attributes),
@@ -1815,7 +1752,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         //     #endregion _______ Elements _______
         // #endregion ░░░░[Parsing]░░░░
-        // #region ░░░░░░░[Custom Elements] Shorthand Element Constructors for Common Use Cases ░░░░░░░ ~
+        // #region ░░░░░░░[Custom Elements] Shorthand Element Constructors for Common Use Cases ░░░░░░░
         const customElements = {
             Box: (content, classes = [], styles = {}) =>
                 H.Div(content, ["box", ...classes], styles),
@@ -1946,7 +1883,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 )
         };
         // #endregion ░░░░[Custom Elements]░░░░
-        // #region ░░░░░░░[Chat Messages] Main Intro/Help Message for EunoScripts ░░░░░░░ ~
+        // #region ░░░░░░░[Chat Messages] Main Intro/Help Message for EunoScripts ░░░░░░░
         /* ████████ HYPHENATION & TILDE ('~') USE █████████████████████████████████████████████████████████████████████████████████████████████
            █
            █ Text displayed in the narrow Roll20 Chat panel is ideal for liberal use of hyphenation to divide words. Unfortunately, browsers
@@ -2066,10 +2003,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ░░░░[Chat Messages]░░░░
 
-        // #region ▒░▒░▒░▒[EXPORTS] H (HTML) ▒░▒░▒░▒ ~
+        // #region ▒░▒░▒░▒[EXPORTS] H (HTML) ▒░▒░▒░▒
         return {
             // [FRONT: Initialization]
-            Preinitialize,
             Initialize,
 
             // [PARSING]
@@ -2090,9 +2026,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     })();
     // #endregion ▄▄▄▄▄ H ▄▄▄▄▄
 
-    // #region ▒░▒░▒░▒[EXPORTS] EunoLIB ▒░▒░▒░▒ ~
+    // #region ▒░▒░▒░▒[EXPORTS] EunoLIB ▒░▒░▒░▒
     return {
-        Preinitialize, Initialize, PostInitialize,
+        DEFAULTSTATE, Initialize, PostInitialize,
         // Listeners,
 
         UTILITIES,
@@ -2109,4 +2045,4 @@ EunoCORE.Register("UTILITIES", EunoLIB.UTILITIES);
 EunoCORE.Register("OBJECTS", EunoLIB.OBJECTS);
 EunoCORE.Register("HTML", EunoLIB.HTML);
 
-on("ready", () => { EunoCORE.UpdateNamespace(); EunoCORE.INITIALIZE() });
+on("ready", () => EunoCORE.INITIALIZE());
