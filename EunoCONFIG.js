@@ -18,11 +18,12 @@ const EunoCONFIG = {
         INACTIVELAYER: "walls"
 
     },
-    //    ████[!ETC]██▓▒░ Settings for !ETC: Euno's Text Controls ░▒▓█████
+    // ████[!ETC]██▓▒░ Settings for !ETC: Euno's Text Controls ░▒▓█████
     ETC: {
-        // ░▒▓█[ETC: Drop Shadows]█▓▒░ Configure Text Drop Shadows ░░░░░░
-        /* IMPORTANT: Run '!etc shadow fix' to update sandbox objects after changing any of these settings. */
+        // ░▒▓█[ETC: Drop Shadows]█▓▒░ Configure Text Drop Shadows ░░░░
         DropShadows: {
+
+            /* 🟥🟥IMPORTANT: Run '!etc shadow fix' to update sandbox objects after changing any of these settings. 🟥🟥 */
 
             /** 🔶COLOR🔶
              * The default color for text shadows.
@@ -50,26 +51,25 @@ const EunoCONFIG = {
                 /** 🔶defaultMult🔶
                  *  The default offset multiplier for all text objects.
                  *    - This value is multiplied by the font size to derive the pixel offset of the shadow beneath, along both axes.
-                 *    - Changing these values will affect all text objects that do not have specific overrides set.
+                 *    - Changing this value will affect all text objects that do not have specific overrides set.
                  *        - There are two ways to override these defaults: by applying a scaling multiplier to a whole font family,
                  *          or by setting exact pixel offsets for specific font/size combinations. Both methods are detailed below.
                  *        - If both methods are used for the same font and size, an explicit pixel offset will override any multipliers. */
                 defaultMult: 0.08,
 
                 /** 🔶multipliers🔶
-                 *  Override the defaults with a multiplier that scales the default offsets for an entire font family.
-                 *    - These scale the default shadow offsets directly (i.e. '0.5' will result in the default offset being halved).
-                 *    - You can apply different multipliers to the horizontal and vertical by passing an array. */
+                 *  Override the defaults with a multiplier that scales the offsets for an entire font family.
+                 *    - These scale the default shadow offsets directly (e.g. '0.5' will result in the default offset being halved). */
                 multipliers: {
                     "Shadows Into Light": 0.5,
-                    Arial: 0.6,
+                    "Arial": 0.6,
                     "Patrick Hand": 0.75,
-                    Tahoma: 0.75,
-                    Rye: 0.5,
+                    "Tahoma": 0.75,
+                    "Rye": 0.5,
                     "IM Fell DW Pica": 0.5,
-                    Nunito: 0.75,
-                    Montserrat: 0.5,
-                    Merriweather: 0.6,
+                    "Nunito": 0.75,
+                    "Montserrat": 0.5,
+                    "Merriweather": 0.6,
                     "Della Respira": 0.4,
                     "Crimson Text": 0.4,
                     "Kaushan Script": 0.4
@@ -85,15 +85,18 @@ const EunoCONFIG = {
                         100: [6, 6],
                         200: [12, 12]
                     }
+                },
+
+                get generic() {
+                    return Object.fromEntries([8, 10, 12, 14, 16, 18, 20, 22, 26, 32, 40, 56, 72, 100, 200, 300].map((size) => {
+                        const defaultMults = typeof EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult === "number"
+                            ? [EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult, EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult]
+                            : [EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult[0], EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult[1]];
+                        return [size, defaultMults.map((mult) => size * mult)];
+                    }));
                 }
             }
         }
     }
 };
-EunoCONFIG.ETC.DropShadows.OFFSETS.generic = Object.fromEntries([8, 10, 12, 14, 16, 18, 20, 22, 26, 32, 40, 56, 72, 100, 200, 300].map((size) => {
-    const defaultMults = typeof EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult === "number"
-        ? [EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult, EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult]
-        : [EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult[0], EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult[1]];
-    return [size, defaultMults.map((mult) => size * mult)];
-}));
 void MarkStop("EunoCONFIG");

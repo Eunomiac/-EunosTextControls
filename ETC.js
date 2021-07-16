@@ -601,10 +601,10 @@ const ETC = (() => {
                         "<u>REMOVE</u> all empty (invisible) text objects from the sandbox."
                     ], ["bronze"])),
                     H.H2("Automation", ["bronze"]),
-                    H.P(H.ButtonToggle([
+                    H.ButtonToggle([
                         "Auto-Prune",
                         "Whe~ther empty (in~vi~sible) text ob~jects are auto~ma~ti~cally re~moved from the sand~box."
-                    ], `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"} feature`, [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "bronze"], {}, {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`}))
+                    ], `!etc toggle autoprune ${STA.TE.isAutoPruning ? "false" : "true"} feature`, [`toggle${STA.TE.isAutoPruning ? "On" : "Off"}`, "bronze"], {}, {title: `Click to ${STA.TE.isAutoPruning ? "DEACTIVATE" : "ACTIVATE"} automatic removal of empty text objects.`})
                 ], ["bronze"]),
                 H.ButtonFooter("!etc", "", ["goBack", "bronze"])
             ], ["bronze"])

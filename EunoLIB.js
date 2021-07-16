@@ -178,8 +178,8 @@ const EunoCORE = {
 
                 commandGold: ["emphasis", "commandGold.png", [235, 37]],
 
-                toggleButtonOnGold: ["buttons", "toggleOnGold.png", [273, 68]],
-                toggleButtonOffGold: ["buttons", "toggleOffGold.png", [273, 68]],
+                toggleButtonOnGold: ["buttons", "toggleOnGold.png", [283, 78]],
+                toggleButtonOffGold: ["buttons", "toggleOffGold.png", [283, 78]],
                 //     #endregion _______ Gold _______
                 //     #region ========== Silver: Level 2 Silver Theme =========== ~
                 bgChatSilver: ["backgrounds", "bgChatSilver.jpg", [283, 563]],
@@ -206,8 +206,8 @@ const EunoCORE = {
 
                 commandSilver: ["emphasis", "commandSilver.png", [235, 37]],
 
-                toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [273, 68]],
-                toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [273, 68]],
+                toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [283, 78]],
+                toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [283, 78]],
                 //     #endregion _______ Silver _______
                 //     #region ========== Bronze: Level 3 Bronze Theme =========== ~
                 bgChatBronze: ["backgrounds", "bgChatBronze.jpg", [283, 563]],
@@ -234,8 +234,8 @@ const EunoCORE = {
 
                 commandBronze: ["emphasis", "commandBronze.png", [235, 37]],
 
-                toggleButtonOnBronze: ["buttons", "toggleOnBronze.png", [273, 68]],
-                toggleButtonOffBronze: ["buttons", "toggleOffBronze.png", [273, 68]],
+                toggleButtonOnBronze: ["buttons", "toggleOnBronze.png", [283, 78]],
+                toggleButtonOffBronze: ["buttons", "toggleOffBronze.png", [283, 78]],
                 //     #endregion _______ Bronze _______
 
                 h3BGBlack: ["backgrounds", "h3BGBlack.jpg", [626, 626]]
@@ -322,7 +322,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     const STA = {get TE() {return EunoCORE.GetLocalSTATE(SCRIPTNAME)}};
     const RE = {get G() {return STA.TE.REGISTRY}};
 
-    const {CFG, C} = EunoCORE; let LIB, U, L, O, H; // must wait for intialization to be assigned
+    const {CFG, C} = EunoCORE; let LIB, REG, U, L, O, H; // must wait for intialization to be assigned
     // #endregion ░░░░[Namespacing]░░░░
     // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░ ~
     const DEFAULTSTATE = {
@@ -330,7 +330,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     };
     const Initialize = () => {
         // Assign shorthand script references
-        ({LIB, U, L, O, H} = EunoCORE); //                                    ◀======
+        ({LIB, REG, U, L, O, H} = EunoCORE); //                                    ◀======
 
         // Report Config Readiness (verified earlier)
         U.Flag("EunoCONFIG Ready"); log("[Euno] EunoCONFIG Ready");
@@ -345,6 +345,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         EunoCORE.ConfirmReady(SCRIPTNAME);
     };
     const PostInitialize = () => {
+
         // Display Help message, if so configured
         if (STA.TE.isDisplayingHelpAtStart) {
             H.DisplayHelp({isAutoDisplaying: true});
@@ -1265,7 +1266,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 titleMainBottom: 0,
                 titleScriptsBottom: -62,
                 subtitleBottom: -100,
-                footerTop: -75,
+                footerTop: -100,
                 commandHighlightShiftLeft: -20,
                 h1Bottom: C.GetImgSize("h1GoldTight")[1] - C.GetImgSize("h1Gold")[1],
                 h2Bottom: C.GetImgSize("h2GoldTight")[1] - C.GetImgSize("h2Gold")[1]
@@ -1537,10 +1538,12 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                     background-image: url('${C.GetImgURL("footerGold")}');
                     z-index: 0;
                 }
-                .footer.silver {background-image: url('${C.GetImgURL("footerSilver")}')}
                 .footer.hideIntro {background-image: url('${C.GetImgURL("footerHideIntroGold")}')}
                 .footer.goBack {background-image: url('${C.GetImgURL("footerGoBackGold")}')}
+                .footer.silver {background-image: url('${C.GetImgURL("footerSilver")}')}
                 .footer.goBack.silver {background-image: url('${C.GetImgURL("footerGoBackSilver")}')}
+                .footer.bronze {background-image: url('${C.GetImgURL("footerBronze")}')}
+                .footer.goBack.bronze {background-image: url('${C.GetImgURL("footerGoBackBronze")}')}
                 span.buttonLabel {
                     width: 40px;
                     text-align: right;
@@ -1571,13 +1574,15 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 span.buttonRound.bug {background-image: url('${C.GetImgURL("buttonBug")}')}
                 div.toggleButton {
                     height: ${C.GetImgSize("toggleButtonOnGold")[1]}px;
-                    padding: 3px;
-                    background-size: 95% 68px;
+                    padding: 0px 3px;
+                    background-size: 105% ${C.GetImgSize("toggleButtonOnGold")[1]}px;
                 }
                 div.toggleButton.toggleOn {background-image: url('${C.GetImgURL("toggleButtonOnGold")}')}
                 div.toggleButton.toggleOff {background-image: url('${C.GetImgURL("toggleButtonOffGold")}')}
                 div.toggleButton.toggleOn.silver {background-image: url('${C.GetImgURL("toggleButtonOnSilver")}')}
                 div.toggleButton.toggleOff.silver {background-image: url('${C.GetImgURL("toggleButtonOffSilver")}')}
+                div.toggleButton.toggleOn.bronze {background-image: url('${C.GetImgURL("toggleButtonOnBronze")}')}
+                div.toggleButton.toggleOff.bronze {background-image: url('${C.GetImgURL("toggleButtonOffBronze")}')}
                 span.toggleButtonTitle {
                     width: 185px;
                     font-family: Anton, sans-serif;
@@ -1586,6 +1591,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                     color: ${C.COLORS.black};
                     text-transform: uppercase;
                     vertical-align: top;
+                    margin-top: 8px;
                 }
                 span.toggleButtonBody {
                     height: 40px;
@@ -1956,11 +1962,11 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 ),
                 H.Block(
                     [
-                        H.P("<b><u>Euno~miac's Roll20 Scripts</u></b> is a col~lec~tion of stand-alone scripts, each in~tended to pro~vide com~pre~hen~sive con~trol over a par~tic~u~lar as~pect of the Roll20 VTT. You can learn more about each of the avail~able scripts be~low, and keep ap~prised of new fea~tures, fixes and fu~ture plans through~out dev~elop~ment by vis~it~ing the links above."),
+                        H.P("<b><u>Euno's Scripts</u></b> is a col~lec~tion of stand-alone scripts, each in~tended to pro~vide com~pre~hen~sive con~trol over a par~tic~u~lar as~pect of the Roll20 VTT. You can learn more about each of the avail~able scripts be~low, and keep ap~prised of new fea~tures, fixes and fu~ture plans through~out dev~elop~ment by vis~it~ing the links above."),
                         H.H1("General Chat Commands"),
                         H.P(H.ButtonCommand(["!euno", "View this help mes~sage."])),
                         H.H2("Available Scripts"),
-                        H.Paras("Click the but~tons be~low to learn more about each of <b><u>Euno~miac's Roll20 Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
+                        H.Paras("Click the but~tons be~low to learn more about each of <b><u>Euno's Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
                         H.ButtonH1(
                             "!etc",
                             [
@@ -1992,7 +1998,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                             {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}
                         ),
                         H.H3("Configuration"),
-                        H.P("Con~fig~u~ra~tion op~tions for every script in <b><u>Euno~miac's Roll20 Scripts</u></b> col~lec~tion is con~tained in 'EunoCONFIG.js', which you'll find in the API Scripts sec~tion of your game page. Fur~ther in~struc~tions on how to con~fig~ure the scripts to your lik~ing are lo~cated there."),
+                        H.P("Con~fig~u~ra~tion op~tions for every script in the <b><u>Euno's Scripts</u></b> col~lec~tion is con~tained in 'EunoCONFIG.js', which you'll find in the API Scripts sec~tion of your game page. Fur~ther in~struc~tions on how to con~fig~ure the scripts to your lik~ing are lo~cated there."),
                         options.isAutoDisplaying
                             ? H.P(`To pre~vent this mes~sage from dis~play~ing at start~up, click the chev~ron be~low. <i>(View this mes~sage at any time via the ${H.Command("!euno")} command.)</i>`)
                             : ""
@@ -2034,6 +2040,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     return {
         DEFAULTSTATE, Initialize, PostInitialize,
         // Listeners,
+        RE,
 
         UTILITIES,
         OBJECTS,
