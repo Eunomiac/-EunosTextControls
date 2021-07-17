@@ -1,12 +1,12 @@
-/******▌████████████████████████████████████████████████████████████▐******\
+/* ****▌████████████████████████████████████████████████████████████▐******\
 |*     ▌█░░░░    EunoLIB: Common Functions for EunoScripts     ░░░░█▐     *|
-|*     ▌████████████████ v0.15-alpha ██ Jul 16 2021 ████████████████▐     *|
+|*     ▌████████████████ v0.15-alpha ██ Jul 17 2021 ████████████████▐     *|
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
-\******▌████████████████████████████████████████████████████████████▐******/
+\* ****▌████████████████████████████████████████████████████████████▐******/
 
 // #region ████████ EunoCORE: Functionality Required in Advance of Initialization ████████
 const EunoCORE = {
-    // #region ░░░░░░░[STORAGE]░░░░ Initialization & Management of 'state' Namespaces ░░░░░░░
+    // #region ░░░░░░░[STORAGE]░░░░ Initialization & Management of 'state' Namespaces ░░░░░░░ ~
     ROOTNAME: "EunoScripts", // Namespace under global state variables
     get ROOT() { // Root state namespace for all EunoScripts
         if (!(this.ROOTNAME in state)) { state[this.ROOTNAME] = {isEunoState: true} }
@@ -23,7 +23,7 @@ const EunoCORE = {
     },
     DeleteLocalSTATE: function(scriptName) { delete this.ROOT[scriptName] }, // Clears local state storage for specified EunoScript
     // #endregion ░░░░[STATE STORAGE]░░░░
-    // #region ░░░░░░░[SCRIPT REGISTRATION] Installed EunoScripts Register Themselves Here ░░░░░░░
+    // #region ░░░░░░░[SCRIPT REGISTRATION] Installed EunoScripts Register Themselves Here ░░░░░░░ ~
     _scriptData: {},
     get SCRIPTDATA() { return this._scriptData },
     getScript: function(scriptName) { return (this.SCRIPTDATA[scriptName] || {script: false}).script },
@@ -39,7 +39,7 @@ const EunoCORE = {
         };
     },
     // #endregion ░░░░[SCRIPT REGISTRATION]░░░░
-    // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░
+    // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░ ~
     InitSteps: ["Preinitialize", "Initialize", /* "Listeners", */"PostInitialize"],
     // VERSION MIGRATION: Any migration processing necessary on version update
     UpdateNamespace: () => {
@@ -98,7 +98,7 @@ const EunoCORE = {
 
     // #region ████████ C (EunoCORE.CONSTANTS): Globally-Accessible Constants ████████
     CONSTANTS: {
-        // #region ░░░░░░░[COLORS] Color Definitions ░░░░░░░
+        // #region ░░░░░░░[COLORS] Color Definitions ░░░░░░░ ~
         COLORS: {
             // Black / Grey / White
             black: "#000",
@@ -122,7 +122,7 @@ const EunoCORE = {
             palebronze: "#E6BF99"
         },
         // #endregion ░░░░[COLORS]░░░░
-        // #region ░░░░░░░[FONTS] Supported Sandbox Fonts ░░░░░░░
+        // #region ░░░░░░░[FONTS] Supported Sandbox Fonts ░░░░░░░ ~
         FONTS: [
             "Arial",
             "Patrick Hand",
@@ -142,16 +142,16 @@ const EunoCORE = {
             "Kaushan Script"
         ],
         // #endregion ░░░░[COLORS]░░░░
-        // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░
+        // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░ ~
 
         IMAGES: (function() {
-            const IMGROOT = "https://tinyurl.com/xczfeezdv"; // "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
+            const IMGROOT = "https://tinyurl.com/xczfeezdv";
             return Object.fromEntries(Object.entries({
                 buttonDownload: ["buttons", "buttonDownload.png", [50, 50]],
                 buttonChat: ["buttons", "buttonChat.png", [50, 50]],
                 buttonBug: ["buttons", "buttonBug.png", [50, 50]],
 
-                //     #region ========== Gold: Level 1 Gold Theme ===========
+                //     #region ========== Gold: Level 1 Gold Theme =========== ~
                 bgChatGold: ["backgrounds", "bgChatGold.jpg", [283, 563]],
 
                 titleMain: ["bookends", "headerMain.png", [283, 208]],
@@ -179,7 +179,7 @@ const EunoCORE = {
                 toggleButtonOnGold: ["buttons", "toggleOnGold.png", [283, 78]],
                 toggleButtonOffGold: ["buttons", "toggleOffGold.png", [283, 78]],
                 //     #endregion _______ Gold _______
-                //     #region ========== Silver: Level 2 Silver Theme ===========
+                //     #region ========== Silver: Level 2 Silver Theme =========== ~
                 bgChatSilver: ["backgrounds", "bgChatSilver.jpg", [283, 563]],
 
                 titleETC: ["bookends", "headerScriptETC.png", [283, 142]],
@@ -207,7 +207,7 @@ const EunoCORE = {
                 toggleButtonOnSilver: ["buttons", "toggleOnSilver.png", [283, 78]],
                 toggleButtonOffSilver: ["buttons", "toggleOffSilver.png", [283, 78]],
                 //     #endregion _______ Silver _______
-                //     #region ========== Bronze: Level 3 Bronze Theme ===========
+                //     #region ========== Bronze: Level 3 Bronze Theme =========== ~
                 bgChatBronze: ["backgrounds", "bgChatBronze.jpg", [283, 563]],
 
                 subtitleBronze: ["bookends", "subtitleBronze.png", [283, 142]],
@@ -248,7 +248,7 @@ const EunoCORE = {
             }
         },
         // #endregion ░░░░[IMAGES]░░░░
-        // #region ░░░░░░░[ROLL20 OBJECTS] Roll20 Object Types ░░░░░░░
+        // #region ░░░░░░░[ROLL20 OBJECTS] Roll20 Object Types ░░░░░░░ ~
         ROLL20TYPES: {
             all: [
                 "graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro",
@@ -259,7 +259,7 @@ const EunoCORE = {
             ]
         },
         // #endregion ░░░░[ROLL20 OBJECTS]░░░░
-        // #region ░░░░░░░[NUMBER STRINGS] Number Words, Ordinal Suffixes, Roman Numerals ░░░░░░░
+        // #region ░░░░░░░[NUMBER STRINGS] Number Words, Ordinal Suffixes, Roman Numerals ░░░░░░░ ~
         NUMBERWORDS: {
             ones: [
                 "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
@@ -298,7 +298,7 @@ const EunoCORE = {
     },
     // #endregion ▄▄▄▄▄ C ▄▄▄▄▄
 
-    // #region ░░░░░░░[SHORTHAND GETTERS] Shorthand Getters for Major Script Components ░░░░░░░
+    // #region ░░░░░░░[SHORTHAND GETTERS] Shorthand Getters for Major Script Components ░░░░░░░ ~
     get CFG() { return EunoCONFIG },
     get LIB() { return EunoLIB },
     get REG() { return EunoLIB.RE.G },
@@ -312,9 +312,9 @@ const EunoCORE = {
 // #endregion ▄▄▄▄▄ EunoCORE ▄▄▄▄▄
 
 // #region ████████ EunoLIB: Library of Script Dependencies ████████
-const EunoLIB = /** @lends EunoLIB */ (() => {
-    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
-    // #region ░░░░░░░[Namespacing] Basic References & Namespacing ░░░░░░░
+const EunoLIB = (() => {
+    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
+    // #region ░░░░░░░[Namespacing] Basic References & Namespacing ░░░░░░░ ~
 
     const SCRIPTNAME = "EunoLIB";
     const STA = {get TE() {return EunoCORE.GetLocalSTATE(SCRIPTNAME)}};
@@ -322,8 +322,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     const {CFG, C} = EunoCORE; let LIB, REG, U, L, O, H; // must wait for intialization to be assigned
     // #endregion ░░░░[Namespacing]░░░░
-    // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░
+    // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░ ~
     const DEFAULTSTATE = {
+        REGISTRY: {},
         isDisplayingHelpAtStart: true
     };
     const Initialize = () => {
@@ -354,12 +355,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     };
 
     // #endregion ░░░░[Initialization]░░░░
-    // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░
-    /*     const Listeners = {
-        "chat:message": [
-            {regexp: /^(!euno|!edev)/, gmOnly: true, objTypes: [], handler: handleMessage}
-        ]
-    }; */
+    // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░ ~
     const handleMessage = (msg) => {
         if (U.CheckMessage(msg, ["!euno", "!edev"])) {
             let {call, args, selected} = U.ParseMessage(msg, "all");
@@ -395,8 +391,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #region ████████ U (UTILITIES): Global Utility Functions ████████
     const UTILITIES = (() => {
-        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
-        //     #region ========== Namespacing: Basic State References & Namespacing ===========
+        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
+        //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
         const SCRIPTNAME = "UTILITIES";
         const STA = {
             get TE() {
@@ -404,7 +400,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         //     #endregion _______ Namespacing _______
-        //     #region ========== Initialization: Script Startup & Event Listeners ===========
+        //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
         const Initialize = () => {
             // Alert readiness confirmation
             Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
@@ -416,22 +412,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ░░░░░░░[Validation] Verification & Type Checking ░░░░░░░
+        // #region ░░░░░░░[Validation] Verification & Type Checking ░░░░░░░ ~
         const GetType = (val) => {
-            /** TYPES RETURNED:
-             *
-             * "id",                        // is likely a Roll20 object id
-             * "hex", "hexa", "rgb", "rgba", "hsl", "hsla",             // css color values
-             * "int", "float", "bigint",    // numbers, even if cast to string
-             * "array", "list",             // list = simple object literal
-             * "boolean", "null", "undefined",
-             * "function",
-             * "date", "regexp", ... ... ...// ... as well as all other core javascript prototypes
-             * "graphic", "text", "path", "character", "ability", "attribute", "handout", "rollabletable", "tableitem", "macro",
-             * "page", "campaign", "player", "deck", "card", "hand", "jukeboxtrack", "custfx",
-             * "string"                     // only if none of the above match
-             *
-             */
             const valType = Object.prototype.toString.call(val)
                 .slice(8, -1)
                 .toLowerCase()
@@ -459,7 +441,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             return valType;
         };
         // #endregion ░░░░[Validation]░░░░
-        // #region ░░░░░░░[Conversion]░░░░ Converting Between String Types ░░░░░░░
+        // #region ░░░░░░░[Conversion]░░░░ Converting Between String Types ░░░░░░░ ~
         const HexToDec = (hex) => LCase(hex)
             .replace(/[^a-z0-9]/g, "")
             .split("").reverse()
@@ -474,12 +456,12 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             return hex.reverse().join("");
         };
         // #endregion ░░░░[Conversion]░░░░
-        // #region ░░░░░░░[Numbers] Number Generation, Manipulation, Parsing from Strings ░░░░░░░
-        //     #region ========== Parsing: "Safe" Parsing of Numbers ===========
+        // #region ░░░░░░░[Numbers] Number Generation, Manipulation, Parsing from Strings ░░░░░░░ ~
+        //     #region ========== Parsing: "Safe" Parsing of Numbers =========== ~
         const Float = (qNum) => parseFloat(qNum) || 0;
         const Int = (qNum) => parseInt(Math.round(Float(qNum)));
         //     #endregion _______ Parsing _______
-        //     #region ========== Constraining: Rounding, Binding, Cycling ===========
+        //     #region ========== Constraining: Rounding, Binding, Cycling =========== ~
         const RoundNum = (qNum, numDecDigits = 0) => {
             if (Float(qNum) === Int(qNum)) {
                 return Int(qNum);
@@ -501,8 +483,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         //     #endregion _______ Constraining _______
         // #endregion ░░░░[Numbers]░░░░
-        // #region ░░░░░░░[Strings] String Manipulation, JSON, Type Conversion ░░░░░░░
-        //     #region ========== Case Conversion: Upper, Lower, Sentence & Title Case ===========
+        // #region ░░░░░░░[Strings] String Manipulation, JSON, Type Conversion ░░░░░░░ ~
+        //     #region ========== Case Conversion: Upper, Lower, Sentence & Title Case =========== ~
         const UCase = (val) => `${val || ""}`.toUpperCase(); // "Safe" toUpperCase()
         const LCase = (val) => `${val || ""}`.toLowerCase(); // "Safe" toLowerCase()
         const SCase = (val) => {
@@ -522,7 +504,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 ).slice(1)}`)
             .join(" ");
         //     #endregion _______ Case Conversion _______
-        //     #region ========== Type Conversion: To Numbers, Objects, JSON ===========
+        //     #region ========== Type Conversion: To Numbers, Objects, JSON =========== ~
         const ParseString = (val) => {
             // Converts strings into appropriate data type
             if (GetType(val) === "array") {
@@ -552,12 +534,12 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 .replace(/ /g, "&nbsp;");
         const JC = (val) => H.Pre(JS(val)); // Stringification for data objects and other code for display in R20 chat.
         //     #endregion _______ Type Conversion _______
-        //     #region ========== Formatting: Lists, Pluralization, Possessives ===========
+        //     #region ========== Formatting: Lists, Pluralization, Possessives =========== ~
         const Pluralize = (qty, singular, plural) => Float(qty) === 1
             ? `${qty} ${singular}`
             : plural || `${singular}s`.replace(/ss$/, "ses").replace(/ys$/, "ies");
         //     #endregion _______ Formatting _______
-        //     #region ========== Numbers to Strings: Convert Numbers to Words, Signed Numbers, Ordinals, Roman Numerals ===========
+        //     #region ========== Numbers to Strings: Convert Numbers to Words, Signed Numbers, Ordinals, Roman Numerals =========== ~
         const NumToString = (num) => {
             // Can take string representations of numbers, either in standard or scientific/engineering notation.
             // Returns a string representation of the number in standard notation.
@@ -700,7 +682,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             return `${leftDigits}.${"0".repeat(numDecDigits)}`;
         };
         //     #endregion _______ Numbers to Strings _______
-        //     #region ========== RegExp: Regular Expressions ===========
+        //     #region ========== RegExp: Regular Expressions =========== ~
         const Extract = (qStr, qRegExp) => {
             const isGrouping = /[)(]/.test(qRegExp.toString());
             const matches = qStr.match(new RegExp(qRegExp)) || [];
@@ -711,7 +693,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         //     #endregion _______ RegExp _______
         // #endregion ░░░░[Strings]░░░░
-        // #region ░░░░░░░[Math] Mathematical Operations, Interpolation, Scaling ░░░░░░░
+        // #region ░░░░░░░[Math] Mathematical Operations, Interpolation, Scaling ░░░░░░░ ~
         const Scale = (qObj, scaleFactor = 1, sigDigits = 2) => {
             if (GetType(qObj) === "list") {
                 return KVPMap(qObj, (val) => RoundNum(Float(val) * Float(scaleFactor), sigDigits));
@@ -796,7 +778,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             return RoundNum((base - base1) * (query2 - query1) / (base2 - base1) + query1, 2);
         };
         // #endregion ░░░░[Math]░░░░
-        // #region ░░░░░░░[Chat] Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░░
+        // #region ░░░░░░░[Chat] Parsing Message Objects, Displaying Basic Chat Messages ░░░░░░░ ~
         const randStr = () => _.sample("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split(""), 4).join("");
         const CheckMessage = (msg, calls, {isGM = true} = {}) => {
             return U.GetType(msg) === "list"
@@ -868,19 +850,11 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         const Flag = (msg, headerLevel = 1, classes = []) => Alert(null, msg, headerLevel, ["flag", ...classes]); // Simple one-line chat flag sent to the GM.
         // #endregion ░░░░[Chat]░░░░
-        // #region ░░░░░░░[Arrays & Objects] Array & Object Processing ░░░░░░░
+        // #region ░░░░░░░[Arrays & Objects] Array & Object Processing ░░░░░░░ ~
         // Arrayify: Ensures value returns as an array containing only truthy objects.
         //     Useful when iterating over a map to functions that return falsy values on failure
         const Arrayify = (x) => [x].flat().filter((xx) => xx === "" || xx === 0 || Boolean(xx));
         const KVPMap = (obj, keyFunc, valFunc) => {
-            /**
-             * An object-equivalent Array.map() function, which accepts mapping functions to transform both keys and values.
-             * If only one function is provided, it's assumed to be mapping the values and will receive (v, k) args.
-             * @param {object} obj
-             * @param {function} keyFunc
-             * @param {function} [valFunc]
-             * @return {object}
-             */
             [valFunc, keyFunc] = [valFunc, keyFunc].filter((x) => ["function", "boolean"].includes(typeof x));
             keyFunc = keyFunc || ((k) => k);
             valFunc = valFunc || ((v) => v);
@@ -962,7 +936,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ░░░░[Arrays & Objects]░░░░
 
-        // #region ▒░▒░▒░▒[EXPORTS] U (UTILITIES) ▒░▒░▒░▒
+        // #region ▒░▒░▒░▒[EXPORTS] U (UTILITIES) ▒░▒░▒░▒ ~
         return {
             // [FRONT: Initialization]
             Initialize,
@@ -1008,37 +982,10 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     })();
     // #endregion ▄▄▄▄▄ U ▄▄▄▄▄
 
-    // #region ████████ L (LISTENER): Master Event Listener ████████
-    /*     const LISTENER = (() => {
-        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
-        //     #region ========== Namespacing: Basic State References & Namespacing ===========
-        const SCRIPTNAME = "LISTENER";
-        const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
-        //     #endregion _______ Namespacing _______
-        //     #region ========== Initialization: Script Startup & Event Listeners ===========
-        const Initialize = () => {
-            // Alert readiness confirmation
-            U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
-            log(`[Euno] ${SCRIPTNAME} Initialized`);
-
-            // Report initialization complete to EunoCORE loader
-            EunoCORE.ConfirmReady(SCRIPTNAME);
-        };
-            //     #endregion _______ Initialization _______
-        // #endregion ▒▒▒▒[FRONT]▒▒▒▒
-
-        // #region ▒░▒░▒░▒[EXPORTS] L (LISTENER) ▒░▒░▒░▒
-        return {
-            Initialize
-        };
-        // #endregion ▒▒▒▒[EXPORTS: L]▒▒▒▒
-    })(); */
-    // #endregion ▄▄▄▄▄ L ▄▄▄▄▄
-
     // #region ████████ O (OBJECTS): Roll20 Object Manipulation ████████
     const OBJECTS = (() => {
-        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
-        //     #region ========== Namespacing: Basic State References & Namespacing ===========
+        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
+        //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
         const SCRIPTNAME = "OBJECTS";
         const STA = {
             get TE() {
@@ -1046,7 +993,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         //     #endregion _______ Namespacing _______
-        //     #region ========== Initialization: Script Startup & Event Listeners ===========
+        //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
         const Initialize = () => {
             // Alert readiness confirmation
             U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
@@ -1058,7 +1005,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ░░░░░░░[Getters] Retrieving Sandbox Objects ░░░░░░░
+        // #region ░░░░░░░[Getters] Retrieving Sandbox Objects ░░░░░░░ ~
         const GetR20Type = (val) => {
             if (val && typeof val === "object" && "id" in val && "get" in val) {
                 const type = val.get("_type");
@@ -1217,7 +1164,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ░░░░[Getters]░░░░
 
-        // #region ▒░▒░▒░▒[EXPORTS] O (OBJECTS) ▒░▒░▒░▒
+        // #region ▒░▒░▒░▒[EXPORTS] O (OBJECTS) ▒░▒░▒░▒ ~
         return {
             Initialize,
 
@@ -1232,8 +1179,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #region ████████ H (HTML): HTML/CSS Parsing & Styling for Chat & Handouts ████████
     const HTML = (() => {
-        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
-        //     #region ========== Namespacing: Basic State References & Namespacing ===========
+        // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
+        //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
         const SCRIPTNAME = "HTML";
         const STA = {
             get TE() {
@@ -1241,7 +1188,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         //     #endregion _______ Namespacing _______
-        //     #region ========== Initialization: Script Startup & Event Listeners ===========
+        //     #region ========== Initialization: Script Startup & Event Listeners =========== ~
         const Initialize = () => {
             // Alert readiness confirmation
             U.Flag(`EunoLIB.${SCRIPTNAME} Ready`, 2, ["silver"]);
@@ -1253,7 +1200,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ░░░░░░░[Styles] CSS Class Style Definitions ░░░░░░░
+        // #region ░░░░░░░[Styles] CSS Class Style Definitions ░░░░░░░ ~
         const cssVars = {
             chatWidth: 283,
             blockSpacing: 10,
@@ -1320,7 +1267,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         const CSS = {};
         [
-            //     #region ========== Base Styles: Default Styles for Base Element Tags ===========
+            //     #region ========== Base Styles: Default Styles for Base Element Tags =========== ~
             `   div, span, a, p, pre, h1, h2, h3, img {
                     display: block;
                     height: auto; width: auto;
@@ -1417,7 +1364,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 }
             `,
             //     #endregion _______ Base Styles _______
-            //     #region ========== Class Styles: Styles Applied by CSS Class Reference ===========
+            //     #region ========== Class Styles: Styles Applied by CSS Class Reference =========== ~
             `   .box.silver {
                     color: ${C.COLORS.white};
                     background-image: url('${C.GetImgURL("bgChatSilver")}');
@@ -1637,8 +1584,8 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 CSS[sel] = Object.assign(CSS[sel] || {}, block);
             });
         // #endregion ░░░░[Styles]░░░░
-        // #region ░░░░░░░[Parsing] Parsing Style Data to Inline CSS ░░░░░░░
-        //     #region ========== Parsing Functions: Functions for Parsing to Inline CSS ===========
+        // #region ░░░░░░░[Parsing] Parsing Style Data to Inline CSS ░░░░░░░ ~
+        //     #region ========== Parsing Functions: Functions for Parsing to Inline CSS =========== ~
         const getStyles = (tag, classes = []) => {
             classes = [classes].flat();
             const styleSteps = [{classes}];
@@ -1742,7 +1689,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 .replace(/~/gu, "&shy;"); // Turn unescaped tildes into soft hyphen breaks
         };
         //     #endregion _______ Parsing Functions _______
-        //     #region ========== Elements: Basic Element Constructors by Tag ===========
+        //     #region ========== Elements: Basic Element Constructors by Tag =========== ~
         const baseElements = {
             Div: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "div", classes, styles, attributes),
             Span: (content, classes = [], styles = {}, attributes = {}) => Tag(content, "span", classes, styles, attributes),
@@ -1758,7 +1705,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         //     #endregion _______ Elements _______
         // #endregion ░░░░[Parsing]░░░░
-        // #region ░░░░░░░[Custom Elements] Shorthand Element Constructors for Common Use Cases ░░░░░░░
+        // #region ░░░░░░░[Custom Elements] Shorthand Element Constructors for Common Use Cases ░░░░░░░ ~
         const customElements = {
             Box: (content, classes = [], styles = {}) =>
                 H.Div(content, ["box", ...classes], styles),
@@ -1889,7 +1836,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 )
         };
         // #endregion ░░░░[Custom Elements]░░░░
-        // #region ░░░░░░░[Chat Messages] Main Intro/Help Message for EunoScripts ░░░░░░░
+        // #region ░░░░░░░[Chat Messages] Main Intro/Help Message for EunoScripts ░░░░░░░ ~
         /* ████████ HYPHENATION & TILDE ('~') USE █████████████████████████████████████████████████████████████████████████████████████████████
            █
            █ Text displayed in the narrow Roll20 Chat panel is ideal for liberal use of hyphenation to divide words. Unfortunately, browsers
@@ -1959,10 +1906,10 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 H.Block(
                     [
                         H.P("<b><u>Euno's Scripts</u></b> is a col~lec~tion of stand-alone scripts, each in~tended to pro~vide com~pre~hen~sive con~trol over a par~tic~u~lar as~pect of the Roll20 VTT. You can learn more about each of the avail~able scripts be~low, and keep ap~prised of new fea~tures, fixes and fu~ture plans through~out dev~elop~ment by vis~it~ing the links above."),
-                        H.H1("General Chat Commands"),
+                        H.H2("General Chat Commands"),
                         H.P(H.ButtonCommand(["!euno", "View this help mes~sage."])),
                         H.H2("Available Scripts"),
-                        H.Paras("Click the but~tons be~low to learn more about each of <b><u>Euno's Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
+                        H.P("Click the but~tons be~low to learn more about each of <b><u>Euno's Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
                         H.ButtonH1(
                             "!etc",
                             [
@@ -1993,7 +1940,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                             {},
                             {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}
                         ),
-                        H.H3("Configuration"),
+                        H.H2("Configuration"),
                         H.P("Con~fig~u~ra~tion op~tions for every script in the <b><u>Euno's Scripts</u></b> col~lec~tion is con~tained in 'EunoCONFIG.js', which you'll find in the API Scripts sec~tion of your game page. Fur~ther in~struc~tions on how to con~fig~ure the scripts to your lik~ing are lo~cated there."),
                         options.isAutoDisplaying
                             ? H.P(`To pre~vent this mes~sage from dis~play~ing at start~up, click the chev~ron be~low. <i>(View this mes~sage at any time via the ${H.Command("!euno")} command.)</i>`)
@@ -2009,7 +1956,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ░░░░[Chat Messages]░░░░
 
-        // #region ▒░▒░▒░▒[EXPORTS] H (HTML) ▒░▒░▒░▒
+        // #region ▒░▒░▒░▒[EXPORTS] H (HTML) ▒░▒░▒░▒ ~
         return {
             // [FRONT: Initialization]
             Initialize,
@@ -2022,20 +1969,15 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             ...customElements,
 
             // [HELP MESSAGES]
-            DisplayHelp,
-
-            // TEMPORARY RETURN FOR CODEPEN DEBUG COMPATIBILITY
-            CSS,
-            cssVars
+            DisplayHelp
         };
     // #endregion ▒▒▒▒[EXPORTS: H]▒▒▒▒
     })();
     // #endregion ▄▄▄▄▄ H ▄▄▄▄▄
 
-    // #region ▒░▒░▒░▒[EXPORTS] EunoLIB ▒░▒░▒░▒
+    // #region ▒░▒░▒░▒[EXPORTS] EunoLIB ▒░▒░▒░▒ ~
     return {
         DEFAULTSTATE, Initialize, PostInitialize,
-        // Listeners,
         RE,
 
         UTILITIES,
@@ -2048,7 +1990,6 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
 EunoCORE.Register("EunoLIB", EunoLIB);
 EunoCORE.Register("UTILITIES", EunoLIB.UTILITIES);
-// EunoCORE.Register("LISTENER", EunoLIB.LISTENER);
 EunoCORE.Register("OBJECTS", EunoLIB.OBJECTS);
 EunoCORE.Register("HTML", EunoLIB.HTML);
 

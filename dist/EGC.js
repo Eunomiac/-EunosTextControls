@@ -1,19 +1,3 @@
-/** SUPER SIMPLE WAY TO DO THIS:
-             * Give the BASE object a name suffix that references its pads, e.g. 'EGC_BaseImg_<pad1ID>:<pad2ID>'
-             * Give the PAD objects a name suffix that includes the base ID, other pad ID, and a chat command, e.g. 'EGC_PadImg_<baseID>:<partnerID>_!do a thing'
-             * ... then you should have everything you need for wiggles to make chat commands without having to register anything.             *
-             */
-
-
-/******▌████████████████████████████████████████████████████████████▐******\
-|*     ▌██████▓▒░ !EGC: EUNOMIAC'S GRAB CONTROLS for Roll20 ░▒▓█████▐     *|
-|*     ▌████████████████████████████████████████████████████████████▐     *|
-|*     ▌█████████████████████▓▒░ v0.13-alpha ░▒▓████████████████████▐     *|
-|*     ▌████████████████████▓▒░ June 25, 2021 ░▒▓███████████████████▐     *|
-|*     ▌███▓▒░ https://github.com/Eunomiac/-EunosGrabControls ░▒▓███▐     *|
-\******▌████████████████████████████████████████████████████████████▐******/
-
-
 // #region █████▓▒░ CONFIGURATION: Advanced Settings & Options ░▒▓█████
 
 const EUNO_EGC_CONFIG = {

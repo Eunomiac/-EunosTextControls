@@ -1,9 +1,9 @@
 MarkStart("EunoLIB");
-/******▌████████████████████████████████████████████████████████████▐******\
+/* ****▌████████████████████████████████████████████████████████████▐******\
 |*     ▌█░░░░    EunoLIB: Common Functions for EunoScripts     ░░░░█▐     *|
 |*     ▌███████████████████v@@VERSION@@██@@DATE@@███████████████████▐     *|
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
-\******▌████████████████████████████████████████████████████████████▐******/
+\* ****▌████████████████████████████████████████████████████████████▐******/
 
 // #region ████████ EunoCORE: Functionality Required in Advance of Initialization ████████
 const EunoCORE = {
@@ -147,7 +147,7 @@ const EunoCORE = {
         // #region ░░░░░░░[IMAGES] Image Source URLs ░░░░░░░ ~
 
         IMAGES: (function() {
-            const IMGROOT = "https://tinyurl.com/xczfeezdv"; // "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
+            const IMGROOT = "https://tinyurl.com/xczfeezdv"; //~ "http://raw.githubusercontent.com/Eunomiac/EunosRoll20Scripts/master/images";
             return Object.fromEntries(Object.entries({
                 buttonDownload: ["buttons", "buttonDownload.png", [50, 50]],
                 buttonChat: ["buttons", "buttonChat.png", [50, 50]],
@@ -326,6 +326,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     // #endregion ░░░░[Namespacing]░░░░
     // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░ ~
     const DEFAULTSTATE = {
+        REGISTRY: {},
         isDisplayingHelpAtStart: true
     };
     const Initialize = () => {
@@ -357,11 +358,11 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
     // #endregion ░░░░[Initialization]░░░░
     // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░ ~
-    /*     const Listeners = {
+    /*~     const Listeners = {
         "chat:message": [
             {regexp: /^(!euno|!edev)/, gmOnly: true, objTypes: [], handler: handleMessage}
         ]
-    }; */
+    }; ~*/
     const handleMessage = (msg) => {
         if (U.CheckMessage(msg, ["!euno", "!edev"])) {
             let {call, args, selected} = U.ParseMessage(msg, "all");
@@ -1011,8 +1012,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     })();
     // #endregion ▄▄▄▄▄ U ▄▄▄▄▄
 
+    /*~
     // #region ████████ L (LISTENER): Master Event Listener ████████
-    /*     const LISTENER = (() => {
+         const LISTENER = (() => {
         // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
         //     #region ========== Namespacing: Basic State References & Namespacing =========== ~
         const SCRIPTNAME = "LISTENER";
@@ -1035,8 +1037,9 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             Initialize
         };
         // #endregion ▒▒▒▒[EXPORTS: L]▒▒▒▒
-    })(); */
+    })();
     // #endregion ▄▄▄▄▄ L ▄▄▄▄▄
+    ~*/
 
     // #region ████████ O (OBJECTS): Roll20 Object Manipulation ████████
     const OBJECTS = (() => {
@@ -1963,10 +1966,10 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                 H.Block(
                     [
                         H.P("<b><u>Euno's Scripts</u></b> is a col~lec~tion of stand-alone scripts, each in~tended to pro~vide com~pre~hen~sive con~trol over a par~tic~u~lar as~pect of the Roll20 VTT. You can learn more about each of the avail~able scripts be~low, and keep ap~prised of new fea~tures, fixes and fu~ture plans through~out dev~elop~ment by vis~it~ing the links above."),
-                        H.H1("General Chat Commands"),
+                        H.H2("General Chat Commands"),
                         H.P(H.ButtonCommand(["!euno", "View this help mes~sage."])),
                         H.H2("Available Scripts"),
-                        H.Paras("Click the but~tons be~low to learn more about each of <b><u>Euno's Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
+                        H.P("Click the but~tons be~low to learn more about each of <b><u>Euno's Scripts</u></b>, all of which are in vary~ing sta~ges of de~vel~op~ment:"),
                         H.ButtonH1(
                             "!etc",
                             [
@@ -1997,7 +2000,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
                             {},
                             {title: "Eunomiac's HTML Controls: Create handouts and character bios using full HTML & CSS."}
                         ),
-                        H.H3("Configuration"),
+                        H.H2("Configuration"),
                         H.P("Con~fig~u~ra~tion op~tions for every script in the <b><u>Euno's Scripts</u></b> col~lec~tion is con~tained in 'EunoCONFIG.js', which you'll find in the API Scripts sec~tion of your game page. Fur~ther in~struc~tions on how to con~fig~ure the scripts to your lik~ing are lo~cated there."),
                         options.isAutoDisplaying
                             ? H.P(`To pre~vent this mes~sage from dis~play~ing at start~up, click the chev~ron be~low. <i>(View this mes~sage at any time via the ${H.Command("!euno")} command.)</i>`)
@@ -2026,11 +2029,10 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             ...customElements,
 
             // [HELP MESSAGES]
-            DisplayHelp,
+            DisplayHelp/*~ */,
 
-            // TEMPORARY RETURN FOR CODEPEN DEBUG COMPATIBILITY
-            CSS,
-            cssVars
+            // TEMPORARY RETURN FOR CODEPEN DEBUG COMPATIBILITY */
+            CSS, cssVars /* ~*/
         };
     // #endregion ▒▒▒▒[EXPORTS: H]▒▒▒▒
     })();
@@ -2039,7 +2041,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     // #region ▒░▒░▒░▒[EXPORTS] EunoLIB ▒░▒░▒░▒ ~
     return {
         DEFAULTSTATE, Initialize, PostInitialize,
-        // Listeners,
+        //~ Listeners,
         RE,
 
         UTILITIES,
@@ -2052,7 +2054,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
 
 EunoCORE.Register("EunoLIB", EunoLIB);
 EunoCORE.Register("UTILITIES", EunoLIB.UTILITIES);
-// EunoCORE.Register("LISTENER", EunoLIB.LISTENER);
+//~ EunoCORE.Register("LISTENER", EunoLIB.LISTENER);
 EunoCORE.Register("OBJECTS", EunoLIB.OBJECTS);
 EunoCORE.Register("HTML", EunoLIB.HTML);
 

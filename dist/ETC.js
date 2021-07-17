@@ -1,33 +1,30 @@
-/******▌████████████████████████████████████████████████████████████▐******\
+/* ****▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██████▓▒░ !ETC: EUNOMIAC'S TEXT CONTROLS for Roll20 ░▒▓█████▐     *|
-|*     ▌████████████████ v0.15-alpha ██ Jul 16 2021 ████████████████▐     *|
+|*     ▌████████████████ v0.15-alpha ██ Jul 17 2021 ████████████████▐     *|
 |*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
-\******▌████████████████████████████████████████████████████████████▐******/
+\* ****▌████████████████████████████████████████████████████████████▐******/
 
 const ETC = (() => {
-    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒
-    // #region ░░░░░░░[Namespacing]░░░░ Basic References & Namespacing ░░░░░░
+    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
+    // #region ░░░░░░░[Namespacing]░░░░ Basic References & Namespacing ░░░░░░ ~
 
     const SCRIPTNAME = "ETC";
     const STA = {get TE() { return EunoCORE.GetLocalSTATE(SCRIPTNAME) }};
-    const RE = {get G() { return STA.TE.REGISTRY }};
 
     // #endregion ░░░░[Namespacing]░░░░
-    // #region ░░░░░░░[Initialization]░░░░ Script Startup & Event Listeners ░░░░░░
+    // #region ░░░░░░░[Initialization]░░░░ Script Startup & Event Listeners ░░░░░░ ~
 
     // Define shorthand references to major script components.
     const {CFG, C} = EunoCORE;
-    let LIB, U, O, H, Flag; // these have to be declared now, but must wait for intialization to be assigned  \\
+    let LIB, REG, U, O, H, Flag; // these have to be declared now, but must wait for intialization to be assigned  \\
     const DEFAULTSTATE = {
-        REGISTRY: {},
         hiddenMasterIDs: [],
-        shadowOffsets: {},
         isAutoShadowing: false,
         isAutoPruning: false
     };                                                                                                                  //
     const Initialize = () => {
         // Assign shorthand script references
-        ({LIB, U, O, H} = EunoCORE); //                                    ◀======
+        ({LIB, REG, U, O, H} = EunoCORE); //                                    ◀======
 
         // Assign mappings of library functions for script-specific behavior
         Flag = (message) => U.Flag(message, 1, ["etc", "silver"]);
@@ -48,7 +45,7 @@ const ETC = (() => {
         EunoCORE.ConfirmReady(SCRIPTNAME);
     };
     // #endregion ░░░░[Initialization]░░░░
-    // #region ░░░░░░░[Handlers]░░░░ Event Handlers: chat:message, change:text, add:text, destroy:text ░░░░░░
+    // #region ░░░░░░░[Handlers]░░░░ Event Handlers: chat:message, change:text, add:text, destroy:text ░░░░░░ ~
 
     const handleMessage = (msg) => {
         if (U.CheckMessage(msg, "!etc")) {
@@ -81,18 +78,18 @@ const ETC = (() => {
                     reg: () => STA.TE.REGISTRY = {}
                 }[U.LCase(call = args.shift())])()
             }[U.LCase(call = args.shift())])();
-            } catch(err) { log(err.message); displayHelp("etc") }
+            } catch { displayHelp("etc") }
         };
     };
     const handleTextChange = (textObj) => {
-        if (textObj.id in RE.G && !ignoreQueue.includes(textObj.id)) {
+        if (textObj.id in REG && !ignoreQueue.includes(textObj.id)) {
             if (isLocked(textObj)) {
                 const textData = _.pick(getTextData(textObj), "top", "left");
                 textObj.set(textData);
             }
             const [masterObj, shadowObj] = [
-                RE.G[textObj.id].shadowID ? textObj : getObj("text", RE.G[textObj.id].masterID),
-                RE.G[textObj.id].masterID ? textObj : getObj("text", RE.G[textObj.id].shadowID)
+                REG[textObj.id].shadowID ? textObj : getObj("text", REG[textObj.id].masterID),
+                REG[textObj.id].masterID ? textObj : getObj("text", REG[textObj.id].shadowID)
             ];
             if (masterObj && shadowObj) {
                 syncShadow(masterObj, shadowObj);
@@ -109,31 +106,31 @@ const ETC = (() => {
         }, 500);
     };
     const handleTextDestroy = (textObj) => {
-        if (textObj.id in RE.G && !ignoreQueue.includes(textObj.id)) {
+        if (textObj.id in REG && !ignoreQueue.includes(textObj.id)) {
             if (isShadowObj(textObj)) {
-                const masterObj = getObj("text", RE.G[textObj.id].masterID);
+                const masterObj = getObj("text", REG[textObj.id].masterID);
                 if (masterObj) {
                     displayError("ManualShadowRemoval");
                     makeTextShadow(masterObj);
                 }
-            } else if (RE.G[textObj.id].hasShadow) {
-                unregTextShadow(RE.G[textObj.id].shadowID);
+            } else if (REG[textObj.id].hasShadow) {
+                unregTextShadow(REG[textObj.id].shadowID);
             }
         }
     };
 
     // #endregion ░░░░[Handlers]░░░░
     // #endregion ▒▒▒▒[FRONT]▒▒▒▒
-    // #region ▒░▒░▒░▒[UTILITY] General Utility Functions for Text Objects ▒░▒░▒░▒
+    // #region ▒░▒░▒░▒[UTILITY] General Utility Functions for Text Objects ▒░▒░▒░▒ ~
     const ignoreQueue = [];
-    const getText = (qText) => O.GetObj(qText, "text", RE.G);
+    const getText = (qText) => O.GetObj(qText, "text", REG);
     const getTextData = (qText, isReturningArray = false) => {
         const textDatas = [];
         if (U.GetType(qText) === "array") {
             isReturningArray = true;
             textDatas.push(...U.Arrayify(qText.map((qO) => getTextData(qO, true))));
         } else {
-            textDatas.push(...getText([qText]).map((textObj) => textObj.id in RE.G ? RE.G[textObj.id] : false));
+            textDatas.push(...getText([qText]).map((textObj) => textObj.id in REG ? REG[textObj.id] : false));
         }
         if (isReturningArray) {
             return U.Arrayify(textDatas).flat(3);
@@ -157,7 +154,7 @@ const ETC = (() => {
         } else {
             textMasters.push(..._.uniq(U.Arrayify(getText([qMaster]))
                 .filter((textObj) => isRegShadow(textObj) || hasShadowObj(textObj))
-                .map((textObj) => isRegShadow(textObj) ? getTextMaster(RE.G[textObj.id].masterID) : textObj)));
+                .map((textObj) => isRegShadow(textObj) ? getTextMaster(REG[textObj.id].masterID) : textObj)));
         }
         if (isReturningArray) {
             return U.Arrayify(textMasters).flat(3);
@@ -172,7 +169,7 @@ const ETC = (() => {
         } else {
             textShadows.push(..._.uniq(U.Arrayify(getText([qShadow]))
                 .filter((textObj) => isShadowObj(textObj) || hasShadowObj(textObj))
-                .map((textObj) => hasShadowObj(textObj) ? getTextShadow(RE.G[textObj.id].shadowID) : textObj)));
+                .map((textObj) => hasShadowObj(textObj) ? getTextShadow(REG[textObj.id].shadowID) : textObj)));
         }
         if (isReturningArray) {
             return U.Arrayify(textShadows).flat(3);
@@ -197,7 +194,7 @@ const ETC = (() => {
     };
     // #endregion ▒▒▒▒[UTILITY]▒▒▒▒
 
-    // #region ████████ ETC: Master Control & General Functions for ETC ████████
+    // #region ████████ ETC: Master Control & General Functions for ETC ████████ ~
 
     const toggleFeature = (feature, isActive, options = {}) => {
         isActive = isActive === true;
@@ -224,14 +221,14 @@ const ETC = (() => {
 
     // #endregion ▄▄▄▄▄▄▄▄ ETC ▄▄▄▄▄▄▄▄
 
-    // #region ████████ TEXT SHADOWS: Applying Text Shadows to Text Objects ████████
-    // #region ░░░░░░░[Offsets]░░░░ Determining Shadow Offset Distances ░░░░░░░
-
+    // #region ████████ TEXT SHADOWS: Applying Text Shadows to Text Objects ████████ ~
+    // #region ░░░░░░░[Offsets]░░░░ Determining Shadow Offset Distances ░░░░░░░ ~
+    const SHADOWOFFSETS = {};
     const processOffsets = () => {
-        const OFFSETS = {...CFG.ETC.DropShadows.OFFSETS};
+        const {OFFSETS} = CFG.ETC.DropShadows;
         const genericOffsets = {...OFFSETS.generic};
         for (const fontFamily of C.FONTS) {
-            STA.TE.shadowOffsets[fontFamily] = U.KVPMap(
+            SHADOWOFFSETS[fontFamily] = U.KVPMap(
                 genericOffsets,
                 (offset, fontSize) => {
                     if (fontFamily in OFFSETS.multipliers) {
@@ -252,17 +249,17 @@ const ETC = (() => {
     const getShadowOffset = (fontFamily, fontSize) => {
         if (isValidFont(fontFamily)) {
             fontSize = U.Float(fontSize);
-            if (fontSize in STA.TE.shadowOffsets[fontFamily]) {
-                return STA.TE.shadowOffsets[fontFamily][fontSize];
+            if (fontSize in SHADOWOFFSETS[fontFamily]) {
+                return SHADOWOFFSETS[fontFamily][fontSize];
             }
             return [
                 U.Interpolate(
-                    [[0, [0, 0]], ...Object.entries(STA.TE.shadowOffsets[fontFamily])]
+                    [[0, [0, 0]], ...Object.entries(SHADOWOFFSETS[fontFamily])]
                         .map(([size, offsets]) => [U.Int(size), offsets[0]]),
                     [fontSize, null]
                 ),
                 U.Interpolate(
-                    [[0, [0, 0]], ...Object.entries(STA.TE.shadowOffsets[fontFamily])]
+                    [[0, [0, 0]], ...Object.entries(SHADOWOFFSETS[fontFamily])]
                         .map(([size, offsets]) => [U.Int(size), offsets[1]]),
                     [fontSize, null]
                 )
@@ -273,17 +270,17 @@ const ETC = (() => {
     };
 
     // #endregion ░░░░[Offsets]░░░░
-    // #region ░░░░░░░[Add & Remove]░░░░ Creation, Registration, Unregistration of Text Shadows ░░░░░░░
+    // #region ░░░░░░░[Add & Remove]░░░░ Creation, Registration, Unregistration of Text Shadows ░░░░░░░ ~
 
     const makeTextShadow = (qMaster) => {
         U.Arrayify(getText(qMaster)).forEach((masterObj) => {
             let isSkipping = false;
             if (!masterObj || masterObj.get("text") === "") {
                 isSkipping = true;
-            } else if (masterObj.id in RE.G) {
-                if (RE.G[masterObj.id].shadowID) {
-                    unregTextShadow(RE.G[masterObj.id].shadowID);
-                } else if (RE.G[masterObj.id].masterID) {
+            } else if (masterObj.id in REG) {
+                if (REG[masterObj.id].shadowID) {
+                    unregTextShadow(REG[masterObj.id].shadowID);
+                } else if (REG[masterObj.id].masterID) {
                     displayError("AddShadowToShadow");
                     isSkipping = true;
                 }
@@ -310,13 +307,13 @@ const ETC = (() => {
         });
     };
     const regTextShadow = (masterObj, shadowObj) => {
-        RE.G[masterObj.id] = {
+        REG[masterObj.id] = {
             id: masterObj.id,
             hasShadow: true,
             shadowID: shadowObj.id,
             isShadowMuted: false
         };
-        RE.G[shadowObj.id] = {
+        REG[shadowObj.id] = {
             id: shadowObj.id,
             isShadow: true,
             masterID: masterObj.id
@@ -328,17 +325,17 @@ const ETC = (() => {
         getTextShadow(U.Arrayify(qText)).forEach((shadowObj) => {
             const {id, masterID} = getTextData(shadowObj);
             safeRemove(shadowObj);
-            if (isMuting && RE.G[masterID]) {
-                RE.G[masterID].isShadowMuted = true;
+            if (isMuting && REG[masterID]) {
+                REG[masterID].isShadowMuted = true;
             } else {
-                delete RE.G[masterID];
+                delete REG[masterID];
             }
-            delete RE.G[id];
+            delete REG[id];
         });
     };
 
     // #endregion ░░░░[Add & Remove]░░░░
-    // #region ░░░░░░░[Hiding & Showing]░░░░ Hiding, Showing Text Shadows ░░░░░░░
+    // #region ░░░░░░░[Hiding & Showing]░░░░ Hiding, Showing Text Shadows ░░░░░░░ ~
 
     const hideTextShadows = () => unregTextShadow(getTextShadow(["registered"]), true);
     const showTextShadows = () => {
@@ -351,17 +348,17 @@ const ETC = (() => {
             .map((masterData) => masterData.id));
     };
     // #endregion ░░░░[Hiding & Showing]░░░░
-    // #region ░░░░░░░[Synchronization]░░░░ Synchronizing Text Objects' Position & Settings ░░░░░░░
+    // #region ░░░░░░░[Synchronization]░░░░ Synchronizing Text Objects' Position & Settings ░░░░░░░ ~
 
     const isLocked = (qText) => (getTextData(qText) || {}).isPositionLocked;
     const lockTextObj = (qText) => U.Arrayify(getTextMaster(qText)).forEach((masterObj) => {
-        Object.assign(RE.G[masterObj.id], {
+        Object.assign(REG[masterObj.id], {
             top: masterObj.get("top"),
             left: masterObj.get("left"),
             isPositionLocked: true
         });
     });
-    const unlockTextObj = (qText) => U.Arrayify(getTextMaster(qText)).forEach((masterObj) => RE.G[masterObj.id].isPositionLocked = false);
+    const unlockTextObj = (qText) => U.Arrayify(getTextMaster(qText)).forEach((masterObj) => REG[masterObj.id].isPositionLocked = false);
     const syncShadow = (masterObj, shadowObj) => {
         // Where the magic happens (?) --- synchronizing text shadows to their master objects, whenever they're changed or created.
         if (O.GetR20Type(masterObj) && O.GetR20Type(shadowObj)) {
@@ -388,7 +385,7 @@ const ETC = (() => {
 
         // ONE: Locate all shadow objects in the sandbox, and remove them if they aren't in the registry.
         findObjs({_type: "text"})
-            .filter((obj) => isShadowObj(obj) && !(obj.id in RE.G))
+            .filter((obj) => isShadowObj(obj) && !(obj.id in REG))
             .forEach((obj) => safeRemove(obj));
 
         // TWO: Cycle through registry, ensuring all objects exist and, if AutoPruning is on, that they all have text content.
@@ -396,14 +393,14 @@ const ETC = (() => {
         //    If a ShadowObj doesn't exist, create it UNLESS master object is muted.
         //    If a MasterObj doesn't exist, unreg the shadow.
         const [objsToPrune, objsToUnreg, objsToRegister, shadowsToMake] = [[], [], []];
-        for (const [id, objData] of Object.entries(RE.G)) {
+        for (const [id, objData] of Object.entries(REG)) {
             const textObj = getObj("text", id);
             if (textObj && STA.TE.isAutoPruning && textObj.get("text") === "") {
                 objsToPrune.push(textObj);
             }
             if ("masterID" in objData) { // This is a Shadow Object.
                 const masterObj = getObj("text", objData.masterID);
-                if (!(masterObj && masterObj.id in RE.G)) { // This is an orphan: Kill it.
+                if (!(masterObj && masterObj.id in REG)) { // This is an orphan: Kill it.
                     objsToUnreg.push(textObj);
                 } else if (masterObj && STA.TE.isAutoPruning && masterObj.get("text") === "") {
                     objsToPrune.push(masterObj);
@@ -416,7 +413,7 @@ const ETC = (() => {
                     const shadowObj = getObj("text", objData.shadowID);
                     if (!shadowObj) { // Create a shadow if it's missing
                         shadowsToMake.push(textObj);
-                    } else if (!(shadowObj.id in RE.G)) { // ... same for registry.
+                    } else if (!(shadowObj.id in REG)) { // ... same for registry.
                         objsToRegister.push([textObj, shadowObj]);
                     }
                 }
@@ -433,7 +430,7 @@ const ETC = (() => {
         processOffsets();
 
         // THREE: Cycle through registry again, synchronizing all shadow objects.
-        for (const [id, shadowData] of Object.entries(RE.G).filter(([id, data]) => "masterID" in data)) {
+        for (const [id, shadowData] of Object.entries(REG).filter(([id, data]) => "masterID" in data)) {
             const [masterObj, shadowObj] = [getObj("text", shadowData.masterID), getObj("text", id)];
             syncShadow(masterObj, shadowObj);
         }
@@ -444,7 +441,7 @@ const ETC = (() => {
     // #endregion ░░░░[Synchronization]░░░░
     // #endregion ▄▄▄▄▄ TEXT SHADOWS ▄▄▄▄▄
 
-    // #region ████████ TEXT PRUNING: Removing Empty (and Invisible) Text Objects ████████
+    // #region ████████ TEXT PRUNING: Removing Empty (and Invisible) Text Objects ████████ ~
 
     const pruneText = (qText, isAutomatic = false) => {
         let removalCount = 0;
@@ -462,8 +459,8 @@ const ETC = (() => {
 
     // #endregion ▄▄▄▄▄ TEXT PRUNING ▄▄▄▄▄
 
-    // #region ████████ ATTRIBUTE LINKING: Linking Character Attributes to Text Object Displays ████████
-    // #region ░░░░░░░[Linking]░░░░ Linking Attributes to Text Objects ░░░░░░░
+    // #region ████████ ATTRIBUTE LINKING: Linking Character Attributes to Text Object Displays ████████ ~
+    // #region ░░░░░░░[Linking]░░░░ Linking Attributes to Text Objects ░░░░░░░ ~
 
     /* const getAttr = (charRef, attrRef) => {
                 const charID = (D.GetChar(charRef) || (() => false)).id;
@@ -503,7 +500,7 @@ const ETC = (() => {
     // #endregion ░░░░[Linking]░░░░
     // #endregion ▄▄▄▄▄ ATTRIBUTE LINKING ▄▄▄▄▄
 
-    // #region ████████ CHAT MESSAGES: Help, Errors & Menus ████████
+    // #region ████████ CHAT MESSAGES: Help, Errors & Menus ████████ ~
 
     const displayHelp = (helpKey) => {
         U.Alert({
@@ -528,12 +525,12 @@ const ETC = (() => {
                     ]),
                     H.H2("!ETC Features", ["silver"]),
                     H.P("Learn more about each of <b>!ETC</b>'s fea~tures by click~ing the head~ings be~low:"),
-                    H.ButtonH1("!etc help shadow", "Text Drop Shadows", ["tight", "silver"], {}, {title: "Control drop shadow behavior."}),
+                    H.ButtonH1("!etc help shadow", "Drop Shadows", ["tight", "silver"], {}, {title: "Control drop shadow behavior."}),
                     H.ButtonH1("!etc help prune", "Empty Text Pruning", ["tight", "silver"], {}, {title: "Configure pruning of empty text objects."}),
-                    H.H1("Attribute Linking", ["dim", "tight", "silver"]),
-                    H.H1("Table & Chart Styling", ["dim", "tight", "silver"]),
-                    H.H1("Timers & Calendars", ["dim", "tight", "silver"]),
-                    H.H1("Miscellaneous", ["dim", "tight", "silver"])
+                    H.H1("Lock, Bind, Toggle", ["dim", "tight", "silver"]),
+                    H.H1("Permissions", ["dim", "tight", "silver"]),
+                    H.H1("Justification", ["dim", "tight", "silver"]),
+                    H.H1("Attribute Linking", ["dim", "tight", "silver"])
                 ], []),
                 H.ButtonFooter("!euno", "", ["goBack", "silver"])
             ], ["silver"]),
@@ -667,7 +664,7 @@ const ETC = (() => {
 
     // #endregion ▄▄▄▄▄ CHAT MESSAGES ▄▄▄▄▄
 
-    // #region ▒░▒░▒░▒[EXPORTS] ETC ▒░▒░▒░▒
+    // #region ▒░▒░▒░▒[EXPORTS] ETC ▒░▒░▒░▒ ~
     return {DEFAULTSTATE, Initialize};
     // #endregion ▒▒▒▒[EXPORTS: ETC]▒▒▒▒
 })();
