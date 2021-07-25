@@ -1,6 +1,6 @@
 /* ****▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██▓▒░ EunoCONFIG: Customization of EunosRoll20Scripts ░▒▓███▐     *|
-|*     ▌████████████████ v0.15-alpha ██ Jul 17 2021 ████████████████▐     *|
+|*     ▌████████████████ v0.15-alpha ██ Jul 25 2021 ████████████████▐     *|
 |*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
 \* ****▌████████████████████████████████████████████████████████████▐******/
 
@@ -78,28 +78,62 @@ const EunoCONFIG = {
                  *  Override the defaults by specifying the exact number of pixels to offset shadows for a specific font/size combination.
                  *    - These values must be passed as arrays, even if the x- and y- offsets are the same. */
                 replacements: {
-                    "FontToOverride": {
-                        /* Use this as a template for your overrides, replacing "FontToOverride" with the full name of any font family,
-                         * and filling this space with overrides for any size(s) (see "Contrail One", below, for an example).
-                         *   - Valid Sizes: 8, 10, 12, 14, 16, 18, 20, 22, 26, 32, 40, 56, 72, 100, 200, 300
-                         *   - Any sizes you do not include will use the default (or multiplied, if a multiplier was specified) offset.
-                         *   - Don't forget the comma at the end of each line, and after each font family block! */
+                    "Anton": {
+                        /* Use this as a template for your overrides.
+                        *   - Valid Sizes: 8, 10, 12, 14, 16, 18, 20, 22, 26, 32, 40, 56, 72, 100, 200, 300
+                        *   - Any sizes you do not include will use the default (or multiplied, if a multiplier was specified) offset.
+                        *   - Don't forget to remove the comment slashes ('//') at the start of any line you want active! */
+
+                    // 56: [4, 4],
+                    // 72: [6, 6],
+                    // 100: [6, 6],
+                    // 200: [12, 12]
+                    },
+                    "Arial": {
+
+                    },
+                    "Candal": {
+
                     },
                     "Contrail One": {
-                        56: [3, 3],
-                        72: [5, 5],
-                        100: [6, 6],
-                        200: [12, 12]
-                    }
-                },
 
-                get generic() {
-                    return Object.fromEntries([8, 10, 12, 14, 16, 18, 20, 22, 26, 32, 40, 56, 72, 100, 200, 300].map((size) => {
-                        const defaultMults = typeof EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult === "number"
-                            ? [EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult, EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult]
-                            : [EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult[0], EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult[1]];
-                        return [size, defaultMults.map((mult) => size * mult)];
-                    }));
+                    },
+                    "Crimson Text": {
+
+                    },
+                    "Della Respira": {
+
+                    },
+                    "Goblin One": {
+
+                    },
+                    "IM Fell DW Pica": {
+
+                    },
+                    "Kaushan Script": {
+
+                    },
+                    "Merriweather": {
+
+                    },
+                    "Montserrat": {
+
+                    },
+                    "Nunito": {
+
+                    },
+                    "Patrick Hand": {
+
+                    },
+                    "Rye": {
+
+                    },
+                    "Shadows Into Light": {
+
+                    },
+                    "Tahoma": {
+
+                    }
                 }
             }
         }

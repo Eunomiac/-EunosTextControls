@@ -17,7 +17,7 @@ const ETC = (() => {
 
     // Define shorthand references to major script components.
     const {CFG, C} = EunoCORE;
-    let LIB, REG, U, O, H, Flag; // these have to be declared now, but must wait for intialization to be assigned  \\
+    let LIB, REG, U, L, O, H, Flag; // these have to be declared now, but must wait for intialization to be assigned  \\
     const DEFAULTSTATE = {
         hiddenMasterIDs: [],
         isAutoShadowing: false,
@@ -25,7 +25,7 @@ const ETC = (() => {
     };                                                                                                                  //
     const Initialize = () => {
         // Assign shorthand script references
-        ({LIB, REG, U, O, H} = EunoCORE); //                                    ◀======
+        ({LIB, REG, L, U, O, H} = EunoCORE); //                                    ◀======
 
         // Assign mappings of library functions for script-specific behavior
         Flag = (message) => U.Flag(message, 1, ["etc", "silver"]);
@@ -34,10 +34,15 @@ const ETC = (() => {
         processOffsets();
 
         // Register event handlers
-        on("chat:message", handleMessage);
-        on("change:text", handleTextChange);
-        on("add:text", handleTextAdd);
-        on("destroy:text", handleTextDestroy);
+        L.RegisterListener(SCRIPTNAME, "chat:message", "handleMessage", {returnObjs: ["text"], chatCall: "!etc"});
+        L.RegisterListener(SCRIPTNAME, "change:text", "handleTextChange");
+        L.RegisterListener(SCRIPTNAME, "add:text", "handleTextAdd");
+        L.RegisterListener(SCRIPTNAME, "destroy:text", "handleTextDestroy");
+
+        // on("chat:message", handleMessage);
+        // on("change:text", handleTextChange);
+        // on("add:text", handleTextAdd);
+        // on("destroy:text", handleTextDestroy);
 
         // Alert readiness confirmation
         U.Flag(`!${SCRIPTNAME} Ready`, 1); log(`[Euno] ${SCRIPTNAME} Initialized`);
@@ -48,39 +53,36 @@ const ETC = (() => {
     // #endregion ░░░░[Initialization]░░░░
     // #region ░░░░░░░[Handlers]░░░░ Event Handlers: chat:message, change:text, add:text, destroy:text ░░░░░░ ~
 
-    const handleMessage = (msg) => {
-        if (U.CheckMessage(msg, "!etc")) {
-            let {call, args, selected} = U.ParseMessage(msg, ["text"]);
-            try { ({
-                setup: displayToggles,
-                toggle: () => ({
-                    autoshadow: () => toggleFeature("autoShadow", args.includes(true), {goBack: args.includes("feature") ? "feature" : "toggles"}),
-                    autoprune: () => toggleFeature("autoPrune", args.includes(true), {goBack: args.includes("feature") ? "feature" : "toggles"})
-                }[U.LCase(call = args.shift())])(),
-                shadow: () => ({
-                    add: () =>  makeTextShadow(selected.text),
-                    clear: () => {
-                        unregTextShadow(args.includes("all") ? ["all"] : selected.text);
-                        Flag(`${args.includes("all") ? "" : "Selected "}Shadows Cleared.`);
-                    },
-                    hide: hideTextShadows,
-                    show: showTextShadows,
-                    lock: () => lockTextObj(args.includes("all") ? ["all"] : selected.text),
-                    unlock: () => unlockTextObj(args.includes("all") ? ["all"] : selected.text),
-                    fix: fixTextShadows
-                }[U.LCase(call = args.shift())])(),
-                prune: () => { pruneText(args.includes("all") ? ["all"] : selected.text) },
-                help: () => ({
-                    shadow: () => displayHelp("dropShadows"),
-                    prune: () => displayHelp("textPruning")
-                }[U.LCase(call = args.shift())])(),
-                reset: () => ({
-                    all: () => EunoCORE.InitLocalSTATE(true),
-                    reg: () => STA.TE.REGISTRY = {}
-                }[U.LCase(call = args.shift())])()
-            }[U.LCase(call = args.shift())])();
-            } catch { displayHelp("etc") }
-        };
+    const handleMessage = (msgData) => {
+        let {call, args, selected} = msgData;
+        try { ({
+            setup: displayToggles,
+            toggle: () => ({
+                autoshadow: () => toggleFeature("autoShadow", args.includes(true), {goBack: args.includes("feature") ? "feature" : "toggles"}),
+                autoprune: () => toggleFeature("autoPrune", args.includes(true), {goBack: args.includes("feature") ? "feature" : "toggles"})
+            }[U.LCase(call = args.shift())])(),
+            shadow: () => ({
+                add: () =>  makeTextShadow(selected.text),
+                clear: () => {
+                    unregTextShadow(args.includes("all") ? ["all"] : selected.text);
+                    Flag(`${args.includes("all") ? "" : "Selected "}Shadows Cleared.`);
+                },
+                hide: hideTextShadows,
+                show: showTextShadows,
+                lock: () => lockTextObj(args.includes("all") ? ["all"] : selected.text),
+                unlock: () => unlockTextObj(args.includes("all") ? ["all"] : selected.text),
+                fix: fixTextShadows
+            }[U.LCase(call = args.shift())])(),
+            prune: () => { pruneText(args.includes("all") ? ["all"] : selected.text) },
+            help: () => ({
+                shadow: () => displayHelp("dropShadows"),
+                prune: () => displayHelp("textPruning")
+            }[U.LCase(call = args.shift())])(),
+            reset: () => ({
+                all: () => EunoCORE.DeleteLocalSTATE(SCRIPTNAME)
+            }[U.LCase(call = args.shift())])()
+        }[U.LCase(call = args.shift())])();
+        } catch { displayHelp("etc") }
     };
     const handleTextChange = (textObj) => {
         if (textObj.id in REG && !ignoreQueue.includes(textObj.id)) {
@@ -146,7 +148,7 @@ const ETC = (() => {
                                            && ((getTextData(qText) || {}).isShadowMuted
                                                 || Boolean(getText((getTextData(qText) || {}).shadowID, "text")));
     const parseFont = (fontFamily) => U.TCase(fontFamily.replace(/[^A-Za-z ]/gu, ""));
-    const isValidFont = (fontFamily) => C.FONTS.includes(parseFont(fontFamily));
+    const isValidFont = (fontFamily) => C.FONTS.families.includes(parseFont(fontFamily));
     const getTextMaster = (qMaster, isReturningArray = false) => {
         const textMasters = [];
         if (U.GetType(qMaster) === "array") {
@@ -226,21 +228,26 @@ const ETC = (() => {
     // #region ░░░░░░░[Offsets]░░░░ Determining Shadow Offset Distances ░░░░░░░ ~
     const SHADOWOFFSETS = {};
     const processOffsets = () => {
-        const {OFFSETS} = CFG.ETC.DropShadows;
-        const genericOffsets = {...OFFSETS.generic};
-        for (const fontFamily of C.FONTS) {
+        const {defaultMult, multipliers, replacements} = CFG.ETC.DropShadows.OFFSETS;
+        const generic = Object.fromEntries(C.FONTS.sizes.map((size) => {
+            const defaultMults = typeof defaultMult === "number"
+                ? [EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult, EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult]
+                : [EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult[0], EunoCONFIG.ETC.DropShadows.OFFSETS.defaultMult[1]];
+            return [size, defaultMults.map((mult) => size * mult)];
+        }));
+        for (const fontFamily of C.FONTS.families) {
             SHADOWOFFSETS[fontFamily] = U.KVPMap(
-                genericOffsets,
+                generic,
                 (offset, fontSize) => {
-                    if (fontFamily in OFFSETS.multipliers) {
-                        const [multX, multY] = U.GetType(OFFSETS.multipliers[fontFamily]) === "array"
-                            ? OFFSETS.multipliers[fontFamily]
-                            : [OFFSETS.multipliers[fontFamily], OFFSETS.multipliers[fontFamily]];
+                    if (fontFamily in multipliers) {
+                        const [multX, multY] = U.GetType(multipliers[fontFamily]) === "array"
+                            ? multipliers[fontFamily]
+                            : [multipliers[fontFamily], multipliers[fontFamily]];
                         return [U.RoundNum(offset[0] * multX, 4), U.RoundNum(offset[1] * multY, 4)];
                     }
-                    if (fontFamily in OFFSETS.replacements
-                        && fontSize in OFFSETS.replacements[fontFamily]) {
-                        return OFFSETS.replacements[fontFamily][fontSize];
+                    if (fontFamily in replacements
+                        && fontSize in replacements[fontFamily]) {
+                        return replacements[fontFamily][fontSize];
                     }
                     return offset;
                 }
@@ -666,7 +673,10 @@ const ETC = (() => {
     // #endregion ▄▄▄▄▄ CHAT MESSAGES ▄▄▄▄▄
 
     // #region ▒░▒░▒░▒[EXPORTS] ETC ▒░▒░▒░▒ ~
-    return {DEFAULTSTATE, Initialize};
+    return {
+        DEFAULTSTATE, Initialize,
+        handleMessage, handleTextChange, handleTextAdd, handleTextDestroy
+    };
     // #endregion ▒▒▒▒[EXPORTS: ETC]▒▒▒▒
 })();
 
