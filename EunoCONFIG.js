@@ -1,4 +1,5 @@
 void MarkStart("EunoCONFIG");
+state = {};
 /* ****▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██▓▒░ EunoCONFIG: Customization of EunosRoll20Scripts ░▒▓███▐     *|
 |*     ▌███████████████████v@@VERSION@@██@@DATE@@███████████████████▐     *|
@@ -20,12 +21,13 @@ const EunoCONFIG = {
 
             /* 🟥🟥IMPORTANT: Run '!etc shadow fix' to update sandbox objects after changing any of these settings. 🟥🟥 */
 
-            /* 🔶COLOR🔶
-             * The default color for text shadows.
+            /* 🔶SHADOWCOLOR, HIGHLIGHTCOLOR🔶
+             * The default color for text shadow objects, and text highlight objects for bevelled text.
              *   - Accepts any CSS-valid single-color value (e.g. color name, hex code, rgb/a).
              *   - If you want some transparency to your shadows, use an rgba() color definition,
              *       (e.g. 'rgba(0, 0, 0, 0.75)' for a black shadow that is only 75% opaque). */
-            COLOR: "black",
+            SHADOWCOLOR: "black",
+            HIGHLIGHTCOLOR: "white",
 
             /* 🔶LAYER🔶
              * The default layer on which to place text shadow objects.
@@ -36,8 +38,7 @@ const EunoCONFIG = {
 
             /* 🔷OFFSETS🔷
              * These settings determine the distance shadows are positioned relative to their master text objects.
-             *   - If any shadows appear too close or too far from their master objects for a specific font and/or size, these
-             *       are the values you want to change.
+             *   - If any shadows appear too close or too far from their master objects, these are the values you want to change.
              *   - Offsets can be configured along two axes: horizontally (positive = RIGHT) and vertically (positive = DOWN).
              *       - Single-Number Value: Applies to both axes equally (for a 45-degree offset).
              *       - Array of Two Values: Applies the first value to the horizontal axis, and the second to the vertical. */
@@ -51,6 +52,18 @@ const EunoCONFIG = {
                  *          or by setting exact pixel offsets for specific font/size combinations. Both methods are detailed below.
                  *        - If both methods are used for the same font and size, an explicit pixel offset will override any multipliers. */
                 defaultMult: 0.08,
+
+                /* 🔶globalLightSource🔶
+                 *  The direction of the imaginary light source illuminating your text and casting your shadows. This determines the
+                 *  direction of the shadow offset.
+                 *    - This value must be an integer between 0 and 360, representing the angle of the light.
+                 *      - Degrees begin with 0 at the top, advancing clockwise in a circle around your sandbox. Using a clock face to
+                 *        illustrate: 0 degrees = 12 o'clock; 90 = 3 o'clock; 180 = 6 o'clock; 270 = 9 o'clock.
+                 *        - None of those values will likely appeal to you, as they all result in strictly horizontal or vertical offsets
+                 *          (e.g. 90 degrees places the light source directly right of your screen, to cast shadows straight left).
+                 *    - 315 is the default, placing the light source between 10 and 11 o'clock, casting shadows down and to the right
+                 *      at a 45 degree angle. */
+                globalLightSource: 315,
 
                 /* 🔶multipliers🔶
                  *  Override the defaults with a multiplier that scales the offsets for an entire font family.
@@ -68,7 +81,7 @@ const EunoCONFIG = {
                     "Kaushan Script": 0.4,
                     "Merriweather": 0.6,
                     "Montserrat": 0.5,
-                    "Nunito": 0.75,
+                    "Nunito": 0.5,
                     "Patrick Hand": 0.75,
                     "Rye": 0.5,
                     "Shadows Into Light": 0.5,
