@@ -202,7 +202,7 @@ const ETC = (() => {
     // #endregion ▄▄▄▄▄▄▄▄ ETC ▄▄▄▄▄▄▄▄
 
     // #region ████████ TEXT SHADOWS: Applying Text Shadows to Text Objects ████████ ~
-    // #region ░░░░░░░[Offsets]░░░░ Determining Shadow Offset Distances ░░░░░░░ ~
+    // #region ░░░░░░[Offsets]░░░░░░ Determining Shadow Offset Distances ~
     const SHADOWOFFSETS = {};
     const processOffsets = () => {
         const {defaultMult, multipliers, replacements} = CFG.ETC.DropShadows.OFFSETS;
@@ -255,7 +255,7 @@ const ETC = (() => {
     };
 
     // #endregion ░░░░[Offsets]░░░░
-    // #region ░░░░░░░[Add & Remove]░░░░ Creation, Registration, Unregistration of Text Shadows ░░░░░░░ ~
+    // #region ░░░░░░[Add & Remove]░░░░░░ Creation, Registration, Unregistration of Text Shadows ~
 
     const makeTextShadow = (qMaster) => {
         U.Arrayify(getText(qMaster)).forEach((masterObj) => {
@@ -325,7 +325,7 @@ const ETC = (() => {
     };
 
     // #endregion ░░░░[Add & Remove]░░░░
-    // #region ░░░░░░░[Hiding & Showing]░░░░ Hiding, Showing Text Shadows ░░░░░░░ ~
+    // #region ░░░░░░[Hiding & Showing]░░░░░░ Hiding, Showing Text Shadows ~
 
     const hideTextShadows = () => unregTextShadow(getTextShadow(["registered"]), true);
     const showTextShadows = () => {
@@ -339,7 +339,7 @@ const ETC = (() => {
             .map((masterData) => masterData.id));
     };
     // #endregion ░░░░[Hiding & Showing]░░░░
-    // #region ░░░░░░░[Synchronization]░░░░ Synchronizing Text Objects' Position & Settings ░░░░░░░ ~
+    // #region ░░░░░░[Synchronization]░░░░░░ Synchronizing Text Objects' Position & Settings ~
 
     const isLocked = (qText) => (O.GetObjData(qText) || {}).isPositionLocked;
     const lockTextObj = (qText) => U.Arrayify(getTextMaster(qText)).forEach((masterObj) => {
@@ -438,7 +438,7 @@ const ETC = (() => {
     };
 
     // #endregion ░░░░[Synchronization]░░░░
-    // #endregion ▄▄▄▄▄ TEXT SHADOWS ▄▄▄▄▄
+    // #endregion ■■■■■[ TEXT SHADOWS ]■■■■■
 
     // #region ████████ TEXT PRUNING: Removing Empty (and Invisible) Text Objects ████████ ~
 
@@ -456,10 +456,10 @@ const ETC = (() => {
         }
     };
 
-    // #endregion ▄▄▄▄▄ TEXT PRUNING ▄▄▄▄▄
+    // #endregion ■■■■■[ TEXT PRUNING ]■■■■■
 
     // #region ████████ ATTRIBUTE LINKING: Linking Character Attributes to Text Object Displays ████████ ~
-    // #region ░░░░░░░[Linking]░░░░ Linking Attributes to Text Objects ░░░░░░░ ~
+    // #region ░░░░░░[Linking]░░░░░░ Linking Attributes to Text Objects ~
 
     /* const getAttr = (charRef, attrRef) => {
                 const charID = (D.GetChar(charRef) || (() => false)).id;
@@ -497,7 +497,7 @@ const ETC = (() => {
             }; */
 
     // #endregion ░░░░[Linking]░░░░
-    // #endregion ▄▄▄▄▄ ATTRIBUTE LINKING ▄▄▄▄▄
+    // #endregion ■■■■■[ ATTRIBUTE LINKING ]■■■■■
 
     // #region ████████ CHAT MESSAGES: Help, Errors & Menus ████████ ~
 
@@ -678,7 +678,7 @@ const ETC = (() => {
         }
     };
 
-    // #endregion ▄▄▄▄▄ CHAT MESSAGES ▄▄▄▄▄
+    // #endregion ■■■■■[ CHAT MESSAGES ]■■■■■
 
     // #region ▒░▒░▒░▒[EXPORTS] ETC ▒░▒░▒░▒ ~
     return {

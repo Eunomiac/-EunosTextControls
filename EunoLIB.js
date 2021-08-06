@@ -5,9 +5,9 @@ MarkStart("EunoLIB");
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
 \* ****▌████████████████████████████████████████████████████████████▐******/
 
-// #region ████████ EunoCORE: Functionality Required in Advance of Initialization ████████
+// #region ████████[ EunoCORE ]████████ Global Functionality Required for Initialization
 const EunoCORE = {
-    // #region ░░░░░░░[STORAGE]░░░░ Initialization & Management of 'state' Namespaces ░░░░░░░ ~
+    // #region ░░░░░░[State] Initialization & Management of 'state' Namespace ░░░░░░░ ~
     ROOTNAME: "EunoScripts", // Namespace under global state variables
     get ROOT() { // Root state namespace for all EunoScripts
         if (!(this.ROOTNAME in state)) { state[this.ROOTNAME] = {isEunoState: true} }
@@ -24,7 +24,7 @@ const EunoCORE = {
     },
     DeleteLocalSTATE: function(scriptName) { delete this.ROOT[scriptName] }, // Clears local state storage for specified EunoScript
     // #endregion ░░░░[STATE STORAGE]░░░░
-    // #region ░░░░░░░[REGISTRATION] Installed EunoScripts Register Themselves Here ░░░░░░░ ~
+    // #region ░░░░░░░[Scripts] Registration & Tracking of Installed EunoScripts ░░░░░░░ ~
     _scriptData: {},
     get SCRIPTDATA() { return this._scriptData },
     getScript: function(scriptName) { return (this.SCRIPTDATA[scriptName] || {script: false}).script },
@@ -40,7 +40,7 @@ const EunoCORE = {
         };
     },
     // #endregion ░░░░[ REGISTRATION]░░░░
-    // #region ░░░░░░░[INITIALIZATION] Managed Initialization of All Installed EunoScripts ░░░░░░░ ~
+    // #region ░░░░░░░[Initializer] Managed Initialization of Installed EunoScripts ░░░░░░░ ~
     InitSteps: ["Preinitialize", "Initialize", "PostInitialize"],
     // VERSION MIGRATION: Any migration processing necessary on version update
     UpdateNamespace: () => {
@@ -96,7 +96,7 @@ const EunoCORE = {
     },
     // #endregion ░░░░[INITIALIZATION]░░░░
 
-    // #region ████████ C (EunoCORE.CONSTANTS): Globally-Accessible Constants ████████
+    // #region ████████[ C ]████████ (CONSTANTS) Global Constants ████████
     CONSTANTS: {
         // #region ░░░░░░░[COLORS] Color Definitions ░░░░░░░ ~
         COLORS: {
@@ -299,7 +299,7 @@ const EunoCORE = {
         }
     // #endregion ░░░░[NUMBER STRINGS]░░░░
     },
-    // #endregion ▄▄▄▄▄ C ▄▄▄▄▄
+    // #endregion ■■■■■[ C ]■■■■■
 
     // #region ░░░░░░░[SHORTHAND GETTERS] Shorthand Getters for Major Script Components ░░░░░░░ ~
     get CFG() { return EunoCONFIG },
@@ -311,14 +311,13 @@ const EunoCORE = {
     get O() { return EunoLIB.OBJECTS },
     get H() { return EunoLIB.HTML }
     // #endregion ░░░░[SHORTHAND GETTERS]░░░░
-};
-// #endregion ▄▄▄▄▄ EunoCORE ▄▄▄▄▄
+}; // █░▒▓▀≈═≡■□█▌▐—■◯◆▮●▣□◙►▶◁▬◢◣◀◥▸▷‖⁜※▤□▧▦▣□▱▰▭▬▨▩▮◊◖◗◍○▷◆◇◈◉◎◙◤◥◢◣◪◳◲◩◫◨◧◻◯◼
+// #endregion █████[ EunoCORE ]█████
 
 // #region ████████ EunoLIB: Library of Script Dependencies ████████
 const EunoLIB = /** @lends EunoLIB */ (() => {
-    // #region ▒░▒░▒░▒[FRONT] Boilerplate Namespacing & Initialization ▒░▒░▒░▒ ~
-    // #region ░░░░░░░[Namespacing] Basic References & Namespacing ░░░░░░░ ~
-
+    // #region ≈≈≈≈≈≈≈[ FRONT ]≈≈≈≈≈≈≈ Boilerplate Namespacing & Initialization ~
+    // #region ■■■■■■■[ Namespacing ]■■■■■■■ Basic References & Namespacing ~
     const SCRIPTNAME = "EunoLIB";
     const STA = {get TE() {return EunoCORE.GetLocalSTATE(SCRIPTNAME)}};
     const RE = {get G() {return STA.TE.REGISTRY}};
@@ -327,7 +326,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         isDisplayingHelpAtStart: true
     };
     // #endregion ░░░░[Namespacing]░░░░
-    // #region ░░░░░░░[Initialization] Script Startup & Event Listeners ░░░░░░░ ~
+    // #region ■■■■■■■[ Initialization ]■■■■■■■ Script Startup & Event Listeners ~
     const {CFG, C} = EunoCORE;
     let LIB, REG, U, L, O, H, Flag; // must wait for intialization to be assigned
     const Initialize = () => {
@@ -360,7 +359,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     };
 
     // #endregion ░░░░[Initialization]░░░░
-    // #region ░░░░░░░[Handlers] Event Handlers ░░░░░░ ~
+    // #region ■■■■■■■[ Handlers ]■■■■■■■ Event Handlers ~
     const handleMessageEuno = (msgData) => {
         let {call, args, selected} = msgData;
         try {
@@ -391,7 +390,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         } catch { Flag(`[EDev] Error: Bad Call: '${call}'`, 2) }
     };/* ~*/
     // #endregion ░░░░[Handlers]░░░░
-    // #endregion ▒▒▒▒[FRONT]▒▒▒▒
+    // #endregion ≈≈≈≈≈ FRONT ≈≈≈≈≈
 
     // #region ████████ U (UTILITIES): Global Utility Functions ████████
     const UTILITIES = (() => {
@@ -462,7 +461,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         // #endregion ░░░░[Validation]░░░░
-        // #region ░░░░░░░[Conversion]░░░░ Converting Between String Types ░░░░░░░ ~
+        // #region ░░░░░░[Conversion]░░░░░░ Converting Between String Types ~
         const HexToDec = (hex) => LCase(hex)
             .replace(/[^a-z0-9]/g, "")
             .split("").reverse()
@@ -985,7 +984,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ▒▒▒▒[EXPORTS: U]▒▒▒▒
     })();
-    // #endregion ▄▄▄▄▄ U ▄▄▄▄▄
+    // #endregion ■■■■■[ U ]■■■■■
 
     // #region ████████ L (LISTENER): Master Event Listener ████████
     const LISTENER = (() => {
@@ -1017,7 +1016,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ░░░░░░░[REGISTRATION]░░░░ Registration of Script Listeners ░░░░░░░ ~
+        // #region ░░░░░░[REGISTRATION]░░░░░░ Registration of Script Listeners ~
         const RegisterListener = (scriptName, triggerEvent, handlerFuncName, {gmOnly = true,
                                                                               returnObjs = false,
                                                                               chatCall = null} = {}) => {
@@ -1043,7 +1042,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         // #endregion ░░░░[REGISTRATION]░░░░
-        // #region ░░░░░░░[THROTTLING]░░░░ Disregarding Add & Destroy Events for Ignored Objects ░░░░░░░ ~
+        // #region ░░░░░░[THROTTLING]░░░░░░ Disregarding Add & Destroy Events for Ignored Objects ~
         const ignoreQueue = [];
         const IgnoreObjEvent = (qObj) => {
             if (U.GetType(qObj) === "id") {
@@ -1067,7 +1066,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             }
         };
         // #endregion ░░░░[THROTTLING]░░░░
-        // #region ░░░░░░░[HANDLER]░░░░ Primary Event Handler Function ░░░░░░░ ~
+        // #region ░░░░░░[HANDLER]░░░░░░ Primary Event Handler Function ~
         const handleEvent = (trigger, ...returnVals) => {
             const [eventType, eventSubject] = trigger.split(/:/);
             switch (eventType) {
@@ -1139,7 +1138,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ░░░░[HANDLER]░░░░
 
-        // #region ░░░░░░░[CHAT]░░░░ Parsing on("chat:message") Events ░░░░░░░ ~
+        // #region ░░░░░░[CHAT]░░░░░░ Parsing on("chat:message") Events ~
         const CheckMessage = (msg, calls, {isGM = true} = {}) => {
             return U.GetType(msg) === "list"
                     && msg.type === "api"
@@ -1175,7 +1174,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ▒▒▒▒[EXPORTS: L]▒▒▒▒
     })();
-    // #endregion ▄▄▄▄▄ L ▄▄▄▄▄
+    // #endregion ■■■■■[ L ]■■■■■
 
     // #region ████████ O (OBJECTS): Roll20 Object Manipulation ████████
     const OBJECTS = (() => {
@@ -1198,7 +1197,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         //     #endregion _______ Initialization _______
         // #endregion ▒▒▒▒[FRONT]▒▒▒▒
 
-        // #region ░░░░░░░[Getters]░░░░ Retrieving Sandbox Objects ░░░░░░░ ~
+        // #region ░░░░░░[Getters]░░░░░░ Retrieving Sandbox Objects ~
         const GetR20Type = (val) => {
             if (val && typeof val === "object" && "id" in val && "get" in val) {
                 const type = val.get("_type");
@@ -1380,7 +1379,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
             return objDatas.length > 0 ? objDatas.shift() : false;
         };
         // #endregion ░░░░[Getters]░░░░
-        // #region ░░░░░░░[Setters]░░░░ Safe Setting & Removal of Sandbox Objects ░░░░░░░ ~
+        // #region ░░░░░░[Setters]░░░░░░ Safe Setting & Removal of Sandbox Objects ~
         const SafeRemove = (obj) => {
             if (O.GetR20Type(obj)) {
                 L.IgnoreObjEvent(obj);
@@ -1409,7 +1408,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ▒▒▒▒[EXPORTS: O]▒▒▒▒
     })();
-    // #endregion ▄▄▄▄▄ O ▄▄▄▄▄
+    // #endregion ■■■■■[ O ]■■■■■
 
     // #region ████████ H (HTML): HTML/CSS Parsing & Styling for Chat & Handouts ████████
     const HTML = (() => {
@@ -2281,7 +2280,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
         };
         // #endregion ▒▒▒▒[EXPORTS: H]▒▒▒▒
     })();
-    // #endregion ▄▄▄▄▄ H ▄▄▄▄▄
+    // #endregion ■■■■■[ H ]■■■■■
 
     // #region ▒░▒░▒░▒[EXPORTS] EunoLIB ▒░▒░▒░▒ ~
     return {
@@ -2296,7 +2295,7 @@ const EunoLIB = /** @lends EunoLIB */ (() => {
     };
     // #endregion ▒▒▒▒[EXPORTS: EunoLIB]▒▒▒▒
 })();
-// #endregion ▄▄▄▄▄ EunoLIB ▄▄▄▄▄
+// #endregion ■■■■■[ EunoLIB ]■■■■■
 
 EunoCORE.Register("EunoLIB", EunoLIB);
 EunoCORE.Register("UTILITIES", EunoLIB.UTILITIES);

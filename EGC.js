@@ -22,11 +22,11 @@ const EUNO_EGC_CONFIG = {
     // #endregion ░[Global]░░░░
 };
 
-// #endregion ▄▄▄▄▄ CONFIGURATION ▄▄▄▄▄
+// #endregion ■■■■■[ CONFIGURATION ]■■■■■
 
 // #region █████▓▒░ Top-Level Namespacing, Updating & Validation ░▒▓█████
 const EUNO_EGC_ROOTNAME = "Euno";
-// #endregion ▄▄▄▄▄ Top-Level Namespacing ▄▄▄▄▄
+// #endregion ■■■■■[ Top-Level Namespacing ]■■■■■
 
 const EunosGrabControls = (() => {
     const RO = {get OT() { // "RO.OT" Reference to 'state.Euno'
@@ -567,4 +567,4 @@ on("ready", () => {
         log("[EGC] Error Updating State Storage. Unfortunately, a full reinstall of EGC is necessary to fix this issue.");
     }
 });
-// #endregion ▄▄▄▄▄ Event Listener ▄▄▄▄▄
+// #endregion ■■■■■[ Event Listener ]■■■■■
