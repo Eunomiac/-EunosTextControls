@@ -1,5 +1,4 @@
-void MarkStart("ETC");
-/* ****▌████████████████████████████████████████████████████████████▐******\
+void /* ****▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██████▓▒░ !ETC: EUNOMIAC'S TEXT CONTROLS for Roll20 ░▒▓█████▐     *|
 |*     ▌███████████████████v@@VERSION@@██@@DATE@@███████████████████▐     *|
 |*     ▌███▓▒░ https://github.com/Eunomiac/EunosRoll20Scripts ░▒▓███▐     *|
@@ -689,4 +688,4 @@ const ETC = (() => {
 })();
 
 EunoCORE.Register("ETC", ETC);
-void MarkStop("ETC");
+void

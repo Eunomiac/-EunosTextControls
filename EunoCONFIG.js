@@ -1,5 +1,3 @@
-void MarkStart("EunoCONFIG");
-state = {};
 /* ****▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██▓▒░ EunoCONFIG: Customization of EunosRoll20Scripts ░▒▓███▐     *|
 |*     ▌███████████████████v@@VERSION@@██@@DATE@@███████████████████▐     *|
@@ -153,4 +151,3 @@ const EunoCONFIG = {
         }
     }
 };
-void MarkStop("EunoCONFIG");
