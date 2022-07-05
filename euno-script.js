@@ -1,3 +1,4 @@
+const state = {};
 /* ****▌████████████████████████████████████████████████████████████▐******\
 |*     ▌██▓▒░ EunoCONFIG: Customization of EunosRoll20Scripts ░▒▓███▐     *|
 |*     ▌███████████████████v@@VERSION@@██@@DATE@@███████████████████▐     *|
@@ -156,7 +157,6 @@ const EunoCONFIG = {
 |*     ▌███████████████████v@@VERSION@@██@@DATE@@███████████████████▐     *|
 |*     ▌██░░░░ https://github.com/Eunomiac/EunosRoll20Scripts ░░░░██▐     *|
 \* ****▌████████████████████████████████████████████████████████████▐******/
-const state = {};
 
 // #region ████████[ EunoCORE ]████████ Global Functionality Required for Initialization
 const EunoCORE = {
